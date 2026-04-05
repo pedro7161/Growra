@@ -1,46 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { View, Text, ScrollView, StyleSheet, SafeAreaView } from "react-native";
 import { GameState } from "../types";
-import { gameStateService } from "../services/gameStateService";
-import { createSaveData, createInitialGameState } from "../utils/initialState";
 
-export default function DashboardScreen() {
-  const [gameState, setGameState] = useState<GameState | null>(null);
-  const [loading, setLoading] = useState(true);
+interface DashboardScreenProps {
+  gameState: GameState;
+}
 
-  useEffect(() => {
-    loadGame();
-  }, []);
-
-  const loadGame = async () => {
-    const saveData = await gameStateService.loadGame();
-
-    if (saveData) {
-      setGameState(saveData.gameState);
-    } else {
-      const newGameState = createInitialGameState();
-      await gameStateService.saveGame(createSaveData(newGameState));
-      setGameState(newGameState);
-    }
-
-    setLoading(false);
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text>Loading...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (!gameState) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text>Error loading game</Text>
-      </SafeAreaView>
-    );
-  }
+export default function DashboardScreen({ gameState }: DashboardScreenProps) {
 
   const equippedPet = gameState.pets.find((p) => p.id === gameState.equippedPetId);
 
