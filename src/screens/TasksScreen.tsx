@@ -6,63 +6,165 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  TextInput,
 } from "react-native";
-import { Task, TaskStatus } from "../types";
+import { getAppCopy } from "../constants/appCopy";
+import { getAppTheme } from "../constants/appTheme";
+import { AppSettings, Task, TaskFrequency, TaskPriority, TaskStatus, TaskType } from "../types";
 import AddTaskModal from "../components/AddTaskModal";
+import TaskDetailsModal from "../components/TaskDetailsModal";
+import { getPredefinedTask } from "../constants/predefinedTasks";
+import { createCustomTask, createPredefinedTask } from "../utils/taskFactory";
+import { getTodayTasks } from "../utils/taskSchedule";
 
 interface TasksScreenProps {
+  settings: AppSettings;
   tasks: Task[];
   onAddTask: (task: Task) => void;
   onCompleteTask: (taskId: string) => void;
+  onUpdateTask: (task: Task) => void;
+  onDeleteTask: (taskId: string) => void;
+  onOpenCalendar: () => void;
 }
 
 export default function TasksScreen({
+  settings,
   tasks,
   onAddTask,
   onCompleteTask,
+  onUpdateTask,
+  onDeleteTask,
+  onOpenCalendar,
 }: TasksScreenProps) {
+  const copy = getAppCopy(settings.language);
+  const theme = getAppTheme(settings.theme);
+  const now = Date.now();
   const [filter, setFilter] = useState<TaskStatus | "all">("all");
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const todayTasks = getTodayTasks(tasks, now);
+  const completedTasks = tasks.filter((task) => task.status === TaskStatus.COMPLETED);
 
-  const filteredTasks = tasks.filter((task) => {
-    if (filter === "all") return true;
-    return task.status === filter;
-  });
+  const baseTasks =
+    filter === "all" ? tasks : filter === TaskStatus.PENDING ? todayTasks : completedTasks;
+  const filteredTasks = [...baseTasks]
+    .filter((task) => {
+      const normalizedQuery = searchQuery.trim().toLowerCase();
 
-  const handleAddTask = (name: string, description: string, type: any, frequency: any) => {
-    const { createTask } = require("../utils/taskFactory");
-    const newTask = createTask(name, description, type, frequency);
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      const predefinedTask = task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId) : null;
+
+      return (
+        task.name.toLowerCase().includes(normalizedQuery) ||
+        task.description.toLowerCase().includes(normalizedQuery) ||
+        task.frequency.toLowerCase().includes(normalizedQuery) ||
+        task.type.toLowerCase().includes(normalizedQuery) ||
+        (predefinedTask ? predefinedTask.category.toLowerCase().includes(normalizedQuery) : false)
+      );
+    })
+    .sort((leftTask, rightTask) => {
+      const priorityOrder = {
+        [TaskPriority.HIGH]: 0,
+        [TaskPriority.MEDIUM]: 1,
+        [TaskPriority.LOW]: 2,
+      };
+
+      if (leftTask.status !== rightTask.status) {
+        return leftTask.status === TaskStatus.PENDING ? -1 : 1;
+      }
+
+      if (priorityOrder[leftTask.priority] !== priorityOrder[rightTask.priority]) {
+        return priorityOrder[leftTask.priority] - priorityOrder[rightTask.priority];
+      }
+
+      if (leftTask.dueDate !== rightTask.dueDate) {
+        return leftTask.dueDate - rightTask.dueDate;
+      }
+
+      return rightTask.createdAt - leftTask.createdAt;
+    });
+
+  const handleAddTask = (
+    values: {
+      name: string;
+      description: string;
+      predefinedTaskId: string;
+      type: TaskType;
+      frequency: TaskFrequency;
+    }
+  ) => {
+    const newTask =
+      values.type === TaskType.PREDEFINED
+        ? createPredefinedTask(getPredefinedTask(values.predefinedTaskId), values.frequency)
+        : createCustomTask(values.name, values.description, values.frequency);
     onAddTask(newTask);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Tasks</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={styles.addButtonText}>+ Add</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <View>
+          <Text style={[styles.title, { color: theme.text }]}>{copy.tasksTitle}</Text>
+          <Text style={[styles.subtitle, { color: theme.mutedText }]}>
+            {todayTasks.length} {copy.tasksActiveToday}
+          </Text>
+        </View>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={[styles.calendarButton, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
+            onPress={onOpenCalendar}
+          >
+            <Text style={[styles.calendarButtonText, { color: theme.text }]}>{copy.tasksCalendar}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.addButton, { backgroundColor: theme.accent }]}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={[styles.addButtonText, { color: theme.accentText }]}>{copy.tasksAdd}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
+      <View style={[styles.filterContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <FilterTab
-          label="All"
+          label={copy.tasksFilterAll}
           active={filter === "all"}
           onPress={() => setFilter("all")}
+          settings={settings}
         />
         <FilterTab
-          label="Active"
+          label={copy.tasksFilterActive}
           active={filter === TaskStatus.PENDING}
           onPress={() => setFilter(TaskStatus.PENDING)}
+          settings={settings}
         />
         <FilterTab
-          label="Completed"
+          label={copy.tasksFilterCompleted}
           active={filter === TaskStatus.COMPLETED}
           onPress={() => setFilter(TaskStatus.COMPLETED)}
+          settings={settings}
+        />
+      </View>
+
+      <View style={[styles.searchContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <TextInput
+          style={[
+            styles.searchInput,
+            {
+              backgroundColor: theme.surfaceMuted,
+              borderColor: theme.border,
+              color: theme.text,
+            },
+          ]}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder={copy.tasksSearchPlaceholder}
+          placeholderTextColor={theme.mutedText}
         />
       </View>
 
@@ -70,10 +172,8 @@ export default function TasksScreen({
       <ScrollView style={styles.content}>
         {filteredTasks.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No tasks to display</Text>
-            <Text style={styles.emptySubtext}>
-              Create your first task to get started
-            </Text>
+            <Text style={[styles.emptyText, { color: theme.text }]}>{copy.tasksEmptyTitle}</Text>
+            <Text style={[styles.emptySubtext, { color: theme.mutedText }]}>{copy.tasksEmptySubtitle}</Text>
           </View>
         ) : (
           filteredTasks.map((task) => (
@@ -81,6 +181,8 @@ export default function TasksScreen({
               key={task.id}
               task={task}
               onComplete={() => onCompleteTask(task.id)}
+              onOpen={() => setSelectedTask(task)}
+              settings={settings}
             />
           ))
         )}
@@ -89,7 +191,22 @@ export default function TasksScreen({
       <AddTaskModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+        settings={settings}
         onSubmit={handleAddTask}
+      />
+      <TaskDetailsModal
+        visible={selectedTask !== null}
+        task={selectedTask}
+        settings={settings}
+        onClose={() => setSelectedTask(null)}
+        onSave={(task) => {
+          onUpdateTask(task);
+          setSelectedTask(null);
+        }}
+        onDelete={(taskId) => {
+          onDeleteTask(taskId);
+          setSelectedTask(null);
+        }}
       />
     </SafeAreaView>
   );
@@ -98,34 +215,73 @@ export default function TasksScreen({
 function TaskItem({
   task,
   onComplete,
+  onOpen,
+  settings,
 }: {
   task: Task;
   onComplete: () => void;
+  onOpen: () => void;
+  settings: AppSettings;
 }) {
+  const copy = getAppCopy(settings.language);
+  const theme = getAppTheme(settings.theme);
   const isCompleted = task.status === TaskStatus.COMPLETED;
+  const predefinedTask = task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId) : null;
+  const priorityLabel =
+    task.priority === TaskPriority.HIGH
+      ? copy.tasksPriorityHigh
+      : task.priority === TaskPriority.LOW
+        ? copy.tasksPriorityLow
+        : copy.tasksPriorityMedium;
 
   return (
-    <View style={[styles.taskItem, isCompleted && styles.taskItemCompleted]}>
+    <View
+      style={[
+        styles.taskItem,
+        {
+          backgroundColor: theme.surface,
+          borderLeftColor: theme.accent,
+        },
+        isCompleted && styles.taskItemCompleted,
+      ]}
+    >
       <TouchableOpacity
-        style={[styles.checkbox, isCompleted && styles.checkboxChecked]}
+        style={[
+          styles.checkbox,
+          {
+            borderColor: theme.border,
+          },
+          isCompleted && { backgroundColor: theme.accent, borderColor: theme.accent },
+        ]}
         onPress={onComplete}
+        disabled={isCompleted}
       >
         {isCompleted && <Text style={styles.checkmark}>✓</Text>}
       </TouchableOpacity>
-      <View style={styles.taskContent}>
-        <Text
-          style={[styles.taskName, isCompleted && styles.taskNameCompleted]}
-        >
-          {task.name}
-        </Text>
+      <TouchableOpacity style={styles.taskContent} onPress={onOpen}>
+        <View style={styles.taskTopRow}>
+          <Text
+            style={[styles.taskName, { color: theme.text }, isCompleted && styles.taskNameCompleted]}
+          >
+            {task.name}
+          </Text>
+          <View style={styles.taskColorMeta}>
+            <View style={[styles.taskColorDot, { backgroundColor: task.calendarColor }]} />
+            <Text style={[styles.taskPriority, { color: theme.mutedText }]}>{priorityLabel}</Text>
+          </View>
+        </View>
         {task.description && (
-          <Text style={styles.taskDescription}>{task.description}</Text>
+          <Text style={[styles.taskDescription, { color: theme.mutedText }]}>{task.description}</Text>
         )}
         <View style={styles.taskMeta}>
-          <Text style={styles.taskType}>{task.type}</Text>
-          <Text style={styles.taskFrequency}>{task.frequency}</Text>
+          <Text style={[styles.taskType, { backgroundColor: theme.surfaceMuted, color: theme.mutedText }]}>
+            {predefinedTask ? predefinedTask.category : task.type}
+          </Text>
+          <Text style={[styles.taskFrequency, { backgroundColor: theme.accentSoft, color: theme.accent }]}>
+            {task.frequency}
+          </Text>
         </View>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -134,17 +290,26 @@ function FilterTab({
   label,
   active,
   onPress,
+  settings,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
+  settings: AppSettings;
 }) {
+  const theme = getAppTheme(settings.theme);
+
   return (
     <TouchableOpacity
-      style={[styles.filterTab, active && styles.filterTabActive]}
+      style={[
+        styles.filterTab,
+        {
+          backgroundColor: active ? theme.accent : theme.surfaceMuted,
+        },
+      ]}
       onPress={onPress}
     >
-      <Text style={[styles.filterText, active && styles.filterTextActive]}>
+      <Text style={[styles.filterText, { color: active ? theme.accentText : theme.mutedText }]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -171,6 +336,26 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#333",
   },
+  subtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#666",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  calendarButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  calendarButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
   addButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -190,6 +375,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
   },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
   filterTab: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -197,16 +394,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#f0f0f0",
   },
-  filterTabActive: {
-    backgroundColor: "#4ecdc4",
-  },
   filterText: {
     fontSize: 12,
-    color: "#666",
     fontWeight: "500",
-  },
-  filterTextActive: {
-    color: "#fff",
   },
   content: {
     flex: 1,
@@ -266,6 +456,27 @@ const styles = StyleSheet.create({
   taskMeta: {
     flexDirection: "row",
     gap: 8,
+  },
+  taskTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  taskColorMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  taskColorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+  },
+  taskPriority: {
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
   },
   taskType: {
     fontSize: 10,

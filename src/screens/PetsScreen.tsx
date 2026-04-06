@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,33 +7,329 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
+import { getAppCopy } from "../constants/appCopy";
+import { getAppTheme } from "../constants/appTheme";
+import { AppSettings, GameState } from "../types";
+import {
+  getFuseSourcePets,
+  getNextEvolutionFusionTarget,
+  getPetTemplates,
+  getPityCost,
+  getSellablePets,
+  getSellValue,
+  MAX_PET_FUSIONS,
+  SUMMON_COST,
+} from "../utils/gameplay";
 
-export default function PetsScreen() {
+interface PetsScreenProps {
+  gameState: GameState;
+  settings: AppSettings;
+  onEquipPet: (petId: string) => void;
+  onFusePet: (targetPetId: string, sourcePetId: string) => void;
+  onRedeemPityPet: (templateId: string) => void;
+  onSellPet: (petId: string) => void;
+  onSummonPet: () => void;
+}
+
+export default function PetsScreen({
+  gameState,
+  settings,
+  onEquipPet,
+  onFusePet,
+  onRedeemPityPet,
+  onSellPet,
+  onSummonPet,
+}: PetsScreenProps) {
+  const copy = getAppCopy(settings.language);
+  const theme = getAppTheme(settings.theme);
+  const [activeTab, setActiveTab] = useState<
+    "summon" | "pity-shop" | "my-pets" | "sell-shop"
+  >("summon");
+  const petTemplates = getPetTemplates();
+  const sellablePets = getSellablePets(gameState);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Pets</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <Text style={[styles.title, { color: theme.text }]}>{copy.petsTitle}</Text>
+        <Text style={[styles.subtitle, { color: theme.mutedText }]}>
+          {gameState.coins} {copy.petsCoinsPity} • {gameState.pityCurrency} pity
+        </Text>
+      </View>
+
+      <View style={[styles.tabBar, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <TabButton
+          label={copy.petsSummonTab}
+          active={activeTab === "summon"}
+          onPress={() => setActiveTab("summon")}
+          settings={settings}
+        />
+        <TabButton
+          label={copy.petsPityShopTab}
+          active={activeTab === "pity-shop"}
+          onPress={() => setActiveTab("pity-shop")}
+          settings={settings}
+        />
+        <TabButton
+          label={copy.petsMyPetsTab}
+          active={activeTab === "my-pets"}
+          onPress={() => setActiveTab("my-pets")}
+          settings={settings}
+        />
+        <TabButton
+          label={copy.petsSellShopTab}
+          active={activeTab === "sell-shop"}
+          onPress={() => setActiveTab("sell-shop")}
+          settings={settings}
+        />
       </View>
 
       <ScrollView style={styles.content}>
-        {/* Pet Grid */}
-        <View style={styles.grid}>
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No pets yet</Text>
-            <Text style={styles.emptySubtext}>
-              Complete tasks to earn pets
+        {activeTab === "summon" && (
+          <View style={[styles.shopCard, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.shopTitle, { color: theme.text }]}>{copy.petsGachaTitle}</Text>
+            <Text style={[styles.shopText, { color: theme.mutedText }]}>{copy.petsGachaOdds}</Text>
+            <Text style={[styles.shopText, { color: theme.mutedText }]}>
+              {copy.petsGachaCost.replace("{cost}", String(SUMMON_COST))}
             </Text>
           </View>
-        </View>
+        )}
+
+        {activeTab === "pity-shop" && (
+          <View style={[styles.shopCard, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.shopTitle, { color: theme.text }]}>{copy.petsPityShopTitle}</Text>
+            <Text style={[styles.shopText, { color: theme.mutedText }]}>{copy.petsPityShopSubtitle}</Text>
+            <View style={styles.pityGrid}>
+              {petTemplates.map((template) => (
+                <View
+                  key={template.id}
+                  style={[styles.pityCard, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
+                >
+                  <View style={styles.pityCardHeader}>
+                    <Text style={[styles.pityName, { color: theme.text }]}>{template.name}</Text>
+                    <Text style={[styles.pityRarity, { color: theme.mutedText }]}>{template.rarity}</Text>
+                  </View>
+                  <Text style={[styles.pityMeta, { color: theme.mutedText }]}>
+                    +{(template.taskMultiplier * 100).toFixed(0)}% {copy.petsTaskBonus.toLowerCase()}
+                  </Text>
+                  <Text style={[styles.pityMeta, { color: theme.mutedText }]}>
+                    {copy.petsCost}: {getPityCost(template.rarity)} pity
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.redeemButton,
+                      { backgroundColor: theme.warning },
+                      gameState.pityCurrency < getPityCost(template.rarity) &&
+                        { backgroundColor: theme.warningSoft },
+                    ]}
+                    onPress={() => onRedeemPityPet(template.id)}
+                    disabled={gameState.pityCurrency < getPityCost(template.rarity)}
+                  >
+                    <Text style={styles.redeemButtonText}>{copy.petsClaim}</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {activeTab === "my-pets" && (
+          <View style={styles.grid}>
+            {gameState.pets.map((pet) => (
+              <PetCard
+                key={pet.id}
+                gameState={gameState}
+                petId={pet.id}
+                settings={settings}
+                onEquipPet={onEquipPet}
+                onFusePet={onFusePet}
+              />
+            ))}
+          </View>
+        )}
+
+        {activeTab === "sell-shop" && (
+          <View style={[styles.shopCard, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.shopTitle, { color: theme.text }]}>{copy.petsSellShopTitle}</Text>
+            <Text style={[styles.shopText, { color: theme.mutedText }]}>{copy.petsSellShopSubtitle}</Text>
+            <View style={styles.sellList}>
+              {sellablePets.length === 0 ? (
+                <Text style={[styles.emptyText, { color: theme.mutedText }]}>{copy.petsNoExtraCopies}</Text>
+              ) : (
+                sellablePets.map((pet) => (
+                  <View
+                    key={pet.id}
+                    style={[styles.sellCard, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
+                  >
+                    <View>
+                      <Text style={[styles.sellName, { color: theme.text }]}>{pet.name}</Text>
+                      <Text style={[styles.sellMeta, { color: theme.mutedText }]}>
+                        {pet.rarity} • {copy.petsSellsFor} {getSellValue(pet.rarity)} {copy.petsCoinsPity}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.sellButton, { backgroundColor: theme.danger }]}
+                      onPress={() => onSellPet(pet.id)}
+                    >
+                      <Text style={styles.sellButtonText}>{copy.petsSell}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
 
-      {/* Gacha Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.gachaButton}>
-          <Text style={styles.gachaButtonText}>Summon Pet</Text>
+      {activeTab === "summon" && (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[
+              styles.gachaButton,
+              { backgroundColor: theme.accent },
+              gameState.coins < SUMMON_COST && { backgroundColor: theme.border },
+            ]}
+            onPress={onSummonPet}
+            disabled={gameState.coins < SUMMON_COST}
+          >
+            <Text style={styles.gachaButtonText}>
+              {copy.petsSummonButton.replace("{cost}", String(SUMMON_COST))}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+function PetCard({
+  gameState,
+  petId,
+  settings,
+  onEquipPet,
+  onFusePet,
+}: {
+  gameState: GameState;
+  petId: string;
+  settings: AppSettings;
+  onEquipPet: (petId: string) => void;
+  onFusePet: (targetPetId: string, sourcePetId: string) => void;
+}) {
+  const copy = getAppCopy(settings.language);
+  const theme = getAppTheme(settings.theme);
+  const pet = gameState.pets.filter((currentPet) => currentPet.id === petId)[0];
+  const fuseSourcePets = getFuseSourcePets(gameState, petId);
+  const availableFuseCopies = pet.fusionLevel < MAX_PET_FUSIONS ? fuseSourcePets : [];
+  const firstFuseCopy = availableFuseCopies[0];
+  const nextEvolutionFusionTarget = getNextEvolutionFusionTarget(pet.fusionLevel);
+  const evolutionLabel =
+    pet.evolutionStage === 2
+      ? copy.petsEvolutionAscended
+      : pet.evolutionStage === 1
+        ? copy.petsEvolutionEvolved
+        : copy.petsEvolutionBase;
+
+  return (
+    <View style={[styles.petCard, { backgroundColor: theme.surface }]}>
+      <View style={styles.petCardHeader}>
+        <View>
+          <Text style={[styles.petName, { color: theme.text }]}>{pet.name}</Text>
+          <Text style={[styles.petMeta, { color: theme.mutedText }]}>
+            {pet.rarity} • {copy.petsLevel.toLowerCase()} {pet.level}
+          </Text>
+        </View>
+        {pet.equipped && (
+          <Text style={[styles.equippedBadge, { backgroundColor: theme.accentSoft, color: theme.accent }]}>
+            {copy.petsActive}
+          </Text>
+        )}
+      </View>
+
+      <Text style={[styles.petStat, { color: theme.mutedText }]}>
+        {copy.petsExperience}: {pet.experience}
+      </Text>
+      <Text style={[styles.petStat, { color: theme.mutedText }]}>
+        {copy.petsFusion}: {pet.fusionLevel}/{MAX_PET_FUSIONS}
+      </Text>
+      <Text style={[styles.petStat, { color: theme.mutedText }]}>
+        {copy.petsEvolution}: {evolutionLabel}
+      </Text>
+      <Text style={[styles.petStat, { color: theme.mutedText }]}>
+        {copy.petsTaskBonus}: +{(pet.taskMultiplier * 100).toFixed(0)}%
+      </Text>
+      <Text style={[styles.petStat, { color: theme.mutedText }]}>
+        ATK {pet.stats.attack} • DEF {pet.stats.defense} • SPD {pet.stats.speed} • LCK {pet.stats.luck}
+      </Text>
+      <View style={styles.powerRow}>
+        <View style={[styles.powerCard, { backgroundColor: theme.surfaceMuted }]}>
+          <Text style={[styles.powerLabel, { color: theme.mutedText }]}>{copy.petsCombatPower}</Text>
+          <Text style={[styles.powerValue, { color: theme.text }]}>{pet.combatPower}</Text>
+        </View>
+        <View style={[styles.powerCard, { backgroundColor: theme.surfaceMuted }]}>
+          <Text style={[styles.powerLabel, { color: theme.mutedText }]}>{copy.petsExplorationPower}</Text>
+          <Text style={[styles.powerValue, { color: theme.text }]}>{pet.explorationPower}</Text>
+        </View>
+      </View>
+      <Text style={[styles.petStat, { color: theme.mutedText }]}>
+        {copy.petsAvailableCopies}: {availableFuseCopies.length}
+      </Text>
+      <Text style={[styles.petStat, { color: theme.mutedText }]}>
+        {nextEvolutionFusionTarget
+          ? `${copy.petsNextEvolution}: ${pet.fusionLevel}/${nextEvolutionFusionTarget}`
+          : copy.petsMaxEvolution}
+      </Text>
+
+      <View style={styles.petActions}>
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            { backgroundColor: theme.accent },
+            pet.equipped && { backgroundColor: theme.border },
+          ]}
+          onPress={() => onEquipPet(pet.id)}
+          disabled={pet.equipped}
+        >
+          <Text style={styles.actionButtonText}>{pet.equipped ? copy.petsActive : copy.petsEquip}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.fuseButton,
+            { backgroundColor: theme.hero },
+            !firstFuseCopy && { backgroundColor: theme.border },
+          ]}
+          onPress={firstFuseCopy ? () => onFusePet(pet.id, firstFuseCopy.id) : undefined}
+          disabled={!firstFuseCopy}
+        >
+          <Text style={styles.fuseButtonText}>{copy.petsFuseCopy}</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
+  );
+}
+
+function TabButton({
+  label,
+  active,
+  onPress,
+  settings,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+  settings: AppSettings;
+}) {
+  const theme = getAppTheme(settings.theme);
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.tabButton,
+        { backgroundColor: active ? theme.accent : theme.surfaceMuted },
+      ]}
+      onPress={onPress}
+    >
+      <Text style={[styles.tabButtonText, { color: active ? theme.accentText : theme.mutedText }]}>{label}</Text>
+    </TouchableOpacity>
   );
 }
 
@@ -53,27 +349,228 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#333",
   },
+  subtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#666",
+  },
+  tabBar: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+    gap: 8,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: "#eef2f1",
+    alignItems: "center",
+  },
+  tabButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
   content: {
     flex: 1,
     padding: 16,
   },
-  grid: {
-    minHeight: 400,
-    justifyContent: "center",
+  shopCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
   },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
+  shopTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#222",
     marginBottom: 8,
   },
-  emptySubtext: {
+  shopText: {
+    fontSize: 13,
+    color: "#555",
+    marginBottom: 4,
+  },
+  pityGrid: {
+    gap: 10,
+    marginTop: 10,
+  },
+  sellList: {
+    gap: 10,
+    marginTop: 10,
+  },
+  emptyText: {
     fontSize: 14,
-    color: "#999",
+    color: "#666",
+    fontStyle: "italic",
+  },
+  pityCard: {
+    borderWidth: 1,
+    borderColor: "#e5e5e5",
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: "#fafafa",
+  },
+  pityCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  pityName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#222",
+  },
+  pityRarity: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#666",
+    textTransform: "capitalize",
+  },
+  pityMeta: {
+    fontSize: 12,
+    color: "#555",
+    marginBottom: 4,
+  },
+  redeemButton: {
+    marginTop: 8,
+    backgroundColor: "#f39c12",
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  redeemButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  sellCard: {
+    backgroundColor: "#fafafa",
+    borderWidth: 1,
+    borderColor: "#e5e5e5",
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  sellName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#222",
+  },
+  sellMeta: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
+    textTransform: "capitalize",
+  },
+  sellButton: {
+    backgroundColor: "#d35400",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  sellButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  grid: {
+    gap: 12,
+  },
+  petCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 16,
+    elevation: 2,
+  },
+  petCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  petName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#222",
+  },
+  petMeta: {
+    fontSize: 13,
+    color: "#666",
+    marginTop: 4,
+    textTransform: "capitalize",
+  },
+  equippedBadge: {
+    backgroundColor: "#dff8f4",
+    color: "#1f7a73",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  petStat: {
+    fontSize: 13,
+    color: "#444",
+    marginBottom: 6,
+  },
+  petActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 8,
+  },
+  powerRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 6,
+  },
+  powerCard: {
+    flex: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  powerLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    marginBottom: 4,
+    textTransform: "uppercase",
+  },
+  powerValue: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  actionButton: {
+    backgroundColor: "#1f7a73",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    flex: 1,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  fuseButton: {
+    backgroundColor: "#275dad",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    flex: 1,
+  },
+  fuseButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#fff",
   },
   footer: {
     padding: 16,

@@ -1,96 +1,186 @@
 import React from "react";
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-  SafeAreaView,
-} from "react-native";
+import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { getAppCopy } from "../constants/appCopy";
+import { getAppTheme } from "../constants/appTheme";
+import { AppSettings } from "../types";
 
 type Screen = "dashboard" | "tasks" | "pets";
+
+const ACTIVE_CIRCLE_SIZE = 74;
+const ACTIVE_DOCK_WIDTH = 92;
+const ACTIVE_DOCK_HEIGHT = 34;
 
 interface BottomNavigationProps {
   activeScreen: Screen;
   onNavigate: (screen: Screen) => void;
+  settings: AppSettings;
 }
 
 export default function BottomNavigation({
   activeScreen,
   onNavigate,
+  settings,
 }: BottomNavigationProps) {
+  const copy = getAppCopy(settings.language);
+  const theme = getAppTheme(settings.theme);
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <NavItem
-          label="Dashboard"
-          screen="dashboard"
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.surface }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.surface,
+            borderTopColor: theme.border,
+          },
+        ]}
+      >
+        <NavSlot
+          label={copy.navDashboard}
           active={activeScreen === "dashboard"}
           onPress={() => onNavigate("dashboard")}
+          settings={settings}
         />
-        <NavItem
-          label="Tasks"
-          screen="tasks"
+        <NavSlot
+          label={copy.navTasks}
           active={activeScreen === "tasks"}
           onPress={() => onNavigate("tasks")}
+          settings={settings}
         />
-        <NavItem
-          label="Pets"
-          screen="pets"
+        <NavSlot
+          label={copy.navPets}
           active={activeScreen === "pets"}
           onPress={() => onNavigate("pets")}
+          settings={settings}
         />
       </View>
     </SafeAreaView>
   );
 }
 
-function NavItem({
+function NavSlot({
   label,
-  screen,
   active,
   onPress,
+  settings,
 }: {
   label: string;
-  screen: Screen;
   active: boolean;
   onPress: () => void;
+  settings: AppSettings;
 }) {
+  const theme = getAppTheme(settings.theme);
+
   return (
-    <TouchableOpacity
-      style={[styles.item, active && styles.itemActive]}
-      onPress={onPress}
-    >
-      <Text style={[styles.label, active && styles.labelActive]}>{label}</Text>
-    </TouchableOpacity>
+    <View style={styles.slot}>
+      {active && (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.dockCurve,
+            {
+              backgroundColor: theme.surface,
+              borderTopColor: theme.border,
+            },
+          ]}
+        />
+      )}
+
+      <TouchableOpacity
+        style={[
+          styles.item,
+          active ? styles.circleItem : styles.rectangleItem,
+          active
+            ? {
+                backgroundColor: theme.accent,
+                borderColor: theme.accentSoft,
+              }
+            : {
+                backgroundColor: theme.surfaceMuted,
+                borderColor: theme.border,
+              },
+        ]}
+        onPress={onPress}
+      >
+        <Text
+          style={[
+            styles.label,
+            active ? styles.circleLabel : styles.rectangleLabel,
+            { color: active ? theme.accentText : theme.mutedText },
+          ]}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#fff",
+    overflow: "visible",
   },
   container: {
     flexDirection: "row",
+    alignItems: "flex-end",
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 14,
     borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
-    backgroundColor: "#fff",
+    overflow: "visible",
+  },
+  slot: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    overflow: "visible",
+  },
+  dockCurve: {
+    position: "absolute",
+    top: -14,
+    width: ACTIVE_DOCK_WIDTH,
+    height: ACTIVE_DOCK_HEIGHT,
+    borderTopWidth: 1,
+    borderTopLeftRadius: ACTIVE_DOCK_WIDTH / 2,
+    borderTopRightRadius: ACTIVE_DOCK_WIDTH / 2,
+    zIndex: 0,
   },
   item: {
-    flex: 1,
-    paddingVertical: 12,
     alignItems: "center",
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
+    justifyContent: "center",
+    borderWidth: 1,
+    zIndex: 1,
   },
-  itemActive: {
-    borderBottomColor: "#4ecdc4",
+  rectangleItem: {
+    minWidth: 96,
+    minHeight: 48,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 16,
+  },
+  circleItem: {
+    width: ACTIVE_CIRCLE_SIZE,
+    height: ACTIVE_CIRCLE_SIZE,
+    borderRadius: ACTIVE_CIRCLE_SIZE / 2,
+    marginTop: -24,
+    marginBottom: 4,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
   },
   label: {
-    fontSize: 12,
-    color: "#999",
-    fontWeight: "500",
+    fontWeight: "600",
   },
-  labelActive: {
-    color: "#4ecdc4",
+  rectangleLabel: {
+    fontSize: 12,
+  },
+  circleLabel: {
+    fontSize: 12,
+    textAlign: "center",
   },
 });

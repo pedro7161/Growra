@@ -15,14 +15,41 @@ export enum TaskStatus {
   COMPLETED = "completed",
 }
 
+export enum TaskPriority {
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
+}
+
+export type AppLanguage = "en" | "pt";
+
+export type AppThemeId = "mint" | "sunset" | "ocean";
+
+export interface AppSettings {
+  language: AppLanguage;
+  theme: AppThemeId;
+}
+
+export interface PredefinedTaskTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  recommendedFrequency: TaskFrequency;
+  calendarColor: string;
+}
+
 export interface Task {
   id: string;
   name: string;
   description: string;
+  predefinedTaskId: string;
   type: TaskType;
   frequency: TaskFrequency;
+  priority: TaskPriority;
+  calendarColor: string;
   status: TaskStatus;
-  dueDate: number; // timestamp
+  dueDate: number; // next active timestamp
   createdAt: number;
   completedAt?: number;
 }
@@ -49,11 +76,16 @@ export interface PetPassive {
 
 export interface Pet {
   id: string;
+  templateId: string;
   name: string;
   rarity: PetRarity;
   level: number;
   experience: number;
+  fusionLevel: number;
+  evolutionStage: number;
   stats: PetStats;
+  combatPower: number;
+  explorationPower: number;
   passives: PetPassive[];
   taskMultiplier: number; // percentage bonus (e.g., 0.05 for 5%)
   equipped: boolean;
@@ -73,10 +105,13 @@ export interface GameState {
   playerId: string;
   level: number;
   coins: number;
+  pityCurrency: number;
   totalExperience: number;
+  totalTasksCompleted: number;
+  settings: AppSettings;
   tasks: Task[];
   pets: Pet[];
-  equippedPetId: string | null;
+  equippedPetId: string;
   streak: Streak;
   createdAt: number;
   lastPlayedAt: number;
