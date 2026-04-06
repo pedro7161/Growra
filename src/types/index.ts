@@ -59,6 +59,7 @@ export enum PetRarity {
   COMMON = "common",
   RARE = "rare",
   EPIC = "epic",
+  LEGENDARY = "legendary",
 }
 
 export interface PetStats {
@@ -72,6 +73,33 @@ export interface PetPassive {
   id: string;
   name: string;
   effect: string; // e.g., "increased_loot", "exploration_speed"
+}
+
+export interface PetImageVariants<T> {
+  default: T;
+  [variantId: string]: T;
+}
+
+export interface PetImages<T> {
+  base: T;
+  evo1: T;
+  evo2: T;
+  variants: PetImageVariants<T>;
+}
+
+export interface PetPromptStages {
+  base: string;
+  evo1: string;
+  evo2: string;
+}
+
+export interface PetConcept {
+  id: string;
+  name: string;
+  element: string;
+  description: string;
+  images: PetImages<string>;
+  prompts: PetPromptStages;
 }
 
 export interface Pet {
@@ -88,6 +116,8 @@ export interface Pet {
   explorationPower: number;
   passives: PetPassive[];
   taskMultiplier: number; // percentage bonus (e.g., 0.05 for 5%)
+  xpMultiplier: number; // per-pet XP multiplier (e.g., 0.9 for -10% XP)
+  activeImageVariantId: string; // "default" now; cosmetics switch this to a variant name
   equipped: boolean;
   createdAt: number;
 }
@@ -108,6 +138,7 @@ export interface GameState {
   pityCurrency: number;
   totalExperience: number;
   totalTasksCompleted: number;
+  tutorialCompleted: boolean;
   settings: AppSettings;
   tasks: Task[];
   pets: Pet[];

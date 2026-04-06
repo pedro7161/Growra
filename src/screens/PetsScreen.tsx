@@ -6,9 +6,11 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
+import { getPetImage } from "../constants/petImages";
 import { AppSettings, GameState } from "../types";
 import {
   getFuseSourcePets,
@@ -18,6 +20,7 @@ import {
   getSellablePets,
   getSellValue,
   MAX_PET_FUSIONS,
+  MULTI_SUMMON_COST,
   SUMMON_COST,
 } from "../utils/gameplay";
 
@@ -29,6 +32,7 @@ interface PetsScreenProps {
   onRedeemPityPet: (templateId: string) => void;
   onSellPet: (petId: string) => void;
   onSummonPet: () => void;
+  onMultiSummonPet: () => void;
 }
 
 export default function PetsScreen({
@@ -39,6 +43,7 @@ export default function PetsScreen({
   onRedeemPityPet,
   onSellPet,
   onSummonPet,
+  onMultiSummonPet,
 }: PetsScreenProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
@@ -89,8 +94,12 @@ export default function PetsScreen({
           <View style={[styles.shopCard, { backgroundColor: theme.surface }]}>
             <Text style={[styles.shopTitle, { color: theme.text }]}>{copy.petsGachaTitle}</Text>
             <Text style={[styles.shopText, { color: theme.mutedText }]}>{copy.petsGachaOdds}</Text>
+            <Text style={[styles.shopText, { color: theme.mutedText }]}>{copy.petsGachaSecret}</Text>
             <Text style={[styles.shopText, { color: theme.mutedText }]}>
               {copy.petsGachaCost.replace("{cost}", String(SUMMON_COST))}
+            </Text>
+            <Text style={[styles.shopText, { color: theme.mutedText }]}>
+              {copy.petsGachaMultiCost.replace("{cost}", String(MULTI_SUMMON_COST))}
             </Text>
           </View>
         )}
@@ -105,6 +114,11 @@ export default function PetsScreen({
                   key={template.id}
                   style={[styles.pityCard, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
                 >
+                  <Image
+                    source={getPetImage(template.id, 0, "default")}
+                    style={styles.pityPetImage}
+                    resizeMode="contain"
+                  />
                   <View style={styles.pityCardHeader}>
                     <Text style={[styles.pityName, { color: theme.text }]}>{template.name}</Text>
                     <Text style={[styles.pityRarity, { color: theme.mutedText }]}>{template.rarity}</Text>
@@ -183,19 +197,34 @@ export default function PetsScreen({
 
       {activeTab === "summon" && (
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={[
-              styles.gachaButton,
-              { backgroundColor: theme.accent },
-              gameState.coins < SUMMON_COST && { backgroundColor: theme.border },
-            ]}
-            onPress={onSummonPet}
-            disabled={gameState.coins < SUMMON_COST}
-          >
-            <Text style={styles.gachaButtonText}>
-              {copy.petsSummonButton.replace("{cost}", String(SUMMON_COST))}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.gachaRow}>
+            <TouchableOpacity
+              style={[
+                styles.gachaButton,
+                { backgroundColor: theme.accent },
+                gameState.coins < SUMMON_COST && { backgroundColor: theme.border },
+              ]}
+              onPress={onSummonPet}
+              disabled={gameState.coins < SUMMON_COST}
+            >
+              <Text style={styles.gachaButtonText}>
+                {copy.petsSummonButton.replace("{cost}", String(SUMMON_COST))}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.gachaButton,
+                { backgroundColor: theme.hero },
+                gameState.coins < MULTI_SUMMON_COST && { backgroundColor: theme.border },
+              ]}
+              onPress={onMultiSummonPet}
+              disabled={gameState.coins < MULTI_SUMMON_COST}
+            >
+              <Text style={styles.gachaButtonText}>
+                {copy.petsMultiSummonButton.replace("{cost}", String(MULTI_SUMMON_COST))}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </SafeAreaView>
@@ -231,6 +260,11 @@ function PetCard({
 
   return (
     <View style={[styles.petCard, { backgroundColor: theme.surface }]}>
+      <Image
+        source={getPetImage(pet.templateId, pet.evolutionStage, pet.activeImageVariantId)}
+        style={styles.petCardImage}
+        resizeMode="contain"
+      />
       <View style={styles.petCardHeader}>
         <View>
           <Text style={[styles.petName, { color: theme.text }]}>{pet.name}</Text>
@@ -416,6 +450,12 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: "#fafafa",
   },
+  pityPetImage: {
+    width: 48,
+    height: 48,
+    alignSelf: "center",
+    marginBottom: 6,
+  },
   pityCardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -490,6 +530,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     elevation: 2,
+  },
+  petCardImage: {
+    width: 96,
+    height: 96,
+    alignSelf: "center",
+    marginBottom: 8,
   },
   petCardHeader: {
     flexDirection: "row",
@@ -578,11 +624,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
   },
+  gachaRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
   gachaButton: {
     backgroundColor: "#4ecdc4",
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
+    flex: 1,
   },
   gachaButtonText: {
     fontSize: 16,

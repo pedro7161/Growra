@@ -11,6 +11,7 @@ import {
   redeemPityPet as applyPityRedemption,
   sellPet as applyPetSale,
   summonPet as applyPetSummon,
+  multiSummonPet as applyMultiPetSummon,
 } from "../utils/gameplay";
 import { getNextAvailableDate, getStartOfDay } from "../utils/taskSchedule";
 import { defaultSettings } from "../utils/settings";
@@ -18,10 +19,11 @@ import { defaultSettings } from "../utils/settings";
 const SAVE_KEY = "growra_save_data";
 const BACKUP_PREFIX = "growra-backup";
 
-type PersistedGameState = Omit<GameState, "pityCurrency" | "totalTasksCompleted" | "equippedPetId"> & {
+type PersistedGameState = Omit<GameState, "pityCurrency" | "totalTasksCompleted" | "equippedPetId" | "tutorialCompleted"> & {
   pityCurrency?: number;
   totalTasksCompleted?: number;
   equippedPetId?: string;
+  tutorialCompleted?: boolean;
   settings?: AppSettings;
   tasks: (
     Omit<Task, "predefinedTaskId" | "priority" | "calendarColor"> & {
@@ -31,12 +33,14 @@ type PersistedGameState = Omit<GameState, "pityCurrency" | "totalTasksCompleted"
     }
   )[];
   pets: (
-    Omit<Pet, "templateId" | "fusionLevel" | "evolutionStage" | "combatPower" | "explorationPower"> & {
+    Omit<Pet, "templateId" | "fusionLevel" | "evolutionStage" | "combatPower" | "explorationPower" | "xpMultiplier" | "activeImageVariantId"> & {
       templateId?: string;
       fusionLevel?: number;
       evolutionStage?: number;
       combatPower?: number;
       explorationPower?: number;
+      xpMultiplier?: number;
+      activeImageVariantId?: string;
     }
   )[];
 };
@@ -56,7 +60,11 @@ function getEquippedPetId(gameState: PersistedGameState): string {
     return equippedPet.id;
   }
 
-  return gameState.pets[0].id;
+  if (gameState.pets.length > 0) {
+    return gameState.pets[0].id;
+  }
+
+  return "";
 }
 
 function migrateSaveData(saveData: PersistedSaveData): SaveData {
@@ -64,7 +72,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
 
   return {
     ...saveData,
-    version: 8,
+    version: 9,
     gameState: {
       ...saveData.gameState,
       pityCurrency:
@@ -73,6 +81,8 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
         saveData.gameState.totalTasksCompleted !== undefined
           ? saveData.gameState.totalTasksCompleted
           : saveData.gameState.tasks.filter((task) => task.status === TaskStatus.COMPLETED).length,
+      tutorialCompleted:
+        saveData.gameState.tutorialCompleted !== undefined ? saveData.gameState.tutorialCompleted : false,
       settings: saveData.gameState.settings ? saveData.gameState.settings : defaultSettings,
       tasks: saveData.gameState.tasks.map((task) => ({
         ...task,
@@ -105,6 +115,8 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
           combatPower: progression.combatPower,
           explorationPower: progression.explorationPower,
           taskMultiplier: progression.taskMultiplier,
+          xpMultiplier: progression.xpMultiplier,
+          activeImageVariantId: pet.activeImageVariantId ?? "default",
           equipped: pet.id === equippedPetId,
         };
       }),
@@ -213,6 +225,10 @@ export const gameStateService = {
 
   async summonPet(gameState: GameState): Promise<GameState> {
     return applyPetSummon(gameState);
+  },
+
+  async multiSummonPet(gameState: GameState): Promise<GameState> {
+    return applyMultiPetSummon(gameState);
   },
 
   async redeemPityPet(gameState: GameState, templateId: string): Promise<GameState> {

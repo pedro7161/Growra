@@ -1,5 +1,4 @@
 import { GameState, SaveData, Streak } from "../types";
-import { createStarterPet } from "./gameplay";
 import { defaultSettings } from "./settings";
 
 function generateId(): string {
@@ -16,8 +15,6 @@ export function createInitialStreak(): Streak {
 }
 
 export function createInitialGameState(): GameState {
-  const starterPet = createStarterPet();
-
   return {
     playerId: generateId(),
     level: 1,
@@ -25,10 +22,11 @@ export function createInitialGameState(): GameState {
     pityCurrency: 0,
     totalExperience: 0,
     totalTasksCompleted: 0,
+    tutorialCompleted: false,
     settings: defaultSettings,
     tasks: [],
-    pets: [starterPet],
-    equippedPetId: starterPet.id,
+    pets: [],
+    equippedPetId: "",
     streak: createInitialStreak(),
     createdAt: Date.now(),
     lastPlayedAt: Date.now(),
@@ -39,6 +37,6 @@ export function createSaveData(gameState: GameState): SaveData {
   return {
     gameState,
     lastSavedAt: Date.now(),
-    version: 8,
+    version: 9,
   };
 }

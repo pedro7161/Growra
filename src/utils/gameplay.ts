@@ -1,9 +1,9 @@
-import { GameState, Pet, PetRarity, Streak, TaskStatus } from "../types";
+import { GameState, Pet, PetImages, PetRarity, Streak, TaskStatus } from "../types";
 import { getNextAvailableDate } from "./taskSchedule";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const STREAK_BONUS_STEP = 0.1;
-const STREAK_BONUS_CAP = 0.5;
+const STREAK_BONUS_PER_DAY = 0.05;
+const STREAK_BONUS_CAP = 1.0;
 const PLAYER_EXPERIENCE_PER_LEVEL = 100;
 const PET_EXPERIENCE_PER_LEVEL = 50;
 const FUSION_TASK_MULTIPLIER_STEP = 0.02;
@@ -14,27 +14,45 @@ export const BASE_TASK_COIN_REWARD = 10;
 export const BASE_TASK_PLAYER_EXPERIENCE_REWARD = 8;
 export const BASE_TASK_PET_EXPERIENCE_REWARD = 6;
 export const SUMMON_COST = 100;
+export const MULTI_SUMMON_COUNT = 11;
+export const MULTI_SUMMON_COST = 1000;
+export const MULTI_SUMMON_PITY = 10;
 export const PITY_CURRENCY_PER_SUMMON = 1;
-export const COMMON_PITY_COST = 3;
-export const RARE_PITY_COST = 6;
-export const EPIC_PITY_COST = 10;
+export const COMMON_PITY_COST = 15;
+export const RARE_PITY_COST = 30;
+export const EPIC_PITY_COST = 60;
+export const LEGENDARY_PITY_COST = 120;
 export const MAX_PET_FUSIONS = 4;
 export const COMMON_SELL_VALUE = 25;
 export const RARE_SELL_VALUE = 60;
 export const EPIC_SELL_VALUE = 120;
+export const LEGENDARY_SELL_VALUE = 240;
+export const LEVEL_THRESHOLDS = [12, 16, 24, 41, 81, 99];
+
+const MAX_DUPE_PITY_VALUE: Record<PetRarity, number> = {
+  [PetRarity.COMMON]: 1,
+  [PetRarity.RARE]: 2,
+  [PetRarity.EPIC]: 3,
+  [PetRarity.LEGENDARY]: 5,
+};
 
 interface PetTemplate {
   id: string;
   name: string;
+  element: string;
+  description: string;
   rarity: PetRarity;
   stats: Pet["stats"];
   taskMultiplier: number;
+  xpMultiplier: number;
+  images: PetImages<string>;
 }
 
 interface PetProgressionSnapshot {
   evolutionStage: number;
   stats: Pet["stats"];
   taskMultiplier: number;
+  xpMultiplier: number;
   combatPower: number;
   explorationPower: number;
 }
@@ -44,55 +62,224 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
     {
       id: "sprout",
       name: "Sprout",
+      element: "forest",
+      description: "A mushroom grove buddy that grows brighter wherever it rests.",
       rarity: PetRarity.COMMON,
       stats: { attack: 5, defense: 5, speed: 5, luck: 5 },
       taskMultiplier: 0.05,
+      xpMultiplier: 0.9,
+      images: {
+        base: "assets/pets/sprout/base.png",
+        evo1: "assets/pets/sprout/evo1.png",
+        evo2: "assets/pets/sprout/evo2.png",
+        variants: {
+          default: "assets/pets/sprout/variants/default.png",
+        },
+      },
     },
     {
       id: "pebble",
       name: "Pebble",
+      element: "earth",
+      description: "A sturdy little boulder critter that gathers flowers and moss.",
       rarity: PetRarity.COMMON,
       stats: { attack: 6, defense: 6, speed: 4, luck: 4 },
       taskMultiplier: 0.05,
+      xpMultiplier: 1.1,
+      images: {
+        base: "assets/pets/pebble/base.png",
+        evo1: "assets/pets/pebble/evo1.png",
+        evo2: "assets/pets/pebble/evo2.png",
+        variants: {
+          default: "assets/pets/pebble/variants/default.png",
+        },
+      },
     },
     {
       id: "moss",
       name: "Moss",
+      element: "forest",
+      description: "A calm woodland lump that carries a tiny meadow on its back.",
       rarity: PetRarity.COMMON,
       stats: { attack: 4, defense: 7, speed: 5, luck: 4 },
       taskMultiplier: 0.05,
+      xpMultiplier: 0.85,
+      images: {
+        base: "assets/pets/moss/base.png",
+        evo1: "assets/pets/moss/evo1.png",
+        evo2: "assets/pets/moss/evo2.png",
+        variants: {
+          default: "assets/pets/moss/variants/default.png",
+        },
+      },
+    },
+    {
+      id: "zephie",
+      name: "Zephie",
+      element: "wind",
+      description: "A breezy sky puff that plays with petals and leaves as if they were part of its aura.",
+      rarity: PetRarity.COMMON,
+      stats: { attack: 4, defense: 5, speed: 7, luck: 6 },
+      taskMultiplier: 0.05,
+      xpMultiplier: 1,
+      images: {
+        base: "assets/pets/zephie/base.png",
+        evo1: "assets/pets/zephie/evo1.png",
+        evo2: "assets/pets/zephie/evo2.png",
+        variants: {
+          default: "assets/pets/zephie/variants/default.png",
+        },
+      },
     },
   ],
   [PetRarity.RARE]: [
     {
       id: "ember",
       name: "Ember",
+      element: "fire",
+      description: "A cheerful flame sprite that burns hottest at its core.",
       rarity: PetRarity.RARE,
       stats: { attack: 8, defense: 6, speed: 7, luck: 6 },
       taskMultiplier: 0.1,
+      xpMultiplier: 1.3,
+      images: {
+        base: "assets/pets/ember/base.png",
+        evo1: "assets/pets/ember/evo1.png",
+        evo2: "assets/pets/ember/evo2.png",
+        variants: {
+          default: "assets/pets/ember/variants/default.png",
+        },
+      },
     },
     {
       id: "ripple",
       name: "Ripple",
+      element: "water",
+      description: "A playful water critter that stirs bright rings wherever it splashes down.",
       rarity: PetRarity.RARE,
       stats: { attack: 7, defense: 7, speed: 8, luck: 6 },
       taskMultiplier: 0.1,
+      xpMultiplier: 1.45,
+      images: {
+        base: "assets/pets/ripple/base.png",
+        evo1: "assets/pets/ripple/evo1.png",
+        evo2: "assets/pets/ripple/evo2.png",
+        variants: {
+          default: "assets/pets/ripple/variants/default.png",
+        },
+      },
+    },
+    {
+      id: "tempo",
+      name: "Tempo",
+      element: "storm",
+      description: "A thunder puff that gathers rainlight and hums before each tiny lightning burst.",
+      rarity: PetRarity.RARE,
+      stats: { attack: 8, defense: 5, speed: 8, luck: 7 },
+      taskMultiplier: 0.1,
+      xpMultiplier: 1.4,
+      images: {
+        base: "assets/pets/tempo/base.png",
+        evo1: "assets/pets/tempo/evo1.png",
+        evo2: "assets/pets/tempo/evo2.png",
+        variants: {
+          default: "assets/pets/tempo/variants/default.png",
+        },
+      },
+    },
+    {
+      id: "glint",
+      name: "Glint",
+      element: "crystal",
+      description: "A prism critter whose tiny gemstone horns scatter warm light into the grass around it.",
+      rarity: PetRarity.RARE,
+      stats: { attack: 6, defense: 8, speed: 6, luck: 8 },
+      taskMultiplier: 0.1,
+      xpMultiplier: 1.5,
+      images: {
+        base: "assets/pets/glint/base.png",
+        evo1: "assets/pets/glint/evo1.png",
+        evo2: "assets/pets/glint/evo2.png",
+        variants: {
+          default: "assets/pets/glint/variants/default.png",
+        },
+      },
     },
   ],
   [PetRarity.EPIC]: [
     {
-      id: "nova",
-      name: "Nova",
-      rarity: PetRarity.EPIC,
-      stats: { attack: 10, defense: 9, speed: 9, luck: 8 },
-      taskMultiplier: 0.15,
-    },
-    {
       id: "astra",
       name: "Astra",
+      element: "cosmic",
+      description: "A star cloud companion that glitters like a whole sky in miniature.",
       rarity: PetRarity.EPIC,
       stats: { attack: 9, defense: 10, speed: 8, luck: 9 },
       taskMultiplier: 0.15,
+      xpMultiplier: 1.7,
+      images: {
+        base: "assets/pets/astra/base.png",
+        evo1: "assets/pets/astra/evo1.png",
+        evo2: "assets/pets/astra/evo2.png",
+        variants: {
+          default: "assets/pets/astra/variants/default.png",
+        },
+      },
+    },
+    {
+      id: "umbra",
+      name: "Umbra",
+      element: "shadow",
+      description: "A velvet shadow sprite that glows softly in moonlit fog instead of hiding inside it.",
+      rarity: PetRarity.EPIC,
+      stats: { attack: 10, defense: 8, speed: 9, luck: 9 },
+      taskMultiplier: 0.15,
+      xpMultiplier: 1.75,
+      images: {
+        base: "assets/pets/umbra/base.png",
+        evo1: "assets/pets/umbra/evo1.png",
+        evo2: "assets/pets/umbra/evo2.png",
+        variants: {
+          default: "assets/pets/umbra/variants/default.png",
+        },
+      },
+    },
+  ],
+  [PetRarity.LEGENDARY]: [
+    {
+      id: "nova",
+      name: "Nova",
+      element: "solar",
+      description: "A radiant star-core pet whose aura bends fire and starlight together.",
+      rarity: PetRarity.LEGENDARY,
+      stats: { attack: 11, defense: 10, speed: 10, luck: 9 },
+      taskMultiplier: 0.2,
+      xpMultiplier: 1.85,
+      images: {
+        base: "assets/pets/nova/base.png",
+        evo1: "assets/pets/nova/evo1.png",
+        evo2: "assets/pets/nova/evo2.png",
+        variants: {
+          default: "assets/pets/nova/variants/default.png",
+        },
+      },
+    },
+    {
+      id: "cindra",
+      name: "Cindra",
+      element: "lava",
+      description: "A molten cuddle beast with a bright magma heart and a habit of kicking up ember sparks.",
+      rarity: PetRarity.LEGENDARY,
+      stats: { attack: 12, defense: 11, speed: 9, luck: 10 },
+      taskMultiplier: 0.2,
+      xpMultiplier: 1.9,
+      images: {
+        base: "assets/pets/cindra/base.png",
+        evo1: "assets/pets/cindra/evo1.png",
+        evo2: "assets/pets/cindra/evo2.png",
+        variants: {
+          default: "assets/pets/cindra/variants/default.png",
+        },
+      },
     },
   ],
 };
@@ -116,7 +303,7 @@ function getLevel(experience: number, experiencePerLevel: number): number {
 }
 
 function getBonusFromLevel(level: number): number {
-  return Math.min(level * STREAK_BONUS_STEP, STREAK_BONUS_CAP);
+  return Math.min(level * STREAK_BONUS_PER_DAY, STREAK_BONUS_CAP);
 }
 
 function getEvolutionStage(fusionLevel: number): number {
@@ -154,7 +341,11 @@ function getRandomRarity(): PetRarity {
     return PetRarity.RARE;
   }
 
-  return PetRarity.EPIC;
+  if (roll < 0.99) {
+    return PetRarity.EPIC;
+  }
+
+  return PetRarity.LEGENDARY;
 }
 
 function createPetFromTemplate(template: PetTemplate): Pet {
@@ -175,6 +366,8 @@ function createPetFromTemplate(template: PetTemplate): Pet {
     explorationPower: progression.explorationPower,
     passives: [],
     taskMultiplier: progression.taskMultiplier,
+    xpMultiplier: progression.xpMultiplier,
+    activeImageVariantId: "default",
     equipped: false,
     createdAt,
   };
@@ -207,6 +400,10 @@ export function getPetTemplates(): PetTemplate[] {
 }
 
 export function getPityCost(rarity: PetRarity): number {
+  if (rarity === PetRarity.LEGENDARY) {
+    return LEGENDARY_PITY_COST;
+  }
+
   if (rarity === PetRarity.EPIC) {
     return EPIC_PITY_COST;
   }
@@ -219,6 +416,10 @@ export function getPityCost(rarity: PetRarity): number {
 }
 
 export function getSellValue(rarity: PetRarity): number {
+  if (rarity === PetRarity.LEGENDARY) {
+    return LEGENDARY_SELL_VALUE;
+  }
+
   if (rarity === PetRarity.EPIC) {
     return EPIC_SELL_VALUE;
   }
@@ -260,6 +461,7 @@ export function getPetProgressionSnapshot(
     evolutionStage,
     stats,
     taskMultiplier,
+    xpMultiplier: template.xpMultiplier,
     combatPower: getCombatPower(stats, evolutionStage),
     explorationPower: getExplorationPower(stats, evolutionStage),
   };
@@ -330,6 +532,20 @@ export function createStarterPet(): Pet {
   return { ...createPetFromTemplate(template), equipped: true };
 }
 
+export function getAllPets(): Pet[] {
+  const allPets: Pet[] = [];
+
+  for (const rarity of Object.values(PetRarity)) {
+    const templates = PET_TEMPLATES[rarity] || [];
+    for (const template of templates) {
+      const pet = createPetFromTemplate(template);
+      allPets.push(pet);
+    }
+  }
+
+  return allPets;
+}
+
 export function calculateUpdatedStreak(streak: Streak, completedAt: number): Streak {
   if (streak.lastCompletedDate === 0) {
     return {
@@ -351,7 +567,7 @@ export function calculateUpdatedStreak(streak: Streak, completedAt: number): Str
   }
 
   if (dayDifference === 1) {
-    const level = Math.min(streak.level + 1, Math.floor(STREAK_BONUS_CAP / STREAK_BONUS_STEP));
+    const level = Math.min(streak.level + 1, Math.floor(STREAK_BONUS_CAP / STREAK_BONUS_PER_DAY));
 
     return {
       level,
@@ -451,6 +667,18 @@ export function summonPet(gameState: GameState): GameState {
   };
 }
 
+export function multiSummonPet(gameState: GameState): GameState {
+  const summonedPets = Array.from({ length: MULTI_SUMMON_COUNT }, () => createPet(getRandomRarity()));
+
+  return {
+    ...gameState,
+    coins: gameState.coins - MULTI_SUMMON_COST,
+    pityCurrency: gameState.pityCurrency + MULTI_SUMMON_PITY,
+    pets: [...gameState.pets, ...summonedPets],
+    lastPlayedAt: Date.now(),
+  };
+}
+
 export function redeemPityPet(gameState: GameState, templateId: string): GameState {
   const selectedTemplate = getPetTemplate(templateId);
   const pityCost = getPityCost(selectedTemplate.rarity);
@@ -492,6 +720,16 @@ export function fusePet(gameState: GameState, targetPetId: string, sourcePetId: 
 
 export function sellPet(gameState: GameState, petId: string): GameState {
   const soldPet = gameState.pets.filter((pet) => pet.id === petId)[0];
+  const isMaxDupe = soldPet.fusionLevel >= MAX_PET_FUSIONS;
+
+  if (isMaxDupe) {
+    return {
+      ...gameState,
+      pityCurrency: gameState.pityCurrency + MAX_DUPE_PITY_VALUE[soldPet.rarity],
+      pets: gameState.pets.filter((pet) => pet.id !== petId),
+      lastPlayedAt: Date.now(),
+    };
+  }
 
   return {
     ...gameState,

@@ -76,8 +76,11 @@ interface AppCopy {
   petsSellShopTab: string;
   petsGachaTitle: string;
   petsGachaOdds: string;
+  petsGachaSecret: string;
   petsGachaCost: string;
+  petsGachaMultiCost: string;
   petsSummonButton: string;
+  petsMultiSummonButton: string;
   petsPityShopTitle: string;
   petsPityShopSubtitle: string;
   petsClaim: string;
@@ -129,6 +132,19 @@ interface AppCopy {
   settingsBackupInvalid: string;
   settingsChangelog: string;
   settingsUpdatedOn: string;
+  tutorialSkip: string;
+  tutorialNext: string;
+  tutorialFinish: string;
+  tutorialRewardTitle: string;
+  tutorialRewardBody: string;
+  tutorialStep1Title: string;
+  tutorialStep1Body: string;
+  tutorialStep2Title: string;
+  tutorialStep2Body: string;
+  tutorialStep3Title: string;
+  tutorialStep3Body: string;
+  tutorialStep4Title: string;
+  tutorialStep4Body: string;
 }
 
 const copyByLanguage: Record<AppLanguage, AppCopy> = {
@@ -207,9 +223,12 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     petsMyPetsTab: "My Pets",
     petsSellShopTab: "Sell Shop",
     petsGachaTitle: "Gacha",
-    petsGachaOdds: "Summon odds: 70% common • 25% rare • 5% epic",
+    petsGachaOdds: "Summon odds: 70% common • 25% rare • 4% epic • 1% legendary",
+    petsGachaSecret: "Secret unit on banner: Nova (legendary).",
     petsGachaCost: "Each summon costs {cost} coins and gives 1 pity.",
+    petsGachaMultiCost: "Multi summon: 11 pets for {cost} coins and gives 10 pity.",
     petsSummonButton: "Summon Pet ({cost} coins)",
+    petsMultiSummonButton: "Multi (11) ({cost} coins)",
     petsPityShopTitle: "Pity Shop",
     petsPityShopSubtitle: "Spend pity to claim a specific pet.",
     petsClaim: "Claim",
@@ -261,6 +280,19 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsBackupInvalid: "The backup code is invalid.",
     settingsChangelog: "Changelog",
     settingsUpdatedOn: "Updated on",
+    tutorialSkip: "Skip",
+    tutorialNext: "Next",
+    tutorialFinish: "Finish",
+    tutorialRewardTitle: "You're ready!",
+    tutorialRewardBody: "Here are 100 coins to summon your first pet. Good luck!",
+    tutorialStep1Title: "Welcome to Growra!",
+    tutorialStep1Body: "Your dashboard shows today's tasks, your streak bonus, and your equipped pet. Complete tasks to earn coins and XP.",
+    tutorialStep2Title: "Tasks",
+    tutorialStep2Body: "Add daily, weekly, or one-time tasks. Complete them to earn rewards. System tasks give extra bonuses!",
+    tutorialStep3Title: "Pets",
+    tutorialStep3Body: "Equip a pet to boost your task rewards. Fuse duplicate pets to evolve them and unlock stronger bonuses.",
+    tutorialStep4Title: "Summon",
+    tutorialStep4Body: "Spend coins to summon new pets. Save up for a multi-summon (11 pets) for better value.",
   },
   pt: {
     navDashboard: "Painel",
@@ -337,9 +369,12 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     petsMyPetsTab: "Os Meus Pets",
     petsSellShopTab: "Loja de Venda",
     petsGachaTitle: "Gacha",
-    petsGachaOdds: "Probabilidades: 70% comum • 25% raro • 5% épico",
+    petsGachaOdds: "Probabilidades: 70% comum • 25% raro • 4% épico • 1% lendário",
+    petsGachaSecret: "Unidade secreta no banner: Nova (lendário).",
     petsGachaCost: "Cada summon custa {cost} moedas e dá 1 pity.",
+    petsGachaMultiCost: "Multi invocação: 11 pets por {cost} moedas e dá 10 pity.",
     petsSummonButton: "Invocar pet ({cost} moedas)",
+    petsMultiSummonButton: "Multi (11) ({cost} moedas)",
     petsPityShopTitle: "Loja Pity",
     petsPityShopSubtitle: "Gasta pity para escolher um pet específico.",
     petsClaim: "Resgatar",
@@ -391,6 +426,19 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsBackupInvalid: "O código de backup é inválido.",
     settingsChangelog: "Registo de alterações",
     settingsUpdatedOn: "Atualizado em",
+    tutorialSkip: "Pular",
+    tutorialNext: "Próximo",
+    tutorialFinish: "Terminar",
+    tutorialRewardTitle: "Estás pronto!",
+    tutorialRewardBody: "Aqui estão 100 moedas para invocares o teu primeiro pet. Boa sorte!",
+    tutorialStep1Title: "Bem-vindo ao Growra!",
+    tutorialStep1Body: "O teu painel mostra as tarefas de hoje, o bónus de sequência e o teu pet equipado. Completa tarefas para ganhar moedas e XP.",
+    tutorialStep2Title: "Tarefas",
+    tutorialStep2Body: "Adiciona tarefas diárias, semanais ou únicas. Completa-as para ganhar recompensas. As tarefas do sistema dão bónus extra!",
+    tutorialStep3Title: "Pets",
+    tutorialStep3Body: "Equipa um pet para aumentar as recompensas das tarefas. Funde pets duplicados para evoluir e desbloqueá bónus mais fortes.",
+    tutorialStep4Title: "Invocar",
+    tutorialStep4Body: "Gasta moedas para invocar novos pets. Poupa para uma multi-invocação (11 pets) para melhor valor.",
   },
 };
 

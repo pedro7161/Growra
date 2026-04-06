@@ -3,6 +3,7 @@ import { View, StyleSheet, AppState } from "react-native";
 import { AppLanguage, AppThemeId, Task, GameState } from "./types";
 import { getAppTheme } from "./constants/appTheme";
 import SettingsModal from "./components/SettingsModal";
+import TutorialOverlay from "./components/TutorialOverlay";
 import DashboardScreen from "./screens/DashboardScreen";
 import TasksScreen from "./screens/TasksScreen";
 import TaskCalendarScreen from "./screens/TaskCalendarScreen";
@@ -14,6 +15,7 @@ import {
   completeTask,
   equipPet,
   fusePet,
+  multiSummonPet,
   redeemPityPet,
   sellPet,
   summonPet,
@@ -27,6 +29,7 @@ export default function App() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [tutorialVisible, setTutorialVisible] = useState(false);
 
   useEffect(() => {
     loadGame();
@@ -57,14 +60,21 @@ export default function App() {
   const loadGame = async () => {
     const saveData = await gameStateService.loadGame();
 
+    let resolvedGameState: GameState;
+
     if (saveData) {
       const syncedGameState = syncRecurringTasks(saveData.gameState);
       await gameStateService.saveGame(createSaveData(syncedGameState));
-      setGameState(syncedGameState);
+      resolvedGameState = syncedGameState;
     } else {
       const newGameState = createInitialGameState();
       await gameStateService.saveGame(createSaveData(newGameState));
-      setGameState(newGameState);
+      resolvedGameState = newGameState;
+    }
+
+    setGameState(resolvedGameState);
+    if (!resolvedGameState.tutorialCompleted) {
+      setTutorialVisible(true);
     }
 
     setLoading(false);
@@ -124,6 +134,12 @@ export default function App() {
     await persistGameState(summonPet(gameState));
   };
 
+  const handleMultiSummonPet = async () => {
+    if (!gameState) return;
+
+    await persistGameState(multiSummonPet(gameState));
+  };
+
   const handleRedeemPityPet = async (templateId: string) => {
     if (!gameState) return;
 
@@ -179,6 +195,18 @@ export default function App() {
     await persistGameState(importedSaveData.gameState);
   };
 
+  const handleTutorialComplete = async () => {
+    if (!gameState) return;
+    setTutorialVisible(false);
+    await persistGameState({ ...gameState, coins: gameState.coins + 100, tutorialCompleted: true });
+  };
+
+  const handleTutorialSkip = async () => {
+    if (!gameState) return;
+    setTutorialVisible(false);
+    await persistGameState({ ...gameState, tutorialCompleted: true });
+  };
+
   if (loading || !gameState) {
     return <View className="flex-1" style={styles.container} />;
   }
@@ -226,6 +254,7 @@ export default function App() {
             onRedeemPityPet={handleRedeemPityPet}
             onSellPet={handleSellPet}
             onSummonPet={handleSummonPet}
+            onMultiSummonPet={handleMultiSummonPet}
           />
         );
     }
@@ -247,6 +276,12 @@ export default function App() {
         onThemeChange={handleThemeChange}
         onExportData={handleExportData}
         onImportData={handleImportData}
+      />
+      <TutorialOverlay
+        visible={tutorialVisible}
+        settings={gameState.settings}
+        onComplete={handleTutorialComplete}
+        onSkip={handleTutorialSkip}
       />
     </View>
   );

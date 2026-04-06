@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, TouchableOpacity, Image } from "react-native";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
+import { getPetImage } from "../constants/petImages";
 import { GameState, Task, TaskFrequency, TaskStatus, TaskType } from "../types";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import { getTodayTasks } from "../utils/taskSchedule";
@@ -61,6 +62,17 @@ export default function DashboardScreen({
                 x{activeMultiplier.toFixed(2)} {copy.dashboardRewardMultiplier}
               </Text>
             </View>
+            {equippedPet && (
+              <Image
+                source={getPetImage(
+                  equippedPet.templateId,
+                  equippedPet.evolutionStage,
+                  equippedPet.activeImageVariantId
+                )}
+                style={styles.heroPetImage}
+                resizeMode="contain"
+              />
+            )}
           </View>
         </View>
 
@@ -204,6 +216,10 @@ const styles = StyleSheet.create({
   },
   heroMeta: {
     fontSize: 14,
+  },
+  heroPetImage: {
+    width: 96,
+    aspectRatio: 1,
   },
   settingsRow: {
     alignItems: "flex-end",
