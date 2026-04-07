@@ -1,5 +1,6 @@
 import React from "react";
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings } from "../types";
@@ -23,9 +24,19 @@ export default function BottomNavigation({
 }: BottomNavigationProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
+  const insets = useSafeAreaInsets();
+  const bottomInset = insets.bottom;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.surface }]}>
+    <View
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor: theme.surface,
+          paddingBottom: bottomInset,
+        },
+      ]}
+    >
       <View
         style={[
           styles.container,
@@ -54,7 +65,7 @@ export default function BottomNavigation({
           settings={settings}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

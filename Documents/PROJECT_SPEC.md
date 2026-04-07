@@ -90,6 +90,29 @@ No backend required.
 * manual (user confirms completion)
 * trust-based system
 
+### Task Priorities:
+
+* LOW
+* MEDIUM
+* HIGH
+* affects sorting and visual display in task lists
+
+### Task Features:
+
+* task descriptions
+* calendar colors (per-task customization)
+* task details modal (edit, delete, view completion info)
+* quick add from dashboard
+* one-tap completion from Today list
+
+### Task Organization:
+
+* task calendar screen with month navigation
+* visual day indicators (scheduled count, completed count)
+* task filtering (all, active, completed)
+* search functionality
+* priority-aware sorting
+
 ### Optional (Phase 2):
 
 * timer-based tasks
@@ -128,7 +151,16 @@ No backend required.
 * user collects pets
 * user equips 1 pet for tasks
 * pets gain experience from tasks (multiplied by pet's XP multiplier)
-* pets can evolve
+* pets can evolve through multiple stages
+* pets can be fused to increase strength
+* pets support cosmetic variants
+
+### Pet Rarity:
+
+* Common
+* Rare
+* Epic
+* Legendary
 
 ### Task Interaction:
 
@@ -148,10 +180,44 @@ Example (XP Multiplier — per pet):
 * Ember (Rare) → 1.3×
 * Nova (Epic) → 1.65×
 
+### Evolution System:
+
+* pets have multiple evolution stages: base, evolution 1, evolution 2
+* evolution progresses through gameplay
+* each stage has unique visuals and stat progression
+
+### Fusion System:
+
+* pets can be fused with duplicates to increase fusion level
+* maximum fusion level: 4
+* fusion improves pet stats and effectiveness
+* selling a max-fused pet (4 fusions) yields pity coins instead of coins
+
+### Cosmetic Variants:
+
+* pets support variant skins
+* variants can be unlocked or cosmetically applied
+* variants use the `activeImageVariantId` system
+
+### Pet Stats:
+
+* attack
+* defense
+* speed
+* luck
+* combat power (derived from stats)
+* exploration power (derived from stats)
+
+### Pet Passives:
+
+* passive abilities that provide bonuses (e.g., increased loot, exploration speed)
+* passives are trait-based per pet template
+
 ### Leveling:
 
 * pets level from 1 to 99
 * milestone levels: 12, 16, 24, 41, 81, 99
+* experience is required to level up
 
 ---
 
@@ -250,6 +316,7 @@ Top:
 
 * equipped pet
 * streak + bonus
+* player level and coins
 
 Middle:
 
@@ -258,10 +325,11 @@ Middle:
 Main:
 
 * task list (default: Today)
+* shows pending and completed tasks
 
 Bottom:
 
-* navigation (future)
+* bottom navigation (screens: Dashboard, Tasks, Calendar, Pets, Settings)
 
 ### Goal:
 
@@ -271,7 +339,81 @@ Bottom:
 
 ---
 
-## 7. Architecture Principles
+## 6.1 Navigation & Screens
+
+### Available Screens:
+
+* **Dashboard** - main view with equipped pet and today's tasks
+* **Tasks** - full task management with filters and search
+* **Task Calendar** - month-based calendar view with task indicators
+* **Pets** - pet collection, equip, summon, fusion, and sell screens
+* **Settings** - language, theme, stats, import/export, backup codes
+
+### Bottom Navigation:
+
+* persistent navigation between major screens
+* quick access to all core features
+
+---
+
+## 7. Localization & Themes
+
+### Supported Languages:
+
+* English (en)
+* Portuguese (pt)
+* extensible framework for future languages
+
+### Theme System:
+
+Available themes:
+
+* **Mint** - cool, calm aesthetic
+* **Sunset** - warm, evening aesthetic
+* **Ocean** - deep blue, water-inspired aesthetic
+
+Each theme includes:
+
+* primary and secondary colors
+* background colors
+* text colors
+* accent colors
+* UI element styling
+
+Theme customization is saved to player settings.
+
+---
+
+## 8. Tutorial & Onboarding
+
+### Tutorial System:
+
+* multi-step tutorial overlay for new players
+* covers core mechanics (tasks, pets, rewards, progression)
+* can be skipped at any time
+* `tutorialCompleted` flag prevents re-triggering
+
+---
+
+## 9. Settings & Import/Export
+
+### Settings Menu:
+
+* language selection (en, pt)
+* theme selection (mint, sunset, ocean)
+* player statistics view
+* import from backup code
+* export to backup code
+
+### Backup System:
+
+* save game state as exportable codes
+* restore game from backup codes
+* supports migration between devices
+
+---
+
+## 10. Architecture Principles
 
 * separate concerns (tasks, pets, rewards)
 * keep logic modular
@@ -281,7 +423,7 @@ Bottom:
 
 ---
 
-## 8. Coding Rules
+## 11. Coding Rules
 
 * use TypeScript strictly
 * avoid `any`
@@ -291,7 +433,7 @@ Bottom:
 
 ---
 
-## 9. Development Approach
+## 12. Development Approach
 
 ### Step 1:
 
@@ -315,7 +457,7 @@ Bottom:
 
 ---
 
-## 10. Key Design Principle
+## 13. Key Design Principle
 
 > The app must never allow passive progression to replace real-world action.
 
@@ -327,7 +469,7 @@ Users must always:
 
 ---
 
-## 11. Summary
+## 14. Summary
 
 Growra is:
 
