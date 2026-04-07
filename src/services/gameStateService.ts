@@ -1,5 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { GameState, SaveData, Task, Pet, TaskStatus, AppSettings, TaskPriority } from "../types";
+import {
+  GameState,
+  SaveData,
+  Task,
+  Pet,
+  TaskStatus,
+  AppSettings,
+  TaskPriority,
+  TaskTimer,
+  CustomTaskTemplate,
+} from "../types";
 import { DEFAULT_TASK_CALENDAR_COLOR } from "../constants/taskConfig";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import {
@@ -14,22 +24,30 @@ import {
   multiSummonPet as applyMultiPetSummon,
 } from "../utils/gameplay";
 import { getNextAvailableDate, getStartOfDay } from "../utils/taskSchedule";
-import { defaultSettings } from "../utils/settings";
+import { defaultSettings, defaultTimerAlertSettings } from "../utils/settings";
+import { createTaskTimer } from "../utils/taskTimer";
 
 const SAVE_KEY = "growra_save_data";
 const BACKUP_PREFIX = "growra-backup";
 
-type PersistedGameState = Omit<GameState, "pityCurrency" | "totalTasksCompleted" | "equippedPetId" | "tutorialCompleted"> & {
+type PersistedGameState = Omit<
+  GameState,
+  "pityCurrency" | "totalTasksCompleted" | "equippedPetId" | "tutorialCompleted" | "customTaskTemplates"
+> & {
   pityCurrency?: number;
   totalTasksCompleted?: number;
   equippedPetId?: string;
   tutorialCompleted?: boolean;
   settings?: AppSettings;
+  customTaskTemplates?: CustomTaskTemplate[];
   tasks: (
-    Omit<Task, "predefinedTaskId" | "priority" | "calendarColor"> & {
+    Omit<Task, "predefinedTaskId" | "customTemplateId" | "category" | "priority" | "calendarColor"> & {
       predefinedTaskId?: string;
+      customTemplateId?: string;
+      category?: string;
       priority?: TaskPriority;
       calendarColor?: string;
+      timer?: TaskTimer;
     }
   )[];
   pets: (
@@ -69,10 +87,18 @@ function getEquippedPetId(gameState: PersistedGameState): string {
 
 function migrateSaveData(saveData: PersistedSaveData): SaveData {
   const equippedPetId = getEquippedPetId(saveData.gameState);
+  const storedSettings = saveData.gameState.settings ? saveData.gameState.settings : defaultSettings;
+  const timerAlert = storedSettings.timerAlert
+    ? {
+        mode: storedSettings.timerAlert.mode,
+        soundName: storedSettings.timerAlert.soundName,
+        soundUri: storedSettings.timerAlert.soundUri,
+      }
+    : defaultTimerAlertSettings;
 
   return {
     ...saveData,
-    version: 9,
+    version: 11,
     gameState: {
       ...saveData.gameState,
       pityCurrency:
@@ -83,22 +109,52 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
           : saveData.gameState.tasks.filter((task) => task.status === TaskStatus.COMPLETED).length,
       tutorialCompleted:
         saveData.gameState.tutorialCompleted !== undefined ? saveData.gameState.tutorialCompleted : false,
-      settings: saveData.gameState.settings ? saveData.gameState.settings : defaultSettings,
+      settings: {
+        ...storedSettings,
+        timerAlert,
+      },
+      customTaskTemplates: saveData.gameState.customTaskTemplates
+        ? saveData.gameState.customTaskTemplates.map((template) => ({
+            ...template,
+          }))
+        : [],
       tasks: saveData.gameState.tasks.map((task) => ({
         ...task,
         predefinedTaskId: task.predefinedTaskId !== undefined ? task.predefinedTaskId : "",
-        priority: task.priority !== undefined ? task.priority : TaskPriority.MEDIUM,
-        calendarColor:
-          task.calendarColor !== undefined
-            ? task.calendarColor
+        customTemplateId: task.customTemplateId !== undefined ? task.customTemplateId : "",
+        category:
+          task.category !== undefined
+            ? task.category
             : task.predefinedTaskId
-              ? getPredefinedTask(task.predefinedTaskId).calendarColor
-              : DEFAULT_TASK_CALENDAR_COLOR,
-        dueDate:
-          task.status === TaskStatus.COMPLETED && task.completedAt
+              ? getPredefinedTask(task.predefinedTaskId).category
+              : "custom",
+        priority: task.priority !== undefined ? task.priority : TaskPriority.MEDIUM,
+      calendarColor:
+        task.calendarColor !== undefined
+          ? task.calendarColor
+          : task.predefinedTaskId
+            ? getPredefinedTask(task.predefinedTaskId).calendarColor
+            : DEFAULT_TASK_CALENDAR_COLOR,
+      dueDate:
+        task.dueDate !== undefined
+          ? task.dueDate
+          : task.status === TaskStatus.COMPLETED && task.completedAt
             ? getNextAvailableDate(task, task.completedAt)
             : getStartOfDay(task.createdAt),
-      })),
+      timer: (() => {
+        const duration = Math.max(0, task.timer?.duration ?? 0);
+        const enabled = task.timer?.enabled ?? false;
+        const baseTimer = createTaskTimer(duration, enabled);
+        const remaining = Math.min(duration, Math.max(0, task.timer?.remainingMs ?? duration));
+
+        return {
+          ...baseTimer,
+          state: task.timer?.state ?? baseTimer.state,
+          startedAt: task.timer?.startedAt ?? 0,
+          remainingMs: enabled ? remaining : 0,
+        };
+      })(),
+    })),
       equippedPetId,
       pets: saveData.gameState.pets.map((pet) => {
         const templateId =

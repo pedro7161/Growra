@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -6,26 +6,49 @@ import {
   Text,
   TextInput,
   Modal,
-  SafeAreaView,
   ScrollView,
+  Switch,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { AppSettings, TaskType, TaskFrequency } from "../types";
+import { AppSettings, CustomTaskTemplate, TaskType, TaskFrequency, TaskPriority } from "../types";
 import { getPredefinedTask, getPredefinedTaskGroups, predefinedTasks } from "../constants/predefinedTasks";
+import { taskPriorityOptions } from "../constants/taskConfig";
+import { getStartOfDay } from "../utils/taskSchedule";
+import TaskDatePicker from "./TaskDatePicker";
+import { getCustomTaskTemplateGroups } from "../utils/customTaskTemplates";
+
+function getPriorityLabel(priority: TaskPriority): string {
+  if (priority === TaskPriority.HIGH) {
+    return "High";
+  }
+  if (priority === TaskPriority.LOW) {
+    return "Low";
+  }
+  return "Medium";
+}
 
 interface TaskFormValues {
   name: string;
   description: string;
   predefinedTaskId: string;
+  customTemplateId: string;
+  category: string;
   type: TaskType;
   frequency: TaskFrequency;
+  priority: TaskPriority;
+  dueDate: number;
+  timerEnabled: boolean;
+  timerDurationMinutes: number;
+  saveAsTemplate: boolean;
 }
 
 interface AddTaskModalProps {
   visible: boolean;
   onClose: () => void;
   settings: AppSettings;
+  customTaskTemplates: CustomTaskTemplate[];
   onSubmit: (values: TaskFormValues) => void;
 }
 
@@ -33,29 +56,57 @@ export default function AddTaskModal({
   visible,
   onClose,
   settings,
+  customTaskTemplates,
   onSubmit,
 }: AddTaskModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const predefinedTaskGroups = getPredefinedTaskGroups();
+  const customTaskGroups = getCustomTaskTemplateGroups(customTaskTemplates);
+  const customCategories = [...new Set(customTaskTemplates.map((template) => template.category))];
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
   const [predefinedTaskId, setPredefinedTaskId] = useState(predefinedTasks[0].id);
+  const [customTemplateId, setCustomTemplateId] = useState("");
   const [type, setType] = useState<TaskType>(TaskType.CUSTOM);
   const [frequency, setFrequency] = useState<TaskFrequency>(TaskFrequency.ONCE);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(predefinedTaskGroups.map((group) => [group.category, false]))
   );
+  const [collapsedCustomCategories, setCollapsedCustomCategories] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(customTaskGroups.map((group) => [group.category, false]))
+  );
+  const [priority, setPriority] = useState<TaskPriority>(TaskPriority.MEDIUM);
+  const [timerEnabled, setTimerEnabled] = useState(false);
+  const [timerDurationMinutes, setTimerDurationMinutes] = useState(5);
+  const [dueDate, setDueDate] = useState(() => getStartOfDay(Date.now()));
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [showSaveTemplateHelp, setShowSaveTemplateHelp] = useState(false);
   const selectedPredefinedTask = getPredefinedTask(predefinedTaskId);
 
+  useEffect(() => {
+    setCollapsedCustomCategories((currentValue) => ({
+      ...Object.fromEntries(customTaskGroups.map((group) => [group.category, false])),
+      ...currentValue,
+    }));
+  }, [customTaskGroups]);
+
   const handleSubmit = () => {
-    if (type === TaskType.CUSTOM && name.trim()) {
+    if (type === TaskType.CUSTOM && name.trim() && category.trim()) {
       onSubmit({
         name,
         description,
         predefinedTaskId: "",
+        customTemplateId,
+        category,
         type,
         frequency,
+        priority,
+        dueDate,
+        timerEnabled,
+        timerDurationMinutes,
+        saveAsTemplate,
       });
       resetForm();
       return;
@@ -66,8 +117,15 @@ export default function AddTaskModal({
         name: selectedPredefinedTask.name,
         description: selectedPredefinedTask.description,
         predefinedTaskId,
+        customTemplateId: "",
+        category: selectedPredefinedTask.category,
         type,
         frequency,
+        priority,
+        dueDate,
+        timerEnabled,
+        timerDurationMinutes,
+        saveAsTemplate: false,
       });
       resetForm();
     }
@@ -76,10 +134,19 @@ export default function AddTaskModal({
   const resetForm = () => {
     setName("");
     setDescription("");
+    setCategory("");
     setPredefinedTaskId(predefinedTasks[0].id);
+    setCustomTemplateId("");
     setType(TaskType.CUSTOM);
     setFrequency(TaskFrequency.ONCE);
+    setPriority(TaskPriority.MEDIUM);
     setCollapsedCategories(Object.fromEntries(predefinedTaskGroups.map((group) => [group.category, false])));
+    setCollapsedCustomCategories(Object.fromEntries(customTaskGroups.map((group) => [group.category, false])));
+    setTimerEnabled(false);
+    setTimerDurationMinutes(5);
+    setDueDate(getStartOfDay(Date.now()));
+    setSaveAsTemplate(false);
+    setShowSaveTemplateHelp(false);
     onClose();
   };
 
@@ -98,6 +165,21 @@ export default function AddTaskModal({
       ...collapsedCategories,
       [category]: !collapsedCategories[category],
     });
+  };
+
+  const handleToggleCustomCategory = (customCategory: string) => {
+    setCollapsedCustomCategories({
+      ...collapsedCustomCategories,
+      [customCategory]: !collapsedCustomCategories[customCategory],
+    });
+  };
+
+  const handleSelectCustomTemplate = (template: CustomTaskTemplate) => {
+    setName(template.name);
+    setDescription(template.description);
+    setCategory(template.category);
+    setCustomTemplateId(template.id);
+    setSaveAsTemplate(false);
   };
 
   return (
@@ -150,7 +232,10 @@ export default function AddTaskModal({
                     style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]}
                     placeholder={copy.addTaskNamePlaceholder}
                     value={name}
-                    onChangeText={setName}
+                    onChangeText={(value) => {
+                      setName(value);
+                      setCustomTemplateId("");
+                    }}
                     placeholderTextColor={theme.mutedText}
                   />
                 </View>
@@ -161,12 +246,128 @@ export default function AddTaskModal({
                     style={[styles.input, styles.textArea, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]}
                     placeholder={copy.addTaskDescriptionPlaceholder}
                     value={description}
-                    onChangeText={setDescription}
+                    onChangeText={(value) => {
+                      setDescription(value);
+                      setCustomTemplateId("");
+                    }}
                     multiline
                     numberOfLines={4}
                     placeholderTextColor={theme.mutedText}
                   />
                 </View>
+
+                <View style={styles.field}>
+                  <Text style={[styles.label, { color: theme.text }]}>{copy.addTaskCategory}</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]}
+                    placeholder={copy.addTaskCategoryPlaceholder}
+                    value={category}
+                    onChangeText={(value) => {
+                      setCategory(value);
+                      setCustomTemplateId("");
+                    }}
+                    placeholderTextColor={theme.mutedText}
+                  />
+                  {customCategories.length > 0 ? (
+                    <View style={styles.categorySuggestions}>
+                      <Text style={[styles.categorySuggestionsLabel, { color: theme.mutedText }]}>
+                        {copy.addTaskSavedCategories}
+                      </Text>
+                      <View style={styles.categorySuggestionRow}>
+                        {customCategories.map((customCategory) => (
+                          <TouchableOpacity
+                            key={customCategory}
+                            style={[
+                              styles.categoryChip,
+                              {
+                                backgroundColor:
+                                  category === customCategory ? theme.accent : theme.surfaceMuted,
+                                borderColor:
+                                  category === customCategory ? theme.accent : theme.border,
+                              },
+                            ]}
+                            onPress={() => {
+                              setCategory(customCategory);
+                              setCustomTemplateId("");
+                            }}
+                          >
+                            <Text
+                              style={[
+                                styles.categoryChipText,
+                                { color: category === customCategory ? theme.accentText : theme.mutedText },
+                              ]}
+                            >
+                              {customCategory}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                  ) : null}
+                </View>
+
+                {customTaskGroups.length > 0 ? (
+                  <View style={styles.field}>
+                    <Text style={[styles.label, { color: theme.text }]}>{copy.addTaskSavedCustomTasks}</Text>
+                    <ScrollView
+                      style={[styles.predefinedListWrapper, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}
+                      contentContainerStyle={styles.predefinedList}
+                      nestedScrollEnabled
+                      showsVerticalScrollIndicator={false}
+                    >
+                      {customTaskGroups.map((group) => (
+                        <View key={group.category} style={styles.predefinedGroup}>
+                          <TouchableOpacity
+                            style={[styles.groupHeader, { borderBottomColor: theme.border }]}
+                            onPress={() => handleToggleCustomCategory(group.category)}
+                          >
+                            <Text style={[styles.groupTitle, { color: theme.mutedText }]}>{group.category}</Text>
+                            <Text style={[styles.groupToggle, { color: theme.mutedText }]}>
+                              {collapsedCustomCategories[group.category] ? "+" : "-"}
+                            </Text>
+                          </TouchableOpacity>
+                          {!collapsedCustomCategories[group.category]
+                            ? group.tasks.map((task) => (
+                                <TouchableOpacity
+                                  key={task.id}
+                                  style={[
+                                    styles.predefinedCard,
+                                    customTemplateId === task.id && styles.predefinedCardActive,
+                                    {
+                                      backgroundColor: customTemplateId === task.id ? theme.accentSoft : theme.surface,
+                                      borderColor: customTemplateId === task.id ? theme.accent : theme.border,
+                                    },
+                                  ]}
+                                  onPress={() => handleSelectCustomTemplate(task)}
+                                >
+                                  <View style={styles.predefinedHeader}>
+                                    <Text
+                                      style={[
+                                        styles.predefinedName,
+                                        customTemplateId === task.id && styles.predefinedNameActive,
+                                        { color: customTemplateId === task.id ? theme.accent : theme.text },
+                                      ]}
+                                    >
+                                      {task.name}
+                                    </Text>
+                                  </View>
+                                  <Text
+                                    style={[
+                                      styles.predefinedDescription,
+                                      customTemplateId === task.id && styles.predefinedDescriptionActive,
+                                      { color: customTemplateId === task.id ? theme.text : theme.mutedText },
+                                    ]}
+                                  >
+                                    {task.description}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))
+                            : null}
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </View>
+                ) : null}
               </>
             ) : (
               <View style={styles.field}>
@@ -267,6 +468,89 @@ export default function AddTaskModal({
                 />
               </View>
             </View>
+
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: theme.text }]}>{copy.tasksPriority}</Text>
+              <View style={styles.row}>
+                {taskPriorityOptions.map((priorityOption) => (
+                  <ChipButton
+                    key={priorityOption}
+                    label={getPriorityLabel(priorityOption)}
+                    active={priority === priorityOption}
+                    onPress={() => setPriority(priorityOption)}
+                    settings={settings}
+                  />
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: theme.text }]}>{copy.addTaskDate}</Text>
+              <TaskDatePicker settings={settings} value={dueDate} onChange={setDueDate} />
+            </View>
+
+            {type === TaskType.CUSTOM ? (
+              <View style={styles.field}>
+                <View style={styles.timerHeader}>
+                  <View style={styles.helpLabelRow}>
+                    <Text style={[styles.label, styles.inlineLabelText, { color: theme.text }]}>
+                      {copy.addTaskSaveTemplate}
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.helpButton, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}
+                      onPress={() => setShowSaveTemplateHelp(!showSaveTemplateHelp)}
+                    >
+                      <Text style={[styles.helpButtonText, { color: theme.mutedText }]}>?</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Switch
+                    value={saveAsTemplate}
+                    onValueChange={setSaveAsTemplate}
+                    thumbColor={saveAsTemplate ? theme.accent : theme.border}
+                    trackColor={{ false: theme.surfaceMuted, true: theme.accentSoft }}
+                  />
+                </View>
+                {showSaveTemplateHelp ? (
+                  <Text style={[styles.helpText, { color: theme.mutedText }]}>
+                    {copy.addTaskSaveTemplateHelp}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+
+            <View style={styles.field}>
+              <View style={styles.timerHeader}>
+                <Text style={[styles.label, { color: theme.text }]}>{copy.addTaskTimer}</Text>
+                <Switch
+                  value={timerEnabled}
+                  onValueChange={setTimerEnabled}
+                  thumbColor={timerEnabled ? theme.accent : theme.border}
+                  trackColor={{ false: theme.surfaceMuted, true: theme.accentSoft }}
+                />
+              </View>
+              {timerEnabled && (
+                <View style={styles.timerInputRow}>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.timerInput,
+                      { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text },
+                    ]}
+                    value={timerDurationMinutes.toString()}
+                    onChangeText={(value) => {
+                      const parsed = Number(value);
+                      if (!Number.isNaN(parsed)) {
+                        setTimerDurationMinutes(Math.max(1, parsed));
+                      }
+                    }}
+                    keyboardType="numeric"
+                    placeholder="5"
+                    placeholderTextColor={theme.mutedText}
+                  />
+                  <Text style={[styles.timerLabel, { color: theme.mutedText }]}>min</Text>
+                </View>
+              )}
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -348,6 +632,44 @@ function FrequencyButton({
   );
 }
 
+function ChipButton({
+  label,
+  active,
+  onPress,
+  settings,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+  settings: AppSettings;
+}) {
+  const theme = getAppTheme(settings.theme);
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.chipButton,
+        {
+          backgroundColor: active ? theme.accent : theme.surfaceMuted,
+          borderColor: active ? theme.accent : theme.border,
+        },
+      ]}
+      onPress={onPress}
+    >
+      <Text
+        style={[
+          styles.chipButtonText,
+          {
+            color: active ? theme.accentText : theme.mutedText,
+          },
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -405,6 +727,77 @@ const styles = StyleSheet.create({
   textArea: {
     textAlignVertical: "top",
     paddingTop: 10,
+  },
+  categorySuggestions: {
+    marginTop: 12,
+    gap: 8,
+  },
+  categorySuggestionsLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  categorySuggestionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  categoryChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  categoryChipText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  helpLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  inlineLabelText: {
+    marginBottom: 0,
+  },
+  helpButton: {
+    width: 22,
+    height: 22,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  helpButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  helpText: {
+    marginTop: 10,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  timerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  timerInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+  },
+  timerInput: {
+    flex: 0.5,
+  },
+  timerLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  dateValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 12,
   },
   buttonGroup: {
     flexDirection: "row",
@@ -496,5 +889,20 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 12,
     fontWeight: "500",
+  },
+  row: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  chipButton: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  chipButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

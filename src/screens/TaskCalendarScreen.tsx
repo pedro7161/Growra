@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, Task, TaskPriority, TaskStatus } from "../types";
@@ -316,7 +317,7 @@ export default function TaskCalendarScreen({
                     </Text>
                   </View>
                   <Text style={[styles.dayTaskMeta, { color: theme.mutedText }]}>
-                    {predefinedTask ? predefinedTask.category : task.type} • {task.frequency}
+                    {predefinedTask ? predefinedTask.category : task.category} • {task.frequency}
                   </Text>
                 </View>
               );

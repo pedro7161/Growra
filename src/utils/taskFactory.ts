@@ -1,10 +1,15 @@
-import { TaskPriority, PredefinedTaskTemplate, Task, TaskType, TaskFrequency, TaskStatus } from "../types";
+import {
+  TaskPriority,
+  PredefinedTaskTemplate,
+  Task,
+  TaskType,
+  TaskFrequency,
+  TaskStatus,
+} from "../types";
 import { DEFAULT_TASK_CALENDAR_COLOR } from "../constants/taskConfig";
 import { getStartOfDay } from "./taskSchedule";
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 11);
-}
+import { createTaskTimer } from "./taskTimer";
+import { generateId } from "./idUtils";
 
 export function createTask(
   name: string,
@@ -12,17 +17,25 @@ export function createTask(
   type: TaskType,
   frequency: TaskFrequency,
   predefinedTaskId: string = "",
+  customTemplateId: string = "",
+  category: string = "",
   dueDate: number = getStartOfDay(Date.now()),
   priority: TaskPriority = TaskPriority.MEDIUM,
-  calendarColor: string = DEFAULT_TASK_CALENDAR_COLOR
+  calendarColor: string = DEFAULT_TASK_CALENDAR_COLOR,
+  timerEnabled: boolean = false,
+  timerDurationMinutes: number = 0
 ): Task {
   const now = Date.now();
+  const durationMs = Math.max(0, Math.round(timerDurationMinutes * 60 * 1000));
+  const timerConfig = createTaskTimer(durationMs, timerEnabled);
 
   return {
     id: generateId(),
     name,
     description,
     predefinedTaskId,
+    customTemplateId,
+    category,
     type,
     frequency,
     priority,
@@ -30,20 +43,44 @@ export function createTask(
     status: TaskStatus.PENDING,
     dueDate,
     createdAt: now,
+    timer: timerConfig,
   };
 }
 
 export function createCustomTask(
   name: string,
   description: string,
-  frequency: TaskFrequency
+  category: string,
+  frequency: TaskFrequency,
+  customTemplateId: string = "",
+  dueDate: number = getStartOfDay(Date.now()),
+  timerEnabled: boolean = false,
+  timerDurationMinutes: number = 0,
+  priority: TaskPriority = TaskPriority.MEDIUM
 ): Task {
-  return createTask(name, description, TaskType.CUSTOM, frequency);
+  return createTask(
+    name,
+    description,
+    TaskType.CUSTOM,
+    frequency,
+    "",
+    customTemplateId,
+    category,
+    dueDate,
+    priority,
+    DEFAULT_TASK_CALENDAR_COLOR,
+    timerEnabled,
+    timerDurationMinutes
+  );
 }
 
 export function createPredefinedTask(
   template: PredefinedTaskTemplate,
-  frequency: TaskFrequency
+  frequency: TaskFrequency,
+  dueDate: number = getStartOfDay(Date.now()),
+  timerEnabled: boolean = false,
+  timerDurationMinutes: number = 0,
+  priority: TaskPriority = TaskPriority.MEDIUM
 ): Task {
   return createTask(
     template.name,
@@ -51,8 +88,12 @@ export function createPredefinedTask(
     TaskType.PREDEFINED,
     frequency,
     template.id,
-    getStartOfDay(Date.now()),
-    TaskPriority.MEDIUM,
-    template.calendarColor
+    "",
+    template.category,
+    dueDate,
+    priority,
+    template.calendarColor,
+    timerEnabled,
+    timerDurationMinutes
   );
 }

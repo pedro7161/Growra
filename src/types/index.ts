@@ -25,9 +25,18 @@ export type AppLanguage = "en" | "pt";
 
 export type AppThemeId = "mint" | "sunset" | "ocean";
 
+export type TimerAlertMode = "vibration" | "sound";
+
+export interface TimerAlertSettings {
+  mode: TimerAlertMode;
+  soundName: string;
+  soundUri: string;
+}
+
 export interface AppSettings {
   language: AppLanguage;
   theme: AppThemeId;
+  timerAlert: TimerAlertSettings;
 }
 
 export interface PredefinedTaskTemplate {
@@ -39,11 +48,21 @@ export interface PredefinedTaskTemplate {
   calendarColor: string;
 }
 
+export interface CustomTaskTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  createdAt: number;
+}
+
 export interface Task {
   id: string;
   name: string;
   description: string;
   predefinedTaskId: string;
+  customTemplateId: string;
+  category: string;
   type: TaskType;
   frequency: TaskFrequency;
   priority: TaskPriority;
@@ -52,6 +71,17 @@ export interface Task {
   dueDate: number; // next active timestamp
   createdAt: number;
   completedAt?: number;
+  timer: TaskTimer;
+}
+
+export type TaskTimerState = "idle" | "running" | "paused" | "ready";
+
+export interface TaskTimer {
+  enabled: boolean;
+  duration: number;
+  state: TaskTimerState;
+  startedAt: number;
+  remainingMs: number;
 }
 
 // Pet Types
@@ -141,6 +171,7 @@ export interface GameState {
   tutorialCompleted: boolean;
   settings: AppSettings;
   tasks: Task[];
+  customTaskTemplates: CustomTaskTemplate[];
   pets: Pet[];
   equippedPetId: string;
   streak: Streak;

@@ -1,9 +1,6 @@
 import { GameState, SaveData, Streak } from "../types";
 import { defaultSettings } from "./settings";
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 11);
-}
+import { generateId } from "./idUtils";
 
 export function createInitialStreak(): Streak {
   return {
@@ -25,6 +22,7 @@ export function createInitialGameState(): GameState {
     tutorialCompleted: false,
     settings: defaultSettings,
     tasks: [],
+    customTaskTemplates: [],
     pets: [],
     equippedPetId: "",
     streak: createInitialStreak(),
@@ -37,6 +35,6 @@ export function createSaveData(gameState: GameState): SaveData {
   return {
     gameState,
     lastSavedAt: Date.now(),
-    version: 9,
+    version: 11,
   };
 }

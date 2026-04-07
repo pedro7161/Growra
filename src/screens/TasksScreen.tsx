@@ -3,51 +3,72 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   TextInput,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { AppSettings, Task, TaskFrequency, TaskPriority, TaskStatus, TaskType } from "../types";
+import {
+  AppSettings,
+  CustomTaskTemplate,
+  Task,
+  TaskFrequency,
+  TaskPriority,
+  TaskStatus,
+  TaskType,
+} from "../types";
 import AddTaskModal from "../components/AddTaskModal";
 import TaskDetailsModal from "../components/TaskDetailsModal";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import { createCustomTask, createPredefinedTask } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
+import TaskTimerControls from "../components/TaskTimerControls";
+import { createCustomTaskTemplate } from "../utils/customTaskTemplates";
 
 interface TasksScreenProps {
   settings: AppSettings;
   tasks: Task[];
-  onAddTask: (task: Task) => void;
+  customTaskTemplates: CustomTaskTemplate[];
+  onAddTask: (task: Task, customTemplate?: CustomTaskTemplate) => void;
   onCompleteTask: (taskId: string) => void;
   onUpdateTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onOpenCalendar: () => void;
+  onStartTimer: (taskId: string) => void;
+  onPauseTimer: (taskId: string) => void;
+  onResetTimer: (taskId: string) => void;
+  onTimerReady: (taskId: string) => void;
 }
 
 export default function TasksScreen({
   settings,
   tasks,
+  customTaskTemplates,
   onAddTask,
   onCompleteTask,
   onUpdateTask,
   onDeleteTask,
   onOpenCalendar,
+  onStartTimer,
+  onPauseTimer,
+  onResetTimer,
+  onTimerReady,
 }: TasksScreenProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const now = Date.now();
-  const [filter, setFilter] = useState<TaskStatus | "all">("all");
+  const [filter, setFilter] = useState<TaskStatus | "all" | "upcoming">("all");
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const todayTasks = getTodayTasks(tasks, now);
+  const upcomingTasks = tasks.filter((task) => task.status === TaskStatus.PENDING && task.dueDate > now);
   const completedTasks = tasks.filter((task) => task.status === TaskStatus.COMPLETED);
 
   const baseTasks =
-    filter === "all" ? tasks : filter === TaskStatus.PENDING ? todayTasks : completedTasks;
+    filter === "all" ? tasks : filter === TaskStatus.PENDING ? todayTasks : filter === "upcoming" ? upcomingTasks : completedTasks;
   const filteredTasks = [...baseTasks]
     .filter((task) => {
       const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -61,6 +82,7 @@ export default function TasksScreen({
       return (
         task.name.toLowerCase().includes(normalizedQuery) ||
         task.description.toLowerCase().includes(normalizedQuery) ||
+        task.category.toLowerCase().includes(normalizedQuery) ||
         task.frequency.toLowerCase().includes(normalizedQuery) ||
         task.type.toLowerCase().includes(normalizedQuery) ||
         (predefinedTask ? predefinedTask.category.toLowerCase().includes(normalizedQuery) : false)
@@ -93,15 +115,48 @@ export default function TasksScreen({
       name: string;
       description: string;
       predefinedTaskId: string;
+      customTemplateId: string;
+      category: string;
       type: TaskType;
       frequency: TaskFrequency;
+      priority: any;
+      dueDate: number;
+      timerEnabled: boolean;
+      timerDurationMinutes: number;
+      saveAsTemplate: boolean;
     }
   ) => {
     const newTask =
       values.type === TaskType.PREDEFINED
-        ? createPredefinedTask(getPredefinedTask(values.predefinedTaskId), values.frequency)
-        : createCustomTask(values.name, values.description, values.frequency);
-    onAddTask(newTask);
+        ? createPredefinedTask(
+            getPredefinedTask(values.predefinedTaskId),
+            values.frequency,
+            values.dueDate,
+            values.timerEnabled,
+            values.timerDurationMinutes,
+            values.priority
+          )
+        : createCustomTask(
+            values.name,
+            values.description,
+            values.category,
+            values.frequency,
+            values.customTemplateId,
+            values.dueDate,
+            values.timerEnabled,
+            values.timerDurationMinutes,
+            values.priority
+          );
+    const customTemplate =
+      values.type === TaskType.CUSTOM && values.saveAsTemplate
+        ? createCustomTaskTemplate(
+            values.name,
+            values.description,
+            values.category,
+            values.customTemplateId
+          )
+        : undefined;
+    onAddTask(newTask, customTemplate);
   };
 
   return (
@@ -144,6 +199,12 @@ export default function TasksScreen({
           settings={settings}
         />
         <FilterTab
+          label={copy.tasksFilterUpcoming}
+          active={filter === "upcoming"}
+          onPress={() => setFilter("upcoming")}
+          settings={settings}
+        />
+        <FilterTab
           label={copy.tasksFilterCompleted}
           active={filter === TaskStatus.COMPLETED}
           onPress={() => setFilter(TaskStatus.COMPLETED)}
@@ -183,6 +244,10 @@ export default function TasksScreen({
               onComplete={() => onCompleteTask(task.id)}
               onOpen={() => setSelectedTask(task)}
               settings={settings}
+              onStartTimer={() => onStartTimer(task.id)}
+              onPauseTimer={() => onPauseTimer(task.id)}
+              onResetTimer={() => onResetTimer(task.id)}
+              onTimerReady={() => onTimerReady(task.id)}
             />
           ))
         )}
@@ -192,12 +257,14 @@ export default function TasksScreen({
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         settings={settings}
+        customTaskTemplates={customTaskTemplates}
         onSubmit={handleAddTask}
       />
       <TaskDetailsModal
         visible={selectedTask !== null}
         task={selectedTask}
         settings={settings}
+        customTaskTemplates={customTaskTemplates}
         onClose={() => setSelectedTask(null)}
         onSave={(task) => {
           onUpdateTask(task);
@@ -217,15 +284,25 @@ function TaskItem({
   onComplete,
   onOpen,
   settings,
+  onStartTimer,
+  onPauseTimer,
+  onResetTimer,
+  onTimerReady,
 }: {
   task: Task;
   onComplete: () => void;
   onOpen: () => void;
   settings: AppSettings;
+  onStartTimer: () => void;
+  onPauseTimer: () => void;
+  onResetTimer: () => void;
+  onTimerReady: () => void;
 }) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
+  const locale = settings.language === "pt" ? "pt-PT" : "en-US";
   const isCompleted = task.status === TaskStatus.COMPLETED;
+  const isScheduled = !isCompleted && task.dueDate > Date.now();
   const predefinedTask = task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId) : null;
   const priorityLabel =
     task.priority === TaskPriority.HIGH
@@ -250,11 +327,12 @@ function TaskItem({
           styles.checkbox,
           {
             borderColor: theme.border,
+            opacity: isScheduled ? 0.45 : 1,
           },
           isCompleted && { backgroundColor: theme.accent, borderColor: theme.accent },
         ]}
         onPress={onComplete}
-        disabled={isCompleted}
+        disabled={isCompleted || isScheduled}
       >
         {isCompleted && <Text style={styles.checkmark}>✓</Text>}
       </TouchableOpacity>
@@ -275,12 +353,29 @@ function TaskItem({
         )}
         <View style={styles.taskMeta}>
           <Text style={[styles.taskType, { backgroundColor: theme.surfaceMuted, color: theme.mutedText }]}>
-            {predefinedTask ? predefinedTask.category : task.type}
+            {predefinedTask ? predefinedTask.category : task.category}
           </Text>
           <Text style={[styles.taskFrequency, { backgroundColor: theme.accentSoft, color: theme.accent }]}>
             {task.frequency}
           </Text>
+          {isScheduled ? (
+            <Text style={[styles.taskSchedule, { backgroundColor: theme.warningSoft, color: theme.warning }]}>
+              {copy.tasksStartsOn}{" "}
+              {new Intl.DateTimeFormat(locale, {
+                day: "numeric",
+                month: "short",
+              }).format(new Date(task.dueDate))}
+            </Text>
+          ) : null}
         </View>
+        <TaskTimerControls
+          task={task}
+          settings={settings}
+          onStart={onStartTimer}
+          onPause={onPauseTimer}
+          onReset={onResetTimer}
+          onReady={onTimerReady}
+        />
       </TouchableOpacity>
     </View>
   );
@@ -493,6 +588,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#e8f5f5",
     borderRadius: 3,
     color: "#4ecdc4",
+  },
+  taskSchedule: {
+    fontSize: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
   },
   emptyState: {
     alignItems: "center",

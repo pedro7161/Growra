@@ -1,11 +1,21 @@
-import { GameState, Pet, PetImages, PetRarity, Streak, TaskStatus } from "../types";
-import { getNextAvailableDate } from "./taskSchedule";
+import {
+    GameState,
+    Pet,
+    PetImages,
+    PetRarity,
+    Streak,
+    Task,
+    TaskStatus,
+} from "../types";
+import { getNextAvailableDate, getStartOfDay } from "./taskSchedule";
+import { finishTaskTimer } from "./taskTimer";
+import { generateId } from "./idUtils";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const STREAK_BONUS_PER_DAY = 0.05;
 const STREAK_BONUS_CAP = 1.0;
-const PLAYER_EXPERIENCE_PER_LEVEL = 100;
-const PET_EXPERIENCE_PER_LEVEL = 50;
+export const PLAYER_LEVEL_BASE_COST = 50;
+export const PET_LEVEL_BASE_COST = 25;
 const FUSION_TASK_MULTIPLIER_STEP = 0.02;
 const EVOLUTION_STAGE_ONE_FUSIONS = 2;
 const EVOLUTION_STAGE_TWO_FUSIONS = 4;
@@ -63,7 +73,8 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
       id: "sprout",
       name: "Sprout",
       element: "forest",
-      description: "A mushroom grove buddy that grows brighter wherever it rests.",
+      description:
+        "A mushroom grove buddy that grows brighter wherever it rests.",
       rarity: PetRarity.COMMON,
       stats: { attack: 5, defense: 5, speed: 5, luck: 5 },
       taskMultiplier: 0.05,
@@ -81,7 +92,8 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
       id: "pebble",
       name: "Pebble",
       element: "earth",
-      description: "A sturdy little boulder critter that gathers flowers and moss.",
+      description:
+        "A sturdy little boulder critter that gathers flowers and moss.",
       rarity: PetRarity.COMMON,
       stats: { attack: 6, defense: 6, speed: 4, luck: 4 },
       taskMultiplier: 0.05,
@@ -99,7 +111,8 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
       id: "moss",
       name: "Moss",
       element: "forest",
-      description: "A calm woodland lump that carries a tiny meadow on its back.",
+      description:
+        "A calm woodland lump that carries a tiny meadow on its back.",
       rarity: PetRarity.COMMON,
       stats: { attack: 4, defense: 7, speed: 5, luck: 4 },
       taskMultiplier: 0.05,
@@ -117,7 +130,8 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
       id: "zephie",
       name: "Zephie",
       element: "wind",
-      description: "A breezy sky puff that plays with petals and leaves as if they were part of its aura.",
+      description:
+        "A breezy sky puff that plays with petals and leaves as if they were part of its aura.",
       rarity: PetRarity.COMMON,
       stats: { attack: 4, defense: 5, speed: 7, luck: 6 },
       taskMultiplier: 0.05,
@@ -155,7 +169,8 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
       id: "ripple",
       name: "Ripple",
       element: "water",
-      description: "A playful water critter that stirs bright rings wherever it splashes down.",
+      description:
+        "A playful water critter that stirs bright rings wherever it splashes down.",
       rarity: PetRarity.RARE,
       stats: { attack: 7, defense: 7, speed: 8, luck: 6 },
       taskMultiplier: 0.1,
@@ -173,7 +188,8 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
       id: "tempo",
       name: "Tempo",
       element: "storm",
-      description: "A thunder puff that gathers rainlight and hums before each tiny lightning burst.",
+      description:
+        "A thunder puff that gathers rainlight and hums before each tiny lightning burst.",
       rarity: PetRarity.RARE,
       stats: { attack: 8, defense: 5, speed: 8, luck: 7 },
       taskMultiplier: 0.1,
@@ -191,7 +207,8 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
       id: "glint",
       name: "Glint",
       element: "crystal",
-      description: "A prism critter whose tiny gemstone horns scatter warm light into the grass around it.",
+      description:
+        "A prism critter whose tiny gemstone horns scatter warm light into the grass around it.",
       rarity: PetRarity.RARE,
       stats: { attack: 6, defense: 8, speed: 6, luck: 8 },
       taskMultiplier: 0.1,
@@ -211,7 +228,8 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
       id: "astra",
       name: "Astra",
       element: "cosmic",
-      description: "A star cloud companion that glitters like a whole sky in miniature.",
+      description:
+        "A star cloud companion that glitters like a whole sky in miniature.",
       rarity: PetRarity.EPIC,
       stats: { attack: 9, defense: 10, speed: 8, luck: 9 },
       taskMultiplier: 0.15,
@@ -229,7 +247,8 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
       id: "umbra",
       name: "Umbra",
       element: "shadow",
-      description: "A velvet shadow sprite that glows softly in moonlit fog instead of hiding inside it.",
+      description:
+        "A velvet shadow sprite that glows softly in moonlit fog instead of hiding inside it.",
       rarity: PetRarity.EPIC,
       stats: { attack: 10, defense: 8, speed: 9, luck: 9 },
       taskMultiplier: 0.15,
@@ -249,7 +268,8 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
       id: "nova",
       name: "Nova",
       element: "solar",
-      description: "A radiant star-core pet whose aura bends fire and starlight together.",
+      description:
+        "A radiant star-core pet whose aura bends fire and starlight together.",
       rarity: PetRarity.LEGENDARY,
       stats: { attack: 11, defense: 10, speed: 10, luck: 9 },
       taskMultiplier: 0.2,
@@ -267,7 +287,8 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
       id: "cindra",
       name: "Cindra",
       element: "lava",
-      description: "A molten cuddle beast with a bright magma heart and a habit of kicking up ember sparks.",
+      description:
+        "A molten cuddle beast with a bright magma heart and a habit of kicking up ember sparks.",
       rarity: PetRarity.LEGENDARY,
       stats: { attack: 12, defense: 11, speed: 9, luck: 10 },
       taskMultiplier: 0.2,
@@ -284,22 +305,38 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
   ],
 };
 
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 11);
+function getDayDifference(
+  previousTimestamp: number,
+  nextTimestamp: number,
+): number {
+  return Math.floor(
+    (getStartOfDay(nextTimestamp) - getStartOfDay(previousTimestamp)) / DAY_IN_MS,
+  );
 }
 
-function getDayStart(timestamp: number): number {
-  const date = new Date(timestamp);
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
+function getExperienceForLevel(level: number, baseCost: number): number {
+  return baseCost * level * (level - 1);
 }
 
-function getDayDifference(previousTimestamp: number, nextTimestamp: number): number {
-  return Math.floor((getDayStart(nextTimestamp) - getDayStart(previousTimestamp)) / DAY_IN_MS);
+export function getLevel(experience: number, levelBaseCost: number): number {
+  if (experience < 0) return 1;
+  let level = 1;
+  while (getExperienceForLevel(level + 1, levelBaseCost) <= experience) {
+    level++;
+  }
+  return level;
 }
 
-function getLevel(experience: number, experiencePerLevel: number): number {
-  return Math.floor(experience / experiencePerLevel) + 1;
+export function getLevelProgress(
+  experience: number,
+  levelBaseCost: number,
+): number {
+  const level = getLevel(experience, levelBaseCost);
+  const levelStart = getExperienceForLevel(level, levelBaseCost);
+  const nextLevelStart = getExperienceForLevel(level + 1, levelBaseCost);
+  const nextLevelCost = nextLevelStart - levelStart;
+  if (nextLevelCost <= 0) return 0;
+  return Math.min(1, Math.max(0, (experience - levelStart) / nextLevelCost));
 }
 
 function getBonusFromLevel(level: number): number {
@@ -319,14 +356,32 @@ function getEvolutionStage(fusionLevel: number): number {
 }
 
 function getCombatPower(stats: Pet["stats"], evolutionStage: number): number {
-  return stats.attack * 4 + stats.defense * 3 + stats.speed * 2 + stats.luck + evolutionStage * 12;
+  return (
+    stats.attack * 4 +
+    stats.defense * 3 +
+    stats.speed * 2 +
+    stats.luck +
+    evolutionStage * 12
+  );
 }
 
-function getExplorationPower(stats: Pet["stats"], evolutionStage: number): number {
-  return stats.speed * 3 + stats.luck * 3 + stats.attack + stats.defense + evolutionStage * 10;
+function getExplorationPower(
+  stats: Pet["stats"],
+  evolutionStage: number,
+): number {
+  return (
+    stats.speed * 3 +
+    stats.luck * 3 +
+    stats.attack +
+    stats.defense +
+    evolutionStage * 10
+  );
 }
 
-function getRewardMultiplier(streakBonus: number, petMultiplier: number): number {
+function getRewardMultiplier(
+  streakBonus: number,
+  petMultiplier: number,
+): number {
   return (1 + streakBonus) * (1 + petMultiplier);
 }
 
@@ -386,7 +441,9 @@ function getPetTemplate(templateId: string): PetTemplate {
 }
 
 export function getPetTemplateId(name: string, rarity: PetRarity): string {
-  const template = PET_TEMPLATES[rarity].find((petTemplate) => petTemplate.name === name);
+  const template = PET_TEMPLATES[rarity].find(
+    (petTemplate) => petTemplate.name === name,
+  );
 
   if (template) {
     return template.id;
@@ -444,7 +501,7 @@ function getFusionBonusStats(templateId: string): Pet["stats"] {
 
 export function getPetProgressionSnapshot(
   templateId: string,
-  fusionLevel: number
+  fusionLevel: number,
 ): PetProgressionSnapshot {
   const template = getPetTemplate(templateId);
   const fusionBonus = getFusionBonusStats(templateId);
@@ -455,7 +512,8 @@ export function getPetProgressionSnapshot(
     speed: template.stats.speed + fusionBonus.speed * fusionLevel,
     luck: template.stats.luck + fusionBonus.luck * fusionLevel,
   };
-  const taskMultiplier = template.taskMultiplier + fusionLevel * FUSION_TASK_MULTIPLIER_STEP;
+  const taskMultiplier =
+    template.taskMultiplier + fusionLevel * FUSION_TASK_MULTIPLIER_STEP;
 
   return {
     evolutionStage,
@@ -467,7 +525,9 @@ export function getPetProgressionSnapshot(
   };
 }
 
-export function getNextEvolutionFusionTarget(fusionLevel: number): number | null {
+export function getNextEvolutionFusionTarget(
+  fusionLevel: number,
+): number | null {
   if (fusionLevel < EVOLUTION_STAGE_ONE_FUSIONS) {
     return EVOLUTION_STAGE_ONE_FUSIONS;
   }
@@ -495,11 +555,17 @@ function getProtectedPetId(pets: Pet[]): string {
   return sortedPets[0].id;
 }
 
-export function getFuseSourcePets(gameState: GameState, targetPetId: string): Pet[] {
-  const targetPet = gameState.pets.filter((pet) => pet.id === targetPetId)[0];
+export function getFuseSourcePets(
+  gameState: GameState,
+  targetPetId: string,
+): Pet[] {
+  const targetPet = gameState.pets.find((pet) => pet.id === targetPetId);
 
   return gameState.pets.filter(
-    (pet) => pet.templateId === targetPet.templateId && pet.id !== targetPetId && !pet.equipped
+    (pet) =>
+      pet.templateId === targetPet?.templateId &&
+      pet.id !== targetPetId &&
+      !pet.equipped,
   );
 }
 
@@ -507,7 +573,9 @@ export function getSellablePets(gameState: GameState): Pet[] {
   const templateIds = [...new Set(gameState.pets.map((pet) => pet.templateId))];
 
   return templateIds.flatMap((templateId) => {
-    const matchingPets = gameState.pets.filter((pet) => pet.templateId === templateId);
+    const matchingPets = gameState.pets.filter(
+      (pet) => pet.templateId === templateId,
+    );
 
     if (matchingPets.length <= 1) {
       return [];
@@ -515,13 +583,16 @@ export function getSellablePets(gameState: GameState): Pet[] {
 
     const protectedPetId = getProtectedPetId(matchingPets);
 
-    return matchingPets.filter((pet) => pet.id !== protectedPetId && !pet.equipped);
+    return matchingPets.filter(
+      (pet) => pet.id !== protectedPetId && !pet.equipped,
+    );
   });
 }
 
 export function createPet(rarity: PetRarity): Pet {
   const templatePool = PET_TEMPLATES[rarity];
-  const template = templatePool[Math.floor(Math.random() * templatePool.length)];
+  const template =
+    templatePool[Math.floor(Math.random() * templatePool.length)];
 
   return createPetFromTemplate(template);
 }
@@ -546,12 +617,15 @@ export function getAllPets(): Pet[] {
   return allPets;
 }
 
-export function calculateUpdatedStreak(streak: Streak, completedAt: number): Streak {
+export function calculateUpdatedStreak(
+  streak: Streak,
+  completedAt: number,
+): Streak {
   if (streak.lastCompletedDate === 0) {
     return {
       level: 1,
       bonus: getBonusFromLevel(1),
-      lastCompletedDate: getDayStart(completedAt),
+      lastCompletedDate: getStartOfDay(completedAt),
       consecutiveMisses: 0,
     };
   }
@@ -561,18 +635,21 @@ export function calculateUpdatedStreak(streak: Streak, completedAt: number): Str
   if (dayDifference === 0) {
     return {
       ...streak,
-      lastCompletedDate: getDayStart(completedAt),
+      lastCompletedDate: getStartOfDay(completedAt),
       consecutiveMisses: 0,
     };
   }
 
   if (dayDifference === 1) {
-    const level = Math.min(streak.level + 1, Math.floor(STREAK_BONUS_CAP / STREAK_BONUS_PER_DAY));
+    const level = Math.min(
+      streak.level + 1,
+      Math.floor(STREAK_BONUS_CAP / STREAK_BONUS_PER_DAY),
+    );
 
     return {
       level,
       bonus: getBonusFromLevel(level),
-      lastCompletedDate: getDayStart(completedAt),
+      lastCompletedDate: getStartOfDay(completedAt),
       consecutiveMisses: 0,
     };
   }
@@ -583,7 +660,7 @@ export function calculateUpdatedStreak(streak: Streak, completedAt: number): Str
     return {
       level: 1,
       bonus: getBonusFromLevel(1),
-      lastCompletedDate: getDayStart(completedAt),
+      lastCompletedDate: getStartOfDay(completedAt),
       consecutiveMisses: 0,
     };
   }
@@ -593,38 +670,57 @@ export function calculateUpdatedStreak(streak: Streak, completedAt: number): Str
   return {
     level,
     bonus: getBonusFromLevel(level),
-    lastCompletedDate: getDayStart(completedAt),
+    lastCompletedDate: getStartOfDay(completedAt),
     consecutiveMisses: 0,
   };
 }
 
 export function completeTask(gameState: GameState, taskId: string): GameState {
+  const targetTask = gameState.tasks.find((task) => task.id === taskId);
+  if (!targetTask || targetTask.dueDate > Date.now()) {
+    return gameState;
+  }
+
+  if (targetTask.timer.enabled && targetTask.timer.state !== "ready") {
+    return gameState;
+  }
+
   const completedAt = Date.now();
   const nextStreak = calculateUpdatedStreak(gameState.streak, completedAt);
-  const equippedPet = gameState.pets.find((pet) => pet.id === gameState.equippedPetId);
+  const equippedPet = gameState.pets.find(
+    (pet) => pet.id === gameState.equippedPetId,
+  );
   const petMultiplier = equippedPet ? equippedPet.taskMultiplier : 0;
   const rewardMultiplier = getRewardMultiplier(nextStreak.bonus, petMultiplier);
   const gainedCoins = Math.round(BASE_TASK_COIN_REWARD * rewardMultiplier);
-  const gainedPlayerExperience = Math.round(BASE_TASK_PLAYER_EXPERIENCE_REWARD * rewardMultiplier);
-  const gainedPetExperience = Math.round(BASE_TASK_PET_EXPERIENCE_REWARD * rewardMultiplier);
+  const gainedPlayerExperience = Math.round(
+    BASE_TASK_PLAYER_EXPERIENCE_REWARD * rewardMultiplier,
+  );
+  const gainedPetExperience = Math.round(
+    BASE_TASK_PET_EXPERIENCE_REWARD * rewardMultiplier,
+  );
   const totalExperience = gameState.totalExperience + gainedPlayerExperience;
 
   return {
     ...gameState,
-    level: getLevel(totalExperience, PLAYER_EXPERIENCE_PER_LEVEL),
+    level: getLevel(totalExperience, PLAYER_LEVEL_BASE_COST),
     coins: gameState.coins + gainedCoins,
     totalExperience,
     totalTasksCompleted: gameState.totalTasksCompleted + 1,
-    tasks: gameState.tasks.map((task) =>
-      task.id === taskId
-        ? {
-            ...task,
-            status: TaskStatus.COMPLETED,
-            dueDate: getNextAvailableDate(task, completedAt),
-            completedAt,
-          }
-        : task
-    ),
+    tasks: gameState.tasks.map((task) => {
+      if (task.id !== taskId) {
+        return task;
+      }
+
+      const completedTask: Task = {
+        ...task,
+        status: TaskStatus.COMPLETED,
+        dueDate: getNextAvailableDate(task, completedAt),
+        completedAt,
+      };
+
+      return finishTaskTimer(completedTask);
+    }),
     pets: gameState.pets.map((pet) => {
       if (pet.id !== gameState.equippedPetId) {
         return pet;
@@ -635,7 +731,7 @@ export function completeTask(gameState: GameState, taskId: string): GameState {
       return {
         ...pet,
         experience,
-        level: getLevel(experience, PET_EXPERIENCE_PER_LEVEL),
+        level: getLevel(experience, PET_LEVEL_BASE_COST),
       };
     }),
     streak: nextStreak,
@@ -668,7 +764,9 @@ export function summonPet(gameState: GameState): GameState {
 }
 
 export function multiSummonPet(gameState: GameState): GameState {
-  const summonedPets = Array.from({ length: MULTI_SUMMON_COUNT }, () => createPet(getRandomRarity()));
+  const summonedPets = Array.from({ length: MULTI_SUMMON_COUNT }, () =>
+    createPet(getRandomRarity()),
+  );
 
   return {
     ...gameState,
@@ -679,7 +777,10 @@ export function multiSummonPet(gameState: GameState): GameState {
   };
 }
 
-export function redeemPityPet(gameState: GameState, templateId: string): GameState {
+export function redeemPityPet(
+  gameState: GameState,
+  templateId: string,
+): GameState {
   const selectedTemplate = getPetTemplate(templateId);
   const pityCost = getPityCost(selectedTemplate.rarity);
   const redeemedPet = createPetFromTemplate(selectedTemplate);
@@ -692,10 +793,18 @@ export function redeemPityPet(gameState: GameState, templateId: string): GameSta
   };
 }
 
-export function fusePet(gameState: GameState, targetPetId: string, sourcePetId: string): GameState {
-  const targetPet = gameState.pets.filter((pet) => pet.id === targetPetId)[0];
+export function fusePet(
+  gameState: GameState,
+  targetPetId: string,
+  sourcePetId: string,
+): GameState {
+  const targetPet = gameState.pets.find((pet) => pet.id === targetPetId);
+  if (!targetPet) return gameState;
   const nextFusionLevel = targetPet.fusionLevel + 1;
-  const progression = getPetProgressionSnapshot(targetPet.templateId, nextFusionLevel);
+  const progression = getPetProgressionSnapshot(
+    targetPet.templateId,
+    nextFusionLevel,
+  );
 
   return {
     ...gameState,
@@ -712,20 +821,22 @@ export function fusePet(gameState: GameState, targetPetId: string, sourcePetId: 
               explorationPower: progression.explorationPower,
               taskMultiplier: progression.taskMultiplier,
             }
-          : pet
+          : pet,
       ),
     lastPlayedAt: Date.now(),
   };
 }
 
 export function sellPet(gameState: GameState, petId: string): GameState {
-  const soldPet = gameState.pets.filter((pet) => pet.id === petId)[0];
+  const soldPet = gameState.pets.find((pet) => pet.id === petId);
+  if (!soldPet) return gameState;
   const isMaxDupe = soldPet.fusionLevel >= MAX_PET_FUSIONS;
 
   if (isMaxDupe) {
     return {
       ...gameState,
-      pityCurrency: gameState.pityCurrency + MAX_DUPE_PITY_VALUE[soldPet.rarity],
+      pityCurrency:
+        gameState.pityCurrency + MAX_DUPE_PITY_VALUE[soldPet.rarity],
       pets: gameState.pets.filter((pet) => pet.id !== petId),
       lastPlayedAt: Date.now(),
     };

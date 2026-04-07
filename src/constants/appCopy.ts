@@ -3,7 +3,7 @@ import { AppLanguage } from "../types";
 interface AppCopy {
   navDashboard: string;
   navTasks: string;
-  navPets: string;
+  navRealm: string;
   dashboardToday: string;
   dashboardPendingTasks: string;
   dashboardRewardMultiplier: string;
@@ -31,6 +31,7 @@ interface AppCopy {
   tasksAdd: string;
   tasksFilterAll: string;
   tasksFilterActive: string;
+  tasksFilterUpcoming: string;
   tasksFilterCompleted: string;
   tasksCalendar: string;
   tasksCalendarBack: string;
@@ -51,6 +52,7 @@ interface AppCopy {
   tasksSearchPlaceholder: string;
   tasksSelectedDay: string;
   tasksNoTasksOnDay: string;
+  tasksStartsOn: string;
   tasksEmptyTitle: string;
   tasksEmptySubtitle: string;
   addTaskTitle: string;
@@ -63,9 +65,18 @@ interface AppCopy {
   addTaskDescription: string;
   addTaskChooseSystemTask: string;
   addTaskFrequency: string;
+  addTaskTimer: string;
+  addTaskDate: string;
+  addTaskDaysAhead: string;
   addTaskOnce: string;
   addTaskDaily: string;
   addTaskWeekly: string;
+  addTaskCategory: string;
+  addTaskCategoryPlaceholder: string;
+  addTaskSavedCategories: string;
+  addTaskSaveTemplate: string;
+  addTaskSaveTemplateHelp: string;
+  addTaskSavedCustomTasks: string;
   addTaskNamePlaceholder: string;
   addTaskDescriptionPlaceholder: string;
   petsTitle: string;
@@ -122,6 +133,12 @@ interface AppCopy {
   settingsEquippedPet: string;
   settingsLanguageEnglish: string;
   settingsLanguagePortuguese: string;
+  settingsTimerAlert: string;
+  settingsTimerAlertVibration: string;
+  settingsTimerAlertSound: string;
+  settingsTimerAlertChooseSound: string;
+  settingsTimerAlertClearSound: string;
+  settingsTimerAlertNoSound: string;
   settingsBackup: string;
   settingsBackupHelp: string;
   settingsBackupPlaceholder: string;
@@ -145,13 +162,21 @@ interface AppCopy {
   tutorialStep3Body: string;
   tutorialStep4Title: string;
   tutorialStep4Body: string;
+  timerStart: string;
+  timerPause: string;
+  timerResume: string;
+  timerReset: string;
+  timerStateRunning: string;
+  timerStatePaused: string;
+  timerStateReady: string;
+  timerStateIdle: string;
 }
 
 const copyByLanguage: Record<AppLanguage, AppCopy> = {
   en: {
     navDashboard: "Dashboard",
     navTasks: "Tasks",
-    navPets: "Pets",
+    navRealm: "Realm",
     dashboardToday: "Today",
     dashboardPendingTasks: "pending tasks",
     dashboardRewardMultiplier: "reward multiplier",
@@ -179,6 +204,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksAdd: "+ Add",
     tasksFilterAll: "All",
     tasksFilterActive: "Active",
+    tasksFilterUpcoming: "Upcoming",
     tasksFilterCompleted: "Completed",
     tasksCalendar: "Calendar",
     tasksCalendarBack: "Back",
@@ -199,6 +225,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksSearchPlaceholder: "Search tasks",
     tasksSelectedDay: "Selected Day",
     tasksNoTasksOnDay: "No tasks on this day.",
+    tasksStartsOn: "Starts",
     tasksEmptyTitle: "No tasks to display",
     tasksEmptySubtitle: "Create your first task to get started",
     addTaskTitle: "Add Task",
@@ -211,9 +238,18 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     addTaskDescription: "Description",
     addTaskChooseSystemTask: "Choose a system task",
     addTaskFrequency: "Frequency",
+    addTaskTimer: "Timer",
+    addTaskDate: "Start Date",
+    addTaskDaysAhead: "Days ahead",
     addTaskOnce: "Once",
     addTaskDaily: "Daily",
     addTaskWeekly: "Weekly",
+    addTaskCategory: "Category",
+    addTaskCategoryPlaceholder: "Enter category",
+    addTaskSavedCategories: "Saved categories",
+    addTaskSaveTemplate: "Save for later",
+    addTaskSaveTemplateHelp: "Stores this custom task and category as a reusable template you can pick again later.",
+    addTaskSavedCustomTasks: "Saved custom tasks",
     addTaskNamePlaceholder: "Enter task name",
     addTaskDescriptionPlaceholder: "Enter task description (optional)",
     petsTitle: "Pets",
@@ -270,6 +306,12 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsEquippedPet: "Equipped pet",
     settingsLanguageEnglish: "English",
     settingsLanguagePortuguese: "Portuguese",
+    settingsTimerAlert: "Timer Alert",
+    settingsTimerAlertVibration: "Vibration",
+    settingsTimerAlertSound: "Song File",
+    settingsTimerAlertChooseSound: "Choose Song",
+    settingsTimerAlertClearSound: "Clear Song",
+    settingsTimerAlertNoSound: "No song selected",
     settingsBackup: "Backup Code",
     settingsBackupHelp: "Export a backup code and import it later on this device or another one.",
     settingsBackupPlaceholder: "Your backup code will appear here. You can also paste one to import.",
@@ -293,11 +335,19 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tutorialStep3Body: "Equip a pet to boost your task rewards. Fuse duplicate pets to evolve them and unlock stronger bonuses.",
     tutorialStep4Title: "Summon",
     tutorialStep4Body: "Spend coins to summon new pets. Save up for a multi-summon (11 pets) for better value.",
+    timerStart: "Start",
+    timerPause: "Pause",
+    timerResume: "Resume",
+    timerReset: "Reset",
+    timerStateRunning: "Running",
+    timerStatePaused: "Paused",
+    timerStateReady: "Ready",
+    timerStateIdle: "Idle",
   },
   pt: {
     navDashboard: "Painel",
     navTasks: "Tarefas",
-    navPets: "Pets",
+    navRealm: "Reino",
     dashboardToday: "Hoje",
     dashboardPendingTasks: "tarefas pendentes",
     dashboardRewardMultiplier: "multiplicador de recompensa",
@@ -325,6 +375,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksAdd: "+ Adicionar",
     tasksFilterAll: "Todas",
     tasksFilterActive: "Ativas",
+    tasksFilterUpcoming: "Próximas",
     tasksFilterCompleted: "Concluídas",
     tasksCalendar: "Calendário",
     tasksCalendarBack: "Voltar",
@@ -345,6 +396,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksSearchPlaceholder: "Pesquisar tarefas",
     tasksSelectedDay: "Dia selecionado",
     tasksNoTasksOnDay: "Sem tarefas neste dia.",
+    tasksStartsOn: "Comeca",
     tasksEmptyTitle: "Sem tarefas para mostrar",
     tasksEmptySubtitle: "Cria a tua primeira tarefa para começar",
     addTaskTitle: "Adicionar tarefa",
@@ -357,9 +409,18 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     addTaskDescription: "Descrição",
     addTaskChooseSystemTask: "Escolhe uma tarefa do sistema",
     addTaskFrequency: "Frequência",
+    addTaskTimer: "Temporizador",
+    addTaskDate: "Data inicial",
+    addTaskDaysAhead: "Dias à frente",
     addTaskOnce: "Uma vez",
     addTaskDaily: "Diária",
     addTaskWeekly: "Semanal",
+    addTaskCategory: "Categoria",
+    addTaskCategoryPlaceholder: "Escreve a categoria",
+    addTaskSavedCategories: "Categorias guardadas",
+    addTaskSaveTemplate: "Guardar para depois",
+    addTaskSaveTemplateHelp: "Guarda esta tarefa personalizada e categoria como modelo reutilizavel para escolher novamente mais tarde.",
+    addTaskSavedCustomTasks: "Tarefas personalizadas guardadas",
     addTaskNamePlaceholder: "Escreve o nome da tarefa",
     addTaskDescriptionPlaceholder: "Escreve a descrição da tarefa (opcional)",
     petsTitle: "Pets",
@@ -416,6 +477,12 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsEquippedPet: "Pet equipado",
     settingsLanguageEnglish: "Inglês",
     settingsLanguagePortuguese: "Português",
+    settingsTimerAlert: "Alerta do temporizador",
+    settingsTimerAlertVibration: "Vibração",
+    settingsTimerAlertSound: "Ficheiro de música",
+    settingsTimerAlertChooseSound: "Escolher música",
+    settingsTimerAlertClearSound: "Remover música",
+    settingsTimerAlertNoSound: "Nenhuma música selecionada",
     settingsBackup: "Código de backup",
     settingsBackupHelp: "Exporta um código de backup e importa-o depois neste dispositivo ou noutro.",
     settingsBackupPlaceholder: "O teu código de backup aparece aqui. Também podes colar um para importar.",
@@ -439,6 +506,14 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tutorialStep3Body: "Equipa um pet para aumentar as recompensas das tarefas. Funde pets duplicados para evoluir e desbloqueá bónus mais fortes.",
     tutorialStep4Title: "Invocar",
     tutorialStep4Body: "Gasta moedas para invocar novos pets. Poupa para uma multi-invocação (11 pets) para melhor valor.",
+    timerStart: "Começar",
+    timerPause: "Pausa",
+    timerResume: "Retomar",
+    timerReset: "Repor",
+    timerStateRunning: "Em execução",
+    timerStatePaused: "Pausado",
+    timerStateReady: "Pronto",
+    timerStateIdle: "Inativo",
   },
 };
 

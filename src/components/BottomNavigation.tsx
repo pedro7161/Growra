@@ -5,7 +5,7 @@ import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings } from "../types";
 
-type Screen = "dashboard" | "tasks" | "pets";
+type Screen = "dashboard" | "tasks" | "realm";
 
 const ACTIVE_CIRCLE_SIZE = 74;
 const ACTIVE_DOCK_WIDTH = 92;
@@ -59,9 +59,9 @@ export default function BottomNavigation({
           settings={settings}
         />
         <NavSlot
-          label={copy.navPets}
-          active={activeScreen === "pets"}
-          onPress={() => onNavigate("pets")}
+          label={copy.navRealm}
+          active={activeScreen === "realm"}
+          onPress={() => onNavigate("realm")}
           settings={settings}
         />
       </View>

@@ -3,5 +3,12 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "npx tsc": true,
+    "/^cd /mnt/HDD/Projects/Growra && python - <<'PY'\nfrom pathlib import Path\npath = Path\\('src/screens/DashboardScreen\\.tsx'\\)\ntext = path\\.read_text\\(\\)\nold = '''            </View>\n            <View\n              style=\\{\\[styles\\.summaryCard, \\{ backgroundColor: theme\\.surface \\}\\]\\}\n            >\n              <Text style=\\{\\[styles\\.summaryLabel, \\{ color: theme\\.mutedText \\}\\]\\}>\\\\n                \\{copy\\.dashboardPlayerLevel\\}\\\\n'''\nnew = '''            </View>\n            <TouchableOpacity\n              style=\\{\\[styles\\.summaryCard, \\{ backgroundColor: theme\\.surface \\}\\]\\}\n              onPress=\\{\\(\\) => setShowPlayerLevelDetail\\(\\(prev\\) => !prev\\)\\}\n              activeOpacity=\\{0\\.8\\}\n            >\n              <Text style=\\{\\[styles\\.summaryLabel, \\{ color: theme\\.mutedText \\}\\]\\}>\\\\n                \\{copy\\.dashboardPlayerLevel\\}\\\\n'''\nif old not in text:\n    raise SystemExit\\('pattern not found'\\)\ntext = text\\.replace\\(old, new, 1\\)\npath\\.write_text\\(text\\)\nPY$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
   }
 }

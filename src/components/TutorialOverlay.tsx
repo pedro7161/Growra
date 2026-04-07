@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppSettings } from '../types';
 import { getAppCopy } from '../constants/appCopy';
 import { getAppTheme } from '../constants/appTheme';

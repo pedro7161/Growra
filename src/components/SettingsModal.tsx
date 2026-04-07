@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   Alert,
   Modal,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,10 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { appThemes, getAppTheme } from "../constants/appTheme";
 import { getChangelog } from "../constants/changelog";
-import { AppLanguage, AppThemeId, GameState } from "../types";
+import { AppLanguage, AppThemeId, GameState, TimerAlertMode } from "../types";
 import { getGameStatsSummary } from "../utils/settings";
 
 interface SettingsModalProps {
@@ -22,6 +22,9 @@ interface SettingsModalProps {
   onClose: () => void;
   onLanguageChange: (language: AppLanguage) => void;
   onThemeChange: (theme: AppThemeId) => void;
+  onTimerAlertModeChange: (mode: TimerAlertMode) => void;
+  onPickTimerAlertSound: () => Promise<void>;
+  onClearTimerAlertSound: () => Promise<void>;
   onExportData: () => Promise<string>;
   onImportData: (backupCode: string) => Promise<void>;
 }
@@ -32,6 +35,9 @@ export default function SettingsModal({
   onClose,
   onLanguageChange,
   onThemeChange,
+  onTimerAlertModeChange,
+  onPickTimerAlertSound,
+  onClearTimerAlertSound,
   onExportData,
   onImportData,
 }: SettingsModalProps) {
@@ -53,6 +59,14 @@ export default function SettingsModal({
       Alert.alert(copy.settingsTitle, copy.settingsBackupImported);
     } catch {
       Alert.alert(copy.settingsTitle, copy.settingsBackupInvalid);
+    }
+  };
+
+  const handlePickTimerAlertSound = async () => {
+    try {
+      await onPickTimerAlertSound();
+    } catch (error) {
+      console.error("Failed to pick timer alert sound:", error);
     }
   };
 
@@ -107,6 +121,45 @@ export default function SettingsModal({
                   <Text style={[styles.themeName, { color: themeOption.text }]}>{themeOption.name}</Text>
                 </TouchableOpacity>
               ))}
+            </View>
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsTimerAlert}</Text>
+            <View style={styles.optionRow}>
+              <OptionButton
+                label={copy.settingsTimerAlertVibration}
+                active={gameState.settings.timerAlert.mode === "vibration"}
+                onPress={() => onTimerAlertModeChange("vibration")}
+                themeId={theme.id}
+              />
+              <OptionButton
+                label={copy.settingsTimerAlertSound}
+                active={gameState.settings.timerAlert.mode === "sound"}
+                onPress={() => onTimerAlertModeChange("sound")}
+                themeId={theme.id}
+              />
+            </View>
+            <View style={[styles.soundCard, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
+              <Text style={[styles.soundName, { color: theme.text }]}>
+                {gameState.settings.timerAlert.soundName
+                  ? gameState.settings.timerAlert.soundName
+                  : copy.settingsTimerAlertNoSound}
+              </Text>
+              <View style={styles.optionRow}>
+                <OptionButton
+                  label={copy.settingsTimerAlertChooseSound}
+                  active
+                  onPress={handlePickTimerAlertSound}
+                  themeId={theme.id}
+                />
+                <OptionButton
+                  label={copy.settingsTimerAlertClearSound}
+                  active={false}
+                  onPress={onClearTimerAlertSound}
+                  themeId={theme.id}
+                />
+              </View>
             </View>
           </View>
 
@@ -270,6 +323,17 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "700",
     marginBottom: 12,
+  },
+  soundCard: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 12,
+  },
+  soundName: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   optionRow: {
     flexDirection: "row",

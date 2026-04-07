@@ -1,27 +1,29 @@
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  TouchableOpacity,
-  Image,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { getPetImage } from "../constants/petImages";
 import { AppSettings, GameState } from "../types";
 import {
-  getFuseSourcePets,
-  getNextEvolutionFusionTarget,
-  getPetTemplates,
-  getPityCost,
-  getSellablePets,
-  getSellValue,
-  MAX_PET_FUSIONS,
-  MULTI_SUMMON_COST,
-  SUMMON_COST,
+    getFuseSourcePets,
+    getLevelProgress,
+    getNextEvolutionFusionTarget,
+    getPetTemplates,
+    getPityCost,
+    getSellablePets,
+    getSellValue,
+    MAX_PET_FUSIONS,
+    MULTI_SUMMON_COST,
+    PET_LEVEL_BASE_COST,
+    SUMMON_COST,
 } from "../utils/gameplay";
 
 interface PetsScreenProps {
@@ -48,33 +50,39 @@ export default function PetsScreen({
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const [activeTab, setActiveTab] = useState<
-    "summon" | "pity-shop" | "my-pets" | "sell-shop"
-  >("summon");
+    "my-pets" | "exploration" | "summon"
+  >("my-pets");
+  const [myPetsSubTab, setMyPetsSubTab] = useState<"box" | "fuse">("box");
+  const [summonSubTab, setSummonSubTab] = useState<
+    "banner" | "pityshop" | "sell"
+  >("banner");
   const petTemplates = getPetTemplates();
   const sellablePets = getSellablePets(gameState);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <Text style={[styles.title, { color: theme.text }]}>{copy.petsTitle}</Text>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.surface, borderBottomColor: theme.border },
+        ]}
+      >
+        <Text style={[styles.title, { color: theme.text }]}>
+          {copy.petsTitle}
+        </Text>
         <Text style={[styles.subtitle, { color: theme.mutedText }]}>
           {gameState.coins} {copy.petsCoinsPity} • {gameState.pityCurrency} pity
         </Text>
       </View>
 
-      <View style={[styles.tabBar, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <TabButton
-          label={copy.petsSummonTab}
-          active={activeTab === "summon"}
-          onPress={() => setActiveTab("summon")}
-          settings={settings}
-        />
-        <TabButton
-          label={copy.petsPityShopTab}
-          active={activeTab === "pity-shop"}
-          onPress={() => setActiveTab("pity-shop")}
-          settings={settings}
-        />
+      <View
+        style={[
+          styles.tabBar,
+          { backgroundColor: theme.surface, borderBottomColor: theme.border },
+        ]}
+      >
         <TabButton
           label={copy.petsMyPetsTab}
           active={activeTab === "my-pets"}
@@ -82,127 +90,297 @@ export default function PetsScreen({
           settings={settings}
         />
         <TabButton
-          label={copy.petsSellShopTab}
-          active={activeTab === "sell-shop"}
-          onPress={() => setActiveTab("sell-shop")}
+          label="Exploration"
+          active={activeTab === "exploration"}
+          onPress={() => setActiveTab("exploration")}
+          settings={settings}
+        />
+        <TabButton
+          label={copy.petsSummonTab}
+          active={activeTab === "summon"}
+          onPress={() => setActiveTab("summon")}
           settings={settings}
         />
       </View>
 
       <ScrollView style={styles.content}>
-        {activeTab === "summon" && (
-          <View style={[styles.shopCard, { backgroundColor: theme.surface }]}>
-            <Text style={[styles.shopTitle, { color: theme.text }]}>{copy.petsGachaTitle}</Text>
-            <Text style={[styles.shopText, { color: theme.mutedText }]}>{copy.petsGachaOdds}</Text>
-            <Text style={[styles.shopText, { color: theme.mutedText }]}>{copy.petsGachaSecret}</Text>
-            <Text style={[styles.shopText, { color: theme.mutedText }]}>
-              {copy.petsGachaCost.replace("{cost}", String(SUMMON_COST))}
-            </Text>
-            <Text style={[styles.shopText, { color: theme.mutedText }]}>
-              {copy.petsGachaMultiCost.replace("{cost}", String(MULTI_SUMMON_COST))}
-            </Text>
-          </View>
-        )}
-
-        {activeTab === "pity-shop" && (
-          <View style={[styles.shopCard, { backgroundColor: theme.surface }]}>
-            <Text style={[styles.shopTitle, { color: theme.text }]}>{copy.petsPityShopTitle}</Text>
-            <Text style={[styles.shopText, { color: theme.mutedText }]}>{copy.petsPityShopSubtitle}</Text>
-            <View style={styles.pityGrid}>
-              {petTemplates.map((template) => (
-                <View
-                  key={template.id}
-                  style={[styles.pityCard, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
-                >
-                  <Image
-                    source={getPetImage(template.id, 0, "default")}
-                    style={styles.pityPetImage}
-                    resizeMode="contain"
-                  />
-                  <View style={styles.pityCardHeader}>
-                    <Text style={[styles.pityName, { color: theme.text }]}>{template.name}</Text>
-                    <Text style={[styles.pityRarity, { color: theme.mutedText }]}>{template.rarity}</Text>
-                  </View>
-                  <Text style={[styles.pityMeta, { color: theme.mutedText }]}>
-                    +{(template.taskMultiplier * 100).toFixed(0)}% {copy.petsTaskBonus.toLowerCase()}
-                  </Text>
-                  <Text style={[styles.pityMeta, { color: theme.mutedText }]}>
-                    {copy.petsCost}: {getPityCost(template.rarity)} pity
-                  </Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.redeemButton,
-                      { backgroundColor: theme.warning },
-                      gameState.pityCurrency < getPityCost(template.rarity) &&
-                        { backgroundColor: theme.warningSoft },
-                    ]}
-                    onPress={() => onRedeemPityPet(template.id)}
-                    disabled={gameState.pityCurrency < getPityCost(template.rarity)}
-                  >
-                    <Text style={styles.redeemButtonText}>{copy.petsClaim}</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
         {activeTab === "my-pets" && (
-          <View style={styles.grid}>
-            {gameState.pets.map((pet) => (
-              <PetCard
-                key={pet.id}
-                gameState={gameState}
-                petId={pet.id}
+          <>
+            <View
+              style={[
+                styles.tabBar,
+                {
+                  backgroundColor: theme.surface,
+                  borderBottomColor: theme.border,
+                },
+              ]}
+            >
+              <TabButton
+                label="Box"
+                active={myPetsSubTab === "box"}
+                onPress={() => setMyPetsSubTab("box")}
                 settings={settings}
-                onEquipPet={onEquipPet}
-                onFusePet={onFusePet}
               />
-            ))}
+              <TabButton
+                label="Fuse"
+                active={myPetsSubTab === "fuse"}
+                onPress={() => setMyPetsSubTab("fuse")}
+                settings={settings}
+              />
+            </View>
+
+            {myPetsSubTab === "box" && (
+              <View style={styles.grid}>
+                {gameState.pets.map((pet) => (
+                  <PetCard
+                    key={pet.id}
+                    gameState={gameState}
+                    petId={pet.id}
+                    settings={settings}
+                    onEquipPet={onEquipPet}
+                    onFusePet={() => {}}
+                    hideFuseButton={true}
+                  />
+                ))}
+              </View>
+            )}
+
+            {myPetsSubTab === "fuse" && (
+              <View style={styles.grid}>
+                {gameState.pets.map((pet) => (
+                  <PetCard
+                    key={pet.id}
+                    gameState={gameState}
+                    petId={pet.id}
+                    settings={settings}
+                    onEquipPet={onEquipPet}
+                    onFusePet={onFusePet}
+                    hideEquipButton={true}
+                  />
+                ))}
+              </View>
+            )}
+          </>
+        )}
+
+        {activeTab === "exploration" && (
+          <View style={[styles.shopCard, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.shopTitle, { color: theme.text }]}>
+              Exploration
+            </Text>
+            <Text style={[styles.shopText, { color: theme.mutedText }]}>
+              Coming soon... Send your pets to explore the realm!
+            </Text>
           </View>
         )}
 
-        {activeTab === "sell-shop" && (
-          <View style={[styles.shopCard, { backgroundColor: theme.surface }]}>
-            <Text style={[styles.shopTitle, { color: theme.text }]}>{copy.petsSellShopTitle}</Text>
-            <Text style={[styles.shopText, { color: theme.mutedText }]}>{copy.petsSellShopSubtitle}</Text>
-            <View style={styles.sellList}>
-              {sellablePets.length === 0 ? (
-                <Text style={[styles.emptyText, { color: theme.mutedText }]}>{copy.petsNoExtraCopies}</Text>
-              ) : (
-                sellablePets.map((pet) => (
-                  <View
-                    key={pet.id}
-                    style={[styles.sellCard, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
-                  >
-                    <View>
-                      <Text style={[styles.sellName, { color: theme.text }]}>{pet.name}</Text>
-                      <Text style={[styles.sellMeta, { color: theme.mutedText }]}>
-                        {pet.rarity} • {copy.petsSellsFor} {getSellValue(pet.rarity)} {copy.petsCoinsPity}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={[styles.sellButton, { backgroundColor: theme.danger }]}
-                      onPress={() => onSellPet(pet.id)}
-                    >
-                      <Text style={styles.sellButtonText}>{copy.petsSell}</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))
-              )}
+        {activeTab === "summon" && (
+          <>
+            <View
+              style={[
+                styles.tabBar,
+                {
+                  backgroundColor: theme.surface,
+                  borderBottomColor: theme.border,
+                },
+              ]}
+            >
+              <TabButton
+                label="Banner"
+                active={summonSubTab === "banner"}
+                onPress={() => setSummonSubTab("banner")}
+                settings={settings}
+              />
+              <TabButton
+                label="Pity Shop"
+                active={summonSubTab === "pityshop"}
+                onPress={() => setSummonSubTab("pityshop")}
+                settings={settings}
+              />
+              <TabButton
+                label="Sell"
+                active={summonSubTab === "sell"}
+                onPress={() => setSummonSubTab("sell")}
+                settings={settings}
+              />
             </View>
-          </View>
+
+            {summonSubTab === "banner" && (
+              <View
+                style={[styles.shopCard, { backgroundColor: theme.surface }]}
+              >
+                <Text style={[styles.shopTitle, { color: theme.text }]}>
+                  {copy.petsGachaTitle}
+                </Text>
+                <Text style={[styles.shopText, { color: theme.mutedText }]}>
+                  {copy.petsGachaOdds}
+                </Text>
+                <Text style={[styles.shopText, { color: theme.mutedText }]}>
+                  {copy.petsGachaSecret}
+                </Text>
+                <Text style={[styles.shopText, { color: theme.mutedText }]}>
+                  {copy.petsGachaCost.replace("{cost}", String(SUMMON_COST))}
+                </Text>
+                <Text style={[styles.shopText, { color: theme.mutedText }]}>
+                  {copy.petsGachaMultiCost.replace(
+                    "{cost}",
+                    String(MULTI_SUMMON_COST),
+                  )}
+                </Text>
+              </View>
+            )}
+
+            {summonSubTab === "pityshop" && (
+              <View
+                style={[styles.shopCard, { backgroundColor: theme.surface }]}
+              >
+                <Text style={[styles.shopTitle, { color: theme.text }]}>
+                  {copy.petsPityShopTitle}
+                </Text>
+                <Text style={[styles.shopText, { color: theme.mutedText }]}>
+                  {copy.petsPityShopSubtitle}
+                </Text>
+                <View style={styles.pityGrid}>
+                  {petTemplates.map((template) => (
+                    <View
+                      key={template.id}
+                      style={[
+                        styles.pityCard,
+                        {
+                          backgroundColor: theme.surfaceMuted,
+                          borderColor: theme.border,
+                        },
+                      ]}
+                    >
+                      <Image
+                        source={getPetImage(template.id, 0, "default")}
+                        style={styles.pityPetImage}
+                        resizeMode="contain"
+                      />
+                      <View style={styles.pityCardHeader}>
+                        <Text style={[styles.pityName, { color: theme.text }]}>
+                          {template.name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.pityRarity,
+                            { color: theme.mutedText },
+                          ]}
+                        >
+                          {template.rarity}
+                        </Text>
+                      </View>
+                      <Text
+                        style={[styles.pityMeta, { color: theme.mutedText }]}
+                      >
+                        +{(template.taskMultiplier * 100).toFixed(0)}%{" "}
+                        {copy.petsTaskBonus.toLowerCase()}
+                      </Text>
+                      <Text
+                        style={[styles.pityMeta, { color: theme.mutedText }]}
+                      >
+                        {copy.petsCost}: {getPityCost(template.rarity)} pity
+                      </Text>
+                      <TouchableOpacity
+                        style={[
+                          styles.redeemButton,
+                          { backgroundColor: theme.warning },
+                          gameState.pityCurrency <
+                            getPityCost(template.rarity) && {
+                            backgroundColor: theme.warningSoft,
+                          },
+                        ]}
+                        onPress={() => onRedeemPityPet(template.id)}
+                        disabled={
+                          gameState.pityCurrency < getPityCost(template.rarity)
+                        }
+                      >
+                        <Text style={styles.redeemButtonText}>
+                          {copy.petsClaim}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {summonSubTab === "sell" && (
+              <View
+                style={[styles.shopCard, { backgroundColor: theme.surface }]}
+              >
+                <Text style={[styles.shopTitle, { color: theme.text }]}>
+                  {copy.petsSellShopTitle}
+                </Text>
+                <Text style={[styles.shopText, { color: theme.mutedText }]}>
+                  {copy.petsSellShopSubtitle}
+                </Text>
+                <View style={styles.sellList}>
+                  {sellablePets.length === 0 ? (
+                    <Text
+                      style={[styles.emptyText, { color: theme.mutedText }]}
+                    >
+                      {copy.petsNoExtraCopies}
+                    </Text>
+                  ) : (
+                    sellablePets.map((pet) => (
+                      <View
+                        key={pet.id}
+                        style={[
+                          styles.sellCard,
+                          {
+                            backgroundColor: theme.surfaceMuted,
+                            borderColor: theme.border,
+                          },
+                        ]}
+                      >
+                        <View>
+                          <Text
+                            style={[styles.sellName, { color: theme.text }]}
+                          >
+                            {pet.name}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.sellMeta,
+                              { color: theme.mutedText },
+                            ]}
+                          >
+                            {pet.rarity} • {copy.petsSellsFor}{" "}
+                            {getSellValue(pet.rarity)} {copy.petsCoinsPity}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={[
+                            styles.sellButton,
+                            { backgroundColor: theme.danger },
+                          ]}
+                          onPress={() => onSellPet(pet.id)}
+                        >
+                          <Text style={styles.sellButtonText}>
+                            {copy.petsSell}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))
+                  )}
+                </View>
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
 
-      {activeTab === "summon" && (
+      {activeTab === "summon" && summonSubTab === "banner" && (
         <View style={styles.footer}>
           <View style={styles.gachaRow}>
             <TouchableOpacity
               style={[
                 styles.gachaButton,
                 { backgroundColor: theme.accent },
-                gameState.coins < SUMMON_COST && { backgroundColor: theme.border },
+                gameState.coins < SUMMON_COST && {
+                  backgroundColor: theme.border,
+                },
               ]}
               onPress={onSummonPet}
               disabled={gameState.coins < SUMMON_COST}
@@ -215,13 +393,18 @@ export default function PetsScreen({
               style={[
                 styles.gachaButton,
                 { backgroundColor: theme.hero },
-                gameState.coins < MULTI_SUMMON_COST && { backgroundColor: theme.border },
+                gameState.coins < MULTI_SUMMON_COST && {
+                  backgroundColor: theme.border,
+                },
               ]}
               onPress={onMultiSummonPet}
               disabled={gameState.coins < MULTI_SUMMON_COST}
             >
               <Text style={styles.gachaButtonText}>
-                {copy.petsMultiSummonButton.replace("{cost}", String(MULTI_SUMMON_COST))}
+                {copy.petsMultiSummonButton.replace(
+                  "{cost}",
+                  String(MULTI_SUMMON_COST),
+                )}
               </Text>
             </TouchableOpacity>
           </View>
@@ -237,51 +420,85 @@ function PetCard({
   settings,
   onEquipPet,
   onFusePet,
+  hideEquipButton = false,
+  hideFuseButton = false,
 }: {
   gameState: GameState;
   petId: string;
   settings: AppSettings;
   onEquipPet: (petId: string) => void;
   onFusePet: (targetPetId: string, sourcePetId: string) => void;
+  hideEquipButton?: boolean;
+  hideFuseButton?: boolean;
 }) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const pet = gameState.pets.filter((currentPet) => currentPet.id === petId)[0];
   const fuseSourcePets = getFuseSourcePets(gameState, petId);
-  const availableFuseCopies = pet.fusionLevel < MAX_PET_FUSIONS ? fuseSourcePets : [];
+  const availableFuseCopies =
+    pet.fusionLevel < MAX_PET_FUSIONS ? fuseSourcePets : [];
   const firstFuseCopy = availableFuseCopies[0];
-  const nextEvolutionFusionTarget = getNextEvolutionFusionTarget(pet.fusionLevel);
+  const nextEvolutionFusionTarget = getNextEvolutionFusionTarget(
+    pet.fusionLevel,
+  );
   const evolutionLabel =
     pet.evolutionStage === 2
       ? copy.petsEvolutionAscended
       : pet.evolutionStage === 1
         ? copy.petsEvolutionEvolved
         : copy.petsEvolutionBase;
+  const petXpProgress = getLevelProgress(pet.experience, PET_LEVEL_BASE_COST);
 
   return (
     <View style={[styles.petCard, { backgroundColor: theme.surface }]}>
       <Image
-        source={getPetImage(pet.templateId, pet.evolutionStage, pet.activeImageVariantId)}
+        source={getPetImage(
+          pet.templateId,
+          pet.evolutionStage,
+          pet.activeImageVariantId,
+        )}
         style={styles.petCardImage}
         resizeMode="contain"
       />
       <View style={styles.petCardHeader}>
         <View>
-          <Text style={[styles.petName, { color: theme.text }]}>{pet.name}</Text>
+          <Text style={[styles.petName, { color: theme.text }]}>
+            {pet.name}
+          </Text>
           <Text style={[styles.petMeta, { color: theme.mutedText }]}>
             {pet.rarity} • {copy.petsLevel.toLowerCase()} {pet.level}
           </Text>
         </View>
         {pet.equipped && (
-          <Text style={[styles.equippedBadge, { backgroundColor: theme.accentSoft, color: theme.accent }]}>
+          <Text
+            style={[
+              styles.equippedBadge,
+              { backgroundColor: theme.accentSoft, color: theme.accent },
+            ]}
+          >
             {copy.petsActive}
           </Text>
         )}
       </View>
-
       <Text style={[styles.petStat, { color: theme.mutedText }]}>
         {copy.petsExperience}: {pet.experience}
       </Text>
+      <View
+        style={[
+          styles.xpProgressTrack,
+          { backgroundColor: theme.surfaceMuted },
+        ]}
+      >
+        <View
+          style={[
+            styles.xpProgressFill,
+            {
+              width: `${Math.round(petXpProgress * 100)}%`,
+              backgroundColor: theme.accent,
+            },
+          ]}
+        />
+      </View>
       <Text style={[styles.petStat, { color: theme.mutedText }]}>
         {copy.petsFusion}: {pet.fusionLevel}/{MAX_PET_FUSIONS}
       </Text>
@@ -292,16 +509,29 @@ function PetCard({
         {copy.petsTaskBonus}: +{(pet.taskMultiplier * 100).toFixed(0)}%
       </Text>
       <Text style={[styles.petStat, { color: theme.mutedText }]}>
-        ATK {pet.stats.attack} • DEF {pet.stats.defense} • SPD {pet.stats.speed} • LCK {pet.stats.luck}
+        ATK {pet.stats.attack} • DEF {pet.stats.defense} • SPD {pet.stats.speed}{" "}
+        • LCK {pet.stats.luck}
       </Text>
       <View style={styles.powerRow}>
-        <View style={[styles.powerCard, { backgroundColor: theme.surfaceMuted }]}>
-          <Text style={[styles.powerLabel, { color: theme.mutedText }]}>{copy.petsCombatPower}</Text>
-          <Text style={[styles.powerValue, { color: theme.text }]}>{pet.combatPower}</Text>
+        <View
+          style={[styles.powerCard, { backgroundColor: theme.surfaceMuted }]}
+        >
+          <Text style={[styles.powerLabel, { color: theme.mutedText }]}>
+            {copy.petsCombatPower}
+          </Text>
+          <Text style={[styles.powerValue, { color: theme.text }]}>
+            {pet.combatPower}
+          </Text>
         </View>
-        <View style={[styles.powerCard, { backgroundColor: theme.surfaceMuted }]}>
-          <Text style={[styles.powerLabel, { color: theme.mutedText }]}>{copy.petsExplorationPower}</Text>
-          <Text style={[styles.powerValue, { color: theme.text }]}>{pet.explorationPower}</Text>
+        <View
+          style={[styles.powerCard, { backgroundColor: theme.surfaceMuted }]}
+        >
+          <Text style={[styles.powerLabel, { color: theme.mutedText }]}>
+            {copy.petsExplorationPower}
+          </Text>
+          <Text style={[styles.powerValue, { color: theme.text }]}>
+            {pet.explorationPower}
+          </Text>
         </View>
       </View>
       <Text style={[styles.petStat, { color: theme.mutedText }]}>
@@ -312,30 +542,39 @@ function PetCard({
           ? `${copy.petsNextEvolution}: ${pet.fusionLevel}/${nextEvolutionFusionTarget}`
           : copy.petsMaxEvolution}
       </Text>
-
       <View style={styles.petActions}>
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            { backgroundColor: theme.accent },
-            pet.equipped && { backgroundColor: theme.border },
-          ]}
-          onPress={() => onEquipPet(pet.id)}
-          disabled={pet.equipped}
-        >
-          <Text style={styles.actionButtonText}>{pet.equipped ? copy.petsActive : copy.petsEquip}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.fuseButton,
-            { backgroundColor: theme.hero },
-            !firstFuseCopy && { backgroundColor: theme.border },
-          ]}
-          onPress={firstFuseCopy ? () => onFusePet(pet.id, firstFuseCopy.id) : undefined}
-          disabled={!firstFuseCopy}
-        >
-          <Text style={styles.fuseButtonText}>{copy.petsFuseCopy}</Text>
-        </TouchableOpacity>
+        {!hideEquipButton && (
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              { backgroundColor: theme.accent },
+              pet.equipped && { backgroundColor: theme.border },
+            ]}
+            onPress={() => onEquipPet(pet.id)}
+            disabled={pet.equipped}
+          >
+            <Text style={styles.actionButtonText}>
+              {pet.equipped ? copy.petsActive : copy.petsEquip}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {!hideFuseButton && (
+          <TouchableOpacity
+            style={[
+              styles.fuseButton,
+              { backgroundColor: theme.hero },
+              !firstFuseCopy && { backgroundColor: theme.border },
+            ]}
+            onPress={
+              firstFuseCopy
+                ? () => onFusePet(pet.id, firstFuseCopy.id)
+                : undefined
+            }
+            disabled={!firstFuseCopy}
+          >
+            <Text style={styles.fuseButtonText}>{copy.petsFuseCopy}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -362,7 +601,14 @@ function TabButton({
       ]}
       onPress={onPress}
     >
-      <Text style={[styles.tabButtonText, { color: active ? theme.accentText : theme.mutedText }]}>{label}</Text>
+      <Text
+        style={[
+          styles.tabButtonText,
+          { color: active ? theme.accentText : theme.mutedText },
+        ]}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -567,6 +813,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#444",
     marginBottom: 6,
+  },
+  xpProgressTrack: {
+    height: 6,
+    borderRadius: 999,
+    overflow: "hidden",
+    marginBottom: 10,
+  },
+  xpProgressFill: {
+    height: "100%",
+    borderRadius: 999,
   },
   petActions: {
     flexDirection: "row",

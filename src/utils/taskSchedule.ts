@@ -1,4 +1,5 @@
 import { GameState, Task, TaskFrequency, TaskStatus } from "../types";
+import { resetTaskTimer } from "./taskTimer";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const WEEK_IN_MS = 7 * DAY_IN_MS;
@@ -15,6 +16,10 @@ export function getStartOfNextDay(timestamp: number): number {
 
 export function getStartOfNextWeek(timestamp: number): number {
   return getStartOfDay(timestamp) + WEEK_IN_MS;
+}
+
+export function addDaysToStartOfDay(timestamp: number, days: number): number {
+  return getStartOfDay(timestamp) + days * DAY_IN_MS;
 }
 
 export function getNextAvailableDate(task: Task, completedAt: number): number {
@@ -50,8 +55,10 @@ export function syncTask(task: Task, now: number): Task {
     return task;
   }
 
+  const resetTimer = resetTaskTimer(task);
+
   return {
-    ...task,
+    ...resetTimer,
     status: TaskStatus.PENDING,
   };
 }

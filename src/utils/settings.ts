@@ -1,9 +1,16 @@
-import { AppSettings, GameState, PetRarity, TaskStatus } from "../types";
+import { AppSettings, GameState, PetRarity, TaskStatus, TimerAlertSettings } from "../types";
 import { getTodayTasks } from "./taskSchedule";
+
+export const defaultTimerAlertSettings: TimerAlertSettings = {
+  mode: "vibration",
+  soundName: "",
+  soundUri: "",
+};
 
 export const defaultSettings: AppSettings = {
   language: "en",
   theme: "mint",
+  timerAlert: defaultTimerAlertSettings,
 };
 
 export interface GameStatsSummary {
