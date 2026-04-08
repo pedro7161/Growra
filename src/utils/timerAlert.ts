@@ -1,5 +1,5 @@
 import { File, Paths } from "expo-file-system";
-import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
+import { Audio } from "expo-av";
 import { Vibration } from "react-native";
 import { TimerAlertSettings } from "../types";
 
@@ -48,22 +48,20 @@ export async function pickTimerAlertSound(
 }
 
 async function playSound(uri: string): Promise<void> {
-  await setAudioModeAsync({
+  await Audio.setAudioModeAsync({
     playsInSilentMode: true,
     shouldPlayInBackground: false,
+    staysActiveInBackground: false,
   });
 
-  const player = createAudioPlayer({ uri });
-  const subscription = player.addListener("playbackStatusUpdate", (status) => {
-    if (!status.didJustFinish) {
-      return;
-    }
-
-    subscription.remove();
-    player.remove();
-  });
-
-  player.play();
+  const sound = new Audio.Sound();
+  try {
+    await sound.loadAsync({ uri });
+    await sound.playAsync();
+  } catch (error) {
+    console.error("Failed to load or play sound:", error);
+    sound.unloadAsync();
+  }
 }
 
 export async function playTimerAlert(settings: TimerAlertSettings): Promise<void> {
