@@ -1,8 +1,14 @@
 import {
+    BattleConsumableItem,
+    BattleConsumableKind,
+    ExpeditionProgress,
+    ExpeditionNodeType,
+    GearItem,
     GameState,
     Pet,
     PetImages,
     PetRarity,
+    PetStats,
     Streak,
     Task,
     TaskStatus,
@@ -28,6 +34,14 @@ export const MULTI_SUMMON_COUNT = 11;
 export const MULTI_SUMMON_COST = 1000;
 export const MULTI_SUMMON_PITY = 10;
 export const PITY_CURRENCY_PER_SUMMON = 1;
+export const EXPEDITION_MAP_REGIONS = 8;
+export const EXPEDITION_POINTS_PER_REGION = 5;
+const EXPEDITION_BASE_DURATION_MS = 30_000;
+const EXPEDITION_DURATION_STEP_MS = 15_000;
+const EXPEDITION_POWER_REDUCTION_MS = 250;
+const EXPEDITION_MIN_DURATION_MS = 15_000;
+const EXPEDITION_FIGHT_BASE_XP = 14;
+const EXPEDITION_FIGHT_XP_STEP = 6;
 export const COMMON_PITY_COST = 15;
 export const RARE_PITY_COST = 30;
 export const EPIC_PITY_COST = 60;
@@ -45,6 +59,86 @@ const MAX_DUPE_PITY_VALUE: Record<PetRarity, number> = {
   [PetRarity.EPIC]: 3,
   [PetRarity.LEGENDARY]: 5,
 };
+
+const EXPEDITION_WILD_PET_NAMES = [
+  "Driftclaw",
+  "Rootglow",
+  "Duneburst",
+  "Cloudjaw",
+  "Mirewhisper",
+  "Glassstride",
+  "Ashthorn",
+  "Skyfang",
+];
+
+const EXPEDITION_GEAR_NAMES = [
+  "Coastline Talisman",
+  "Grovecap Charm",
+  "Duneweave Guard",
+  "Cloudbreak Emblem",
+  "Moonpool Sigil",
+  "Glasswind Crest",
+  "Cinder Hollow Relic",
+  "Skyheart Crown",
+];
+
+const GEAR_RARITY_BY_ZONE: PetRarity[] = [
+  PetRarity.COMMON,
+  PetRarity.COMMON,
+  PetRarity.RARE,
+  PetRarity.RARE,
+  PetRarity.EPIC,
+  PetRarity.EPIC,
+  PetRarity.LEGENDARY,
+  PetRarity.LEGENDARY,
+];
+
+const BATTLE_CONSUMABLE_KIND_NAMES: Record<BattleConsumableKind, string> = {
+  heal: "Restorative Draught",
+  attack: "Rage Tonic",
+  shield: "Bulwark Charm",
+  speed: "Gale Tonic",
+  burst: "Burst Flask",
+  revive: "Second Wind Sigil",
+};
+
+const BATTLE_CONSUMABLE_KIND_DESCRIPTIONS: Record<
+  BattleConsumableKind,
+  string
+> = {
+  heal: "Restores endurance and softens the next hit.",
+  attack: "Raises attack output for the next battle.",
+  shield: "Adds a barrier that absorbs pressure in battle.",
+  speed: "Sharpens initiative and lets your pet strike faster.",
+  burst: "Delivers a sudden damage spike at the start of battle.",
+  revive: "Prevents a defeat from ending the fight too soon.",
+};
+
+interface ExpeditionSideNodeBlueprint {
+  id: string;
+  zoneIndex: number;
+  name: string;
+  type: ExpeditionNodeType;
+  requiredElement: string;
+  rewardKind: "reveal" | "xp" | "gear" | "consumable";
+  rewardLabel: string;
+  rewardPower: number;
+  description: string;
+  mapX: number;
+  mapY: number;
+}
+
+interface ExpeditionZoneBlueprint {
+  index: number;
+  name: string;
+  hint: string;
+  color: string;
+  borderColor: string;
+  requiredElement: string;
+  mapX: number;
+  mapY: number;
+  sideNodes: ExpeditionSideNodeBlueprint[];
+}
 
 interface PetTemplate {
   id: string;
@@ -66,6 +160,297 @@ interface PetProgressionSnapshot {
   combatPower: number;
   explorationPower: number;
 }
+
+interface ExpeditionEncounter {
+  wildPetName: string;
+  wildPower: number;
+  gearName: string;
+  gearRarity: PetRarity;
+  enemyTrait: string;
+  enemyTraitDescription: string;
+  enemyModifier: number;
+}
+
+const EXPEDITION_ZONE_BLUEPRINTS: ExpeditionZoneBlueprint[] = [
+  {
+    index: 0,
+    name: "Sunlit Coast",
+    hint: "Warm shores where the first trail markers were planted.",
+    color: "#d69363",
+    borderColor: "#b76d39",
+    requiredElement: "",
+    mapX: 120,
+    mapY: 300,
+    sideNodes: [
+      {
+        id: "zone-0-cache",
+        zoneIndex: 0,
+        name: "Tide Cache",
+        type: "cache",
+        requiredElement: "wind",
+        rewardKind: "reveal",
+        rewardLabel: "Map reveal",
+        rewardPower: 2,
+        description: "A hidden crate that reveals a nearby route fragment.",
+        mapX: 230,
+        mapY: 190,
+      },
+      {
+        id: "zone-0-shrine",
+        zoneIndex: 0,
+        name: "Shell Shrine",
+        type: "shrine",
+        requiredElement: "forest",
+        rewardKind: "xp",
+        rewardLabel: "XP",
+        rewardPower: 18,
+        description: "A calm shrine that rewards patient scouts with XP.",
+        mapX: 50,
+        mapY: 430,
+      },
+    ],
+  },
+  {
+    index: 1,
+    name: "Mossway Grove",
+    hint: "Dense woodland paths that open only after careful scouting.",
+    color: "#5f8f67",
+    borderColor: "#41704a",
+    requiredElement: "",
+    mapX: 370,
+    mapY: 180,
+    sideNodes: [
+      {
+        id: "zone-1-cache",
+        zoneIndex: 1,
+        name: "Root Cache",
+        type: "cache",
+        requiredElement: "earth",
+        rewardKind: "consumable",
+        rewardLabel: "Battle item",
+        rewardPower: 1,
+        description: "A buried satchel containing a battle consumable.",
+        mapX: 510,
+        mapY: 320,
+      },
+    ],
+  },
+  {
+    index: 2,
+    name: "Amber Dunes",
+    hint: "Wind-carved ridges that hide caravan routes under shifting sand.",
+    color: "#c98b42",
+    borderColor: "#9f6424",
+    requiredElement: "",
+    mapX: 620,
+    mapY: 320,
+    sideNodes: [
+      {
+        id: "zone-2-elite",
+        zoneIndex: 2,
+        name: "Dune Sentinel",
+        type: "elite",
+        requiredElement: "fire",
+        rewardKind: "gear",
+        rewardLabel: "Gear",
+        rewardPower: 1,
+        description: "An elite outcrop that guards a stronger gear drop.",
+        mapX: 540,
+        mapY: 100,
+      },
+      {
+        id: "zone-2-secret",
+        zoneIndex: 2,
+        name: "Buried Caravan",
+        type: "secret",
+        requiredElement: "water",
+        rewardKind: "reveal",
+        rewardLabel: "Map reveal",
+        rewardPower: 3,
+        description: "A secret route cache that pushes the map further ahead.",
+        mapX: 760,
+        mapY: 430,
+      },
+    ],
+  },
+  {
+    index: 3,
+    name: "Cloudbreak Ridge",
+    hint: "A high pass where map fragments drift between cliff shadows.",
+    color: "#6c89b8",
+    borderColor: "#476794",
+    requiredElement: "",
+    mapX: 880,
+    mapY: 170,
+    sideNodes: [
+      {
+        id: "zone-3-shrine",
+        zoneIndex: 3,
+        name: "Storm Shrine",
+        type: "shrine",
+        requiredElement: "storm",
+        rewardKind: "xp",
+        rewardLabel: "XP",
+        rewardPower: 24,
+        description: "A wind-cut altar that teaches a scout how to read the sky.",
+        mapX: 820,
+        mapY: 60,
+      },
+      {
+        id: "zone-3-cache",
+        zoneIndex: 3,
+        name: "Ridge Cache",
+        type: "cache",
+        requiredElement: "wind",
+        rewardKind: "consumable",
+        rewardLabel: "Battle item",
+        rewardPower: 2,
+        description: "A ledge cache with a higher-tier consumable inside.",
+        mapX: 1010,
+        mapY: 300,
+      },
+    ],
+  },
+  {
+    index: 4,
+    name: "Moonpool Marsh",
+    hint: "Still water and silver reeds reflecting what lies further north.",
+    color: "#738f84",
+    borderColor: "#547265",
+    requiredElement: "",
+    mapX: 1140,
+    mapY: 340,
+    sideNodes: [
+      {
+        id: "zone-4-gear",
+        zoneIndex: 4,
+        name: "Moonpool Reliquary",
+        type: "secret",
+        requiredElement: "water",
+        rewardKind: "gear",
+        rewardLabel: "Gear",
+        rewardPower: 2,
+        description: "A rare reliquary that tends to drop stronger gear.",
+        mapX: 1260,
+        mapY: 170,
+      },
+    ],
+  },
+  {
+    index: 5,
+    name: "Glasswind Expanse",
+    hint: "Open plains where the route becomes visible after repeated passes.",
+    color: "#7a9cba",
+    borderColor: "#547792",
+    requiredElement: "",
+    mapX: 1400,
+    mapY: 210,
+    sideNodes: [
+      {
+        id: "zone-5-cache",
+        zoneIndex: 5,
+        name: "Glass Cache",
+        type: "cache",
+        requiredElement: "crystal",
+        rewardKind: "reveal",
+        rewardLabel: "Map reveal",
+        rewardPower: 2,
+        description: "A reflective cache that helps uncover hidden branches.",
+        mapX: 1350,
+        mapY: 470,
+      },
+      {
+        id: "zone-5-shrine",
+        zoneIndex: 5,
+        name: "Wind Shrine",
+        type: "shrine",
+        requiredElement: "wind",
+        rewardKind: "xp",
+        rewardLabel: "XP",
+        rewardPower: 30,
+        description: "A fast-moving shrine that rewards precision scouting.",
+        mapX: 1560,
+        mapY: 80,
+      },
+    ],
+  },
+  {
+    index: 6,
+    name: "Cinder Hollow",
+    hint: "A volcanic basin that glows brighter with each expedition return.",
+    color: "#b75d4b",
+    borderColor: "#8d3b2f",
+    requiredElement: "",
+    mapX: 1680,
+    mapY: 360,
+    sideNodes: [
+      {
+        id: "zone-6-elite",
+        zoneIndex: 6,
+        name: "Forge Beast",
+        type: "elite",
+        requiredElement: "lava",
+        rewardKind: "gear",
+        rewardLabel: "Gear",
+        rewardPower: 2,
+        description: "A heat-shimmering elite node with strong item rewards.",
+        mapX: 1600,
+        mapY: 180,
+      },
+      {
+        id: "zone-6-consumable",
+        zoneIndex: 6,
+        name: "Cinder Cache",
+        type: "cache",
+        requiredElement: "fire",
+        rewardKind: "consumable",
+        rewardLabel: "Battle item",
+        rewardPower: 2,
+        description: "A smoldering cache that yields combat supplies.",
+        mapX: 1835,
+        mapY: 470,
+      },
+    ],
+  },
+  {
+    index: 7,
+    name: "Skyheart Summit",
+    hint: "The final landmark, revealed only when the map is nearly complete.",
+    color: "#7d6fb7",
+    borderColor: "#564b8c",
+    requiredElement: "",
+    mapX: 1960,
+    mapY: 180,
+    sideNodes: [
+      {
+        id: "zone-7-secret",
+        zoneIndex: 7,
+        name: "Starfall Vault",
+        type: "secret",
+        requiredElement: "solar",
+        rewardKind: "gear",
+        rewardLabel: "Gear",
+        rewardPower: 3,
+        description: "A high summit vault with the best gear and loot odds.",
+        mapX: 1910,
+        mapY: 70,
+      },
+      {
+        id: "zone-7-elite",
+        zoneIndex: 7,
+        name: "Summit Trial",
+        type: "elite",
+        requiredElement: "cosmic",
+        rewardKind: "reveal",
+        rewardLabel: "Map reveal",
+        rewardPower: 4,
+        description: "A final trial that can push the map to its limit.",
+        mapX: 2040,
+        mapY: 420,
+      },
+    ],
+  },
+];
 
 const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
   [PetRarity.COMMON]: [
@@ -339,6 +724,27 @@ export function getLevelProgress(
   return Math.min(1, Math.max(0, (experience - levelStart) / nextLevelCost));
 }
 
+export function getExpeditionMapRegionCount(
+  expeditionProgress: ExpeditionProgress,
+): number {
+  return Math.min(
+    EXPEDITION_MAP_REGIONS,
+    Math.floor(expeditionProgress.revealPoints / EXPEDITION_POINTS_PER_REGION),
+  );
+}
+
+export function getExpeditionDurationMs(
+  zoneIndex: number,
+  explorationPower: number,
+): number {
+  return Math.max(
+    EXPEDITION_MIN_DURATION_MS,
+    EXPEDITION_BASE_DURATION_MS +
+      zoneIndex * EXPEDITION_DURATION_STEP_MS -
+      explorationPower * EXPEDITION_POWER_REDUCTION_MS,
+  );
+}
+
 function getBonusFromLevel(level: number): number {
   return Math.min(level * STREAK_BONUS_PER_DAY, STREAK_BONUS_CAP);
 }
@@ -385,6 +791,24 @@ function getRewardMultiplier(
   return (1 + streakBonus) * (1 + petMultiplier);
 }
 
+function addStats(left: PetStats, right: PetStats): PetStats {
+  return {
+    attack: left.attack + right.attack,
+    defense: left.defense + right.defense,
+    speed: left.speed + right.speed,
+    luck: left.luck + right.luck,
+  };
+}
+
+function getZeroStats(): PetStats {
+  return {
+    attack: 0,
+    defense: 0,
+    speed: 0,
+    luck: 0,
+  };
+}
+
 function getRandomRarity(): PetRarity {
   const roll = Math.random();
 
@@ -412,6 +836,7 @@ function createPetFromTemplate(template: PetTemplate): Pet {
     templateId: template.id,
     name: template.name,
     rarity: template.rarity,
+    baseStats: progression.stats,
     level: 1,
     experience: 0,
     fusionLevel: 0,
@@ -423,6 +848,7 @@ function createPetFromTemplate(template: PetTemplate): Pet {
     taskMultiplier: progression.taskMultiplier,
     xpMultiplier: progression.xpMultiplier,
     activeImageVariantId: "default",
+    equippedGearId: "",
     equipped: false,
     createdAt,
   };
@@ -450,6 +876,10 @@ export function getPetTemplateId(name: string, rarity: PetRarity): string {
   }
 
   return PET_TEMPLATES[rarity][0].id;
+}
+
+export function getPetElement(templateId: string): string {
+  return getPetTemplate(templateId).element;
 }
 
 export function getPetTemplates(): PetTemplate[] {
@@ -522,6 +952,442 @@ export function getPetProgressionSnapshot(
     xpMultiplier: template.xpMultiplier,
     combatPower: getCombatPower(stats, evolutionStage),
     explorationPower: getExplorationPower(stats, evolutionStage),
+  };
+}
+
+function getExpeditionEncounter(zoneIndex: number): ExpeditionEncounter {
+  const encounterIndex = Math.min(zoneIndex, EXPEDITION_WILD_PET_NAMES.length - 1);
+  const wildPower = 18 + encounterIndex * 14;
+  const enemyTraitIndex = Math.min(zoneIndex, 4);
+  const enemyTraits = [
+    {
+      name: "Brutal",
+      description: "Hits harder than its size suggests.",
+      modifier: 4,
+    },
+    {
+      name: "Guarded",
+      description: "Tanks damage and drags the fight longer.",
+      modifier: 6,
+    },
+    {
+      name: "Swift",
+      description: "Punishes slow loadouts and weak initiative.",
+      modifier: 5,
+    },
+    {
+      name: "Aggressive",
+      description: "Presses the attack and rewards stronger burst items.",
+      modifier: 7,
+    },
+    {
+      name: "Relentless",
+      description: "A late-zone threat that tests every part of the loadout.",
+      modifier: 10,
+    },
+  ];
+  const enemyTrait = enemyTraits[enemyTraitIndex];
+
+  return {
+    wildPetName: EXPEDITION_WILD_PET_NAMES[encounterIndex],
+    wildPower: wildPower + enemyTrait.modifier,
+    gearName: EXPEDITION_GEAR_NAMES[encounterIndex],
+    gearRarity: GEAR_RARITY_BY_ZONE[encounterIndex],
+    enemyTrait: enemyTrait.name,
+    enemyTraitDescription: enemyTrait.description,
+    enemyModifier: enemyTrait.modifier,
+  };
+}
+
+export function getExpeditionBattlePreview(zoneIndex: number): ExpeditionEncounter {
+  return getExpeditionEncounter(zoneIndex);
+}
+
+export function getExpeditionZoneBlueprints(): ExpeditionZoneBlueprint[] {
+  return EXPEDITION_ZONE_BLUEPRINTS;
+}
+
+export function getExpeditionZoneBlueprint(zoneIndex: number): ExpeditionZoneBlueprint {
+  return EXPEDITION_ZONE_BLUEPRINTS[
+    Math.min(zoneIndex, EXPEDITION_ZONE_BLUEPRINTS.length - 1)
+  ];
+}
+
+export function getExpeditionSideNodeById(
+  nodeId: string,
+): ExpeditionSideNodeBlueprint {
+  const node = EXPEDITION_ZONE_BLUEPRINTS.flatMap((zone) => zone.sideNodes).find(
+    (candidate) => candidate.id === nodeId,
+  );
+
+  if (node) {
+    return node;
+  }
+
+  return EXPEDITION_ZONE_BLUEPRINTS[0].sideNodes[0];
+}
+
+export function getExpeditionNodeDurationMs(
+  nodeId: string,
+  petId: string,
+  gameState: GameState,
+): number {
+  const node = getExpeditionSideNodeById(nodeId);
+  const scout = gameState.pets.filter((pet) => pet.id === petId)[0];
+  const baseDuration = 18000 + node.rewardPower * 3200;
+  const speedBonus = scout.explorationPower * 85;
+
+  return Math.max(9000, baseDuration - speedBonus);
+}
+
+function applyExpeditionNodeReward(
+  gameState: GameState,
+  nodeId: string,
+  petId: string,
+): GameState {
+  const node = getExpeditionSideNodeById(nodeId);
+  const scout = gameState.pets.filter((pet) => pet.id === petId)[0];
+  const scoutElement = getPetElement(scout.templateId);
+  const elementMatched = scoutElement === node.requiredElement;
+
+  if (isExpeditionNodeCompleted(gameState, nodeId)) {
+    return gameState;
+  }
+
+  if (!elementMatched) {
+    return gameState;
+  }
+
+  const rewardMultiplier = elementMatched ? 2 : 1;
+  const nextGameState = {
+    ...gameState,
+    battleConsumables:
+      node.rewardKind === "consumable"
+        ? [
+            ...gameState.battleConsumables,
+            createBattleConsumableDrop(
+              node.zoneIndex,
+              true,
+              node.rewardPower + rewardMultiplier,
+            ),
+          ]
+        : gameState.battleConsumables,
+    gearItems:
+      node.rewardKind === "gear"
+        ? [
+            ...gameState.gearItems,
+            createGearDrop(node.zoneIndex, true, node.rewardPower + rewardMultiplier),
+          ]
+        : gameState.gearItems,
+    pets:
+      node.rewardKind === "xp"
+        ? gameState.pets.map((pet) => {
+            if (pet.id !== petId) {
+              return pet;
+            }
+
+            const experience = pet.experience + node.rewardPower * rewardMultiplier;
+
+            return {
+              ...pet,
+              experience,
+              level: getLevel(experience, PET_LEVEL_BASE_COST),
+            };
+          })
+        : gameState.pets,
+    expeditionProgress: {
+      ...gameState.expeditionProgress,
+      revealPoints:
+        gameState.expeditionProgress.revealPoints +
+        (node.rewardKind === "reveal"
+          ? node.rewardPower * rewardMultiplier
+          : rewardMultiplier),
+      completedNodeIds: [...gameState.expeditionProgress.completedNodeIds, node.id],
+    },
+    lastPlayedAt: Date.now(),
+  };
+
+  return refreshPetGearState(nextGameState);
+}
+
+function getGearBonusStats(rarity: PetRarity, zoneIndex: number): PetStats {
+  const tierBonus = rarity === PetRarity.LEGENDARY ? 4 : rarity === PetRarity.EPIC ? 3 : rarity === PetRarity.RARE ? 2 : 1;
+  const spreadBonus = Math.floor(zoneIndex / 2);
+
+  return {
+    attack: tierBonus + spreadBonus,
+    defense: tierBonus + spreadBonus,
+    speed: Math.max(1, tierBonus - 1 + spreadBonus),
+    luck: Math.max(1, Math.floor(tierBonus / 2) + spreadBonus),
+  };
+}
+
+function getGearDropName(zoneIndex: number): string {
+  return EXPEDITION_GEAR_NAMES[Math.min(zoneIndex, EXPEDITION_GEAR_NAMES.length - 1)];
+}
+
+function boostGearRarity(rarity: PetRarity, boost: number): PetRarity {
+  if (boost <= 0) {
+    return rarity;
+  }
+
+  if (rarity === PetRarity.COMMON) {
+    return boost >= 2 ? PetRarity.RARE : PetRarity.COMMON;
+  }
+
+  if (rarity === PetRarity.RARE) {
+    return boost >= 2 ? PetRarity.EPIC : PetRarity.RARE;
+  }
+
+  if (rarity === PetRarity.EPIC) {
+    return boost >= 2 ? PetRarity.LEGENDARY : PetRarity.EPIC;
+  }
+
+  return PetRarity.LEGENDARY;
+}
+
+function getUnequippedGearItems(gameState: GameState, petId: string): GearItem[] {
+  return gameState.gearItems.filter((gearItem) => gearItem.equippedPetId === petId);
+}
+
+function getBattleConsumableRarity(zoneIndex: number): PetRarity {
+  if (zoneIndex >= 6) {
+    return PetRarity.LEGENDARY;
+  }
+
+  if (zoneIndex >= 4) {
+    return PetRarity.EPIC;
+  }
+
+  if (zoneIndex >= 2) {
+    return PetRarity.RARE;
+  }
+
+  return PetRarity.COMMON;
+}
+
+export function getBattleConsumableKindLabel(kind: BattleConsumableKind): string {
+  return BATTLE_CONSUMABLE_KIND_NAMES[kind];
+}
+
+export function getBattleConsumableDescription(kind: BattleConsumableKind): string {
+  return BATTLE_CONSUMABLE_KIND_DESCRIPTIONS[kind];
+}
+
+function getBattleConsumableKind(zoneIndex: number, victory: boolean): BattleConsumableKind {
+  const kinds: BattleConsumableKind[] = [
+    "heal",
+    "attack",
+    "shield",
+    "speed",
+    "burst",
+    "revive",
+  ];
+  const offset = victory ? zoneIndex : zoneIndex + 2;
+
+  return kinds[offset % kinds.length];
+}
+
+function createBattleConsumableDrop(
+  zoneIndex: number,
+  victory: boolean,
+  powerBonus: number,
+): BattleConsumableItem {
+  const kind = getBattleConsumableKind(zoneIndex, victory);
+  const rarity = getBattleConsumableRarity(zoneIndex);
+  const zoneName = getExpeditionZoneBlueprint(zoneIndex).name;
+
+  return {
+    id: generateId(),
+    name: `${BATTLE_CONSUMABLE_KIND_NAMES[kind]} of ${zoneName}`,
+    kind,
+    rarity,
+    potency: Math.max(1, powerBonus),
+    sourceZoneIndex: zoneIndex,
+    acquiredAt: Date.now(),
+  };
+}
+
+function getBattleConsumableBonus(item: BattleConsumableItem): number {
+  const rarityBonus =
+    item.rarity === PetRarity.LEGENDARY
+      ? 6
+      : item.rarity === PetRarity.EPIC
+        ? 4
+        : item.rarity === PetRarity.RARE
+          ? 2
+          : 1;
+
+  return item.potency + rarityBonus;
+}
+
+function getBattleConsumableEffectTotals(
+  consumables: BattleConsumableItem[],
+): Record<BattleConsumableKind, number> {
+  return consumables.reduce(
+    (totals, item) => ({
+      ...totals,
+      [item.kind]: totals[item.kind] + getBattleConsumableBonus(item),
+    }),
+    {
+      heal: 0,
+      attack: 0,
+      shield: 0,
+      speed: 0,
+      burst: 0,
+      revive: 0,
+    },
+  );
+}
+
+export interface ExpeditionBattleOutcome {
+  zoneIndex: number;
+  victory: boolean;
+  playerPower: number;
+  enemyPower: number;
+  xpReward: number;
+  encounter: ExpeditionEncounter;
+  loadout: BattleConsumableItem[];
+}
+
+export function getBattleConsumablesForLoadout(
+  gameState: GameState,
+  itemIds: string[],
+): BattleConsumableItem[] {
+  return itemIds
+    .map(
+      (itemId) =>
+        gameState.battleConsumables.filter((item) => item.id === itemId)[0]!,
+    );
+}
+
+export function getBattleLoadoutPower(
+  gameState: GameState,
+  itemIds: string[],
+): number {
+  return getBattleConsumableEffectTotals(
+    getBattleConsumablesForLoadout(gameState, itemIds),
+  ).attack;
+}
+
+export function previewExpeditionBattleOutcome(
+  gameState: GameState,
+  zoneIndex: number,
+  petId: string,
+  battleConsumableIds: string[] = [],
+): ExpeditionBattleOutcome {
+  const fighter = gameState.pets.filter((pet) => pet.id === petId)[0];
+  const encounter = getExpeditionEncounter(zoneIndex);
+  const loadout = getBattleConsumablesForLoadout(gameState, battleConsumableIds);
+  const loadoutTotals = getBattleConsumableEffectTotals(loadout);
+  const playerPower =
+    fighter.combatPower +
+    loadoutTotals.attack * 11 +
+    loadoutTotals.speed * 7 +
+    loadoutTotals.shield * 9 +
+    loadoutTotals.heal * 5 +
+    loadoutTotals.burst * 13 +
+    loadoutTotals.revive * 18;
+  const enemyPower =
+    encounter.wildPower +
+    zoneIndex * 5 +
+    encounter.enemyModifier +
+    (loadout.length === 0 ? 8 : 0);
+  const victory =
+    playerPower >= enemyPower ||
+    (loadoutTotals.revive > 0 &&
+      playerPower + loadoutTotals.revive * 12 >= enemyPower);
+  const xpReward = Math.round(
+    EXPEDITION_FIGHT_BASE_XP +
+      zoneIndex * EXPEDITION_FIGHT_XP_STEP +
+      (victory ? fighter.combatPower * 0.25 : fighter.combatPower * 0.1) +
+      loadoutTotals.attack * 2 +
+      loadoutTotals.heal,
+  );
+
+  return {
+    zoneIndex,
+    victory,
+    playerPower,
+    enemyPower,
+    xpReward,
+    encounter,
+    loadout,
+  };
+}
+
+function getPetGearBonus(gameState: GameState, petId: string): PetStats {
+  return getUnequippedGearItems(gameState, petId).reduce(
+    (bonus, gearItem) => addStats(bonus, gearItem.bonusStats),
+    getZeroStats(),
+  );
+}
+
+export function refreshPetGearState(gameState: GameState): GameState {
+  return {
+    ...gameState,
+    pets: gameState.pets.map((pet) => {
+      const gearBonus = getPetGearBonus(gameState, pet.id);
+      const stats = addStats(pet.baseStats, gearBonus);
+
+      return {
+        ...pet,
+        equippedGearId: getUnequippedGearItems(gameState, pet.id)[0]
+          ? getUnequippedGearItems(gameState, pet.id)[0].id
+          : "",
+        stats,
+        combatPower: getCombatPower(stats, pet.evolutionStage),
+        explorationPower: getExplorationPower(stats, pet.evolutionStage),
+      };
+    }),
+  };
+}
+
+export function equipGearToPet(
+  gameState: GameState,
+  gearItemId: string,
+  petId: string,
+): GameState {
+  const nextGameState = {
+    ...gameState,
+    gearItems: gameState.gearItems.map((gearItem) =>
+      gearItem.equippedPetId === petId
+        ? {
+            ...gearItem,
+            equippedPetId: gearItem.id === gearItemId ? petId : "",
+          }
+        : gearItem.id === gearItemId
+          ? {
+              ...gearItem,
+              equippedPetId: petId,
+            }
+          : gearItem,
+    ),
+  };
+
+  return refreshPetGearState(nextGameState);
+}
+
+function createGearDrop(
+  zoneIndex: number,
+  victory: boolean,
+  rarityBoost: number = 0,
+): GearItem {
+  const encounter = getExpeditionEncounter(zoneIndex);
+  const dropRarity = victory
+    ? encounter.gearRarity
+    : GEAR_RARITY_BY_ZONE[Math.max(0, zoneIndex - 1)];
+  const adjustedRarity = boostGearRarity(dropRarity, rarityBoost);
+  const bonusStats = getGearBonusStats(adjustedRarity, zoneIndex + rarityBoost);
+
+  return {
+    id: generateId(),
+    name: getGearDropName(zoneIndex),
+    rarity: adjustedRarity,
+    bonusStats,
+    sourceZoneIndex: zoneIndex,
+    equippedPetId: "",
+    acquiredAt: Date.now(),
   };
 }
 
@@ -806,14 +1672,23 @@ export function fusePet(
     nextFusionLevel,
   );
 
-  return {
+  const nextGameState = {
     ...gameState,
+    gearItems: gameState.gearItems.map((gearItem) =>
+      gearItem.equippedPetId === sourcePetId
+        ? {
+            ...gearItem,
+            equippedPetId: "",
+          }
+        : gearItem,
+    ),
     pets: gameState.pets
       .filter((pet) => pet.id !== sourcePetId)
       .map((pet) =>
         pet.id === targetPetId
           ? {
               ...pet,
+              baseStats: progression.stats,
               fusionLevel: nextFusionLevel,
               evolutionStage: progression.evolutionStage,
               stats: progression.stats,
@@ -825,27 +1700,272 @@ export function fusePet(
       ),
     lastPlayedAt: Date.now(),
   };
+
+  return refreshPetGearState(nextGameState);
 }
 
 export function sellPet(gameState: GameState, petId: string): GameState {
   const soldPet = gameState.pets.find((pet) => pet.id === petId);
   if (!soldPet) return gameState;
+  const nextGameState = {
+    ...gameState,
+    gearItems: gameState.gearItems.map((gearItem) =>
+      gearItem.equippedPetId === petId
+        ? {
+            ...gearItem,
+            equippedPetId: "",
+          }
+        : gearItem,
+    ),
+  };
   const isMaxDupe = soldPet.fusionLevel >= MAX_PET_FUSIONS;
 
   if (isMaxDupe) {
-    return {
-      ...gameState,
+    return refreshPetGearState({
+      ...nextGameState,
       pityCurrency:
         gameState.pityCurrency + MAX_DUPE_PITY_VALUE[soldPet.rarity],
       pets: gameState.pets.filter((pet) => pet.id !== petId),
       lastPlayedAt: Date.now(),
-    };
+    });
+  }
+
+  return refreshPetGearState({
+    ...nextGameState,
+    coins: gameState.coins + getSellValue(soldPet.rarity),
+    pets: gameState.pets.filter((pet) => pet.id !== petId),
+    lastPlayedAt: Date.now(),
+  });
+}
+
+export function completePetExpedition(
+  gameState: GameState,
+  now: number = Date.now(),
+): GameState {
+  if (gameState.expeditionProgress.activeZoneEndsAt > now) {
+    return gameState;
+  }
+
+  if (gameState.expeditionProgress.activeZoneIndex < 0) {
+    return gameState;
   }
 
   return {
     ...gameState,
-    coins: gameState.coins + getSellValue(soldPet.rarity),
-    pets: gameState.pets.filter((pet) => pet.id !== petId),
+    expeditionProgress: {
+      ...gameState.expeditionProgress,
+      revealPoints:
+        gameState.expeditionProgress.revealPoints +
+        EXPEDITION_POINTS_PER_REGION,
+      activeZoneIndex: -1,
+      activeZoneEndsAt: 0,
+    },
+    lastPlayedAt: now,
+  };
+}
+
+function getCompletedNodeIds(gameState: GameState): string[] {
+  return gameState.expeditionProgress.completedNodeIds;
+}
+
+export function isExpeditionNodeCompleted(
+  gameState: GameState,
+  nodeId: string,
+): boolean {
+  return getCompletedNodeIds(gameState).includes(nodeId);
+}
+
+export function exploreExpeditionNode(
+  gameState: GameState,
+  nodeId: string,
+  petId: string,
+): GameState {
+  const node = getExpeditionSideNodeById(nodeId);
+  const scout = gameState.pets.filter((pet) => pet.id === petId)[0];
+  const scoutElement = getPetElement(scout.templateId);
+  const elementMatched = scoutElement === node.requiredElement;
+
+  if (isExpeditionNodeCompleted(gameState, nodeId)) {
+    return gameState;
+  }
+
+  if (!elementMatched) {
+    return gameState;
+  }
+
+  const nextGameState = {
+    ...gameState,
+    expeditionProgress: {
+      ...gameState.expeditionProgress,
+      activeNodeId: node.id,
+      activeNodePetId: petId,
+      activeNodeEndsAt: Date.now() + getExpeditionNodeDurationMs(nodeId, petId, gameState),
+    },
     lastPlayedAt: Date.now(),
   };
+
+  return nextGameState;
+}
+
+export function completeExpeditionNode(
+  gameState: GameState,
+  nodeId: string,
+  petId: string,
+): GameState {
+  if (gameState.expeditionProgress.activeNodeId !== nodeId) {
+    return gameState;
+  }
+
+  const nextGameState = {
+    ...applyExpeditionNodeReward(gameState, nodeId, petId),
+    expeditionProgress: {
+      ...gameState.expeditionProgress,
+      activeNodeId: "",
+      activeNodePetId: "",
+      activeNodeEndsAt: 0,
+      completedNodeIds: [...gameState.expeditionProgress.completedNodeIds, nodeId],
+    },
+    lastPlayedAt: Date.now(),
+  };
+
+  return refreshPetGearState(nextGameState);
+}
+
+export function sendPetOnExpedition(
+  gameState: GameState,
+  petId: string,
+): GameState {
+  const now = Date.now();
+
+  if (gameState.expeditionProgress.activeZoneEndsAt > now) {
+    return gameState;
+  }
+
+  const expeditionPet = gameState.pets.filter((pet) => pet.id === petId)[0]!;
+  const nextZoneIndex = getExpeditionMapRegionCount(
+    gameState.expeditionProgress,
+  );
+  if (nextZoneIndex >= EXPEDITION_MAP_REGIONS) {
+    return gameState;
+  }
+  const nextZone = getExpeditionZoneBlueprint(nextZoneIndex);
+  if (
+    nextZone.requiredElement !== "" &&
+    getPetElement(expeditionPet.templateId) !== nextZone.requiredElement
+  ) {
+    return gameState;
+  }
+  const durationMs = getExpeditionDurationMs(
+    nextZoneIndex,
+    expeditionPet.explorationPower,
+  );
+
+  return {
+    ...gameState,
+    expeditionProgress: {
+      expeditionsSent: gameState.expeditionProgress.expeditionsSent + 1,
+      revealPoints: gameState.expeditionProgress.revealPoints,
+      activeZoneIndex: nextZoneIndex,
+      activeZoneEndsAt: now + durationMs,
+      activeNodeId: "",
+      activeNodePetId: "",
+      activeNodeEndsAt: 0,
+      completedNodeIds: gameState.expeditionProgress.completedNodeIds,
+    },
+    lastPlayedAt: now,
+  };
+}
+
+export function resolveExpeditionBattle(
+  gameState: GameState,
+  zoneIndex: number,
+  petId: string,
+  battleConsumableIds: string[] = [],
+): GameState {
+  const fighter = gameState.pets.filter((pet) => pet.id === petId)[0];
+  const encounter = getExpeditionEncounter(zoneIndex);
+  const loadout = getBattleConsumablesForLoadout(gameState, battleConsumableIds);
+  const loadoutTotals = getBattleConsumableEffectTotals(loadout);
+  const playerPower =
+    fighter.combatPower +
+    loadoutTotals.attack * 11 +
+    loadoutTotals.speed * 7 +
+    loadoutTotals.shield * 9 +
+    loadoutTotals.heal * 5 +
+    loadoutTotals.burst * 13 +
+    loadoutTotals.revive * 18;
+  const enemyPower =
+    encounter.wildPower +
+    zoneIndex * 5 +
+    encounter.enemyModifier +
+    (loadout.length === 0 ? 8 : 0);
+  const victory =
+    playerPower >= enemyPower ||
+    (loadoutTotals.revive > 0 &&
+      playerPower + loadoutTotals.revive * 12 >= enemyPower);
+  const xpReward = Math.round(
+    EXPEDITION_FIGHT_BASE_XP +
+      zoneIndex * EXPEDITION_FIGHT_XP_STEP +
+      (victory ? fighter.combatPower * 0.25 : fighter.combatPower * 0.1) +
+      loadoutTotals.attack * 2 +
+      loadoutTotals.heal,
+  );
+  const gearDrop = createGearDrop(zoneIndex, victory, loadoutTotals.burst > 0 ? 1 : 0);
+  const consumableDrop = createBattleConsumableDrop(
+    zoneIndex,
+    victory,
+    loadoutTotals.speed + loadoutTotals.shield + 1,
+  );
+
+  const nextGameState = {
+    ...gameState,
+    gearItems: [...gameState.gearItems, gearDrop],
+    battleConsumables: [
+      ...gameState.battleConsumables.filter(
+        (item) => !battleConsumableIds.includes(item.id),
+      ),
+      consumableDrop,
+    ],
+    pets: gameState.pets.map((pet) => {
+      if (pet.id !== petId) {
+        return pet;
+      }
+
+      const experience = pet.experience + xpReward;
+
+      return {
+        ...pet,
+        experience,
+        level: getLevel(experience, PET_LEVEL_BASE_COST),
+      };
+    }),
+    lastPlayedAt: Date.now(),
+  };
+
+  return refreshPetGearState(nextGameState);
+}
+
+export function resolveExpeditionProgress(
+  gameState: GameState,
+  now: number = Date.now(),
+): GameState {
+  if (
+    gameState.expeditionProgress.activeNodeId !== "" &&
+    gameState.expeditionProgress.activeNodeEndsAt <= now
+  ) {
+    return completeExpeditionNode(
+      gameState,
+      gameState.expeditionProgress.activeNodeId,
+      gameState.expeditionProgress.activeNodePetId,
+    );
+  }
+
+  if (
+    gameState.expeditionProgress.activeZoneIndex < 0 ||
+    gameState.expeditionProgress.activeZoneEndsAt > now
+  ) {
+    return gameState;
+  }
+
+  return completePetExpedition(gameState, now);
 }

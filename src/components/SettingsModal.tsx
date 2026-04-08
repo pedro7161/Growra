@@ -46,6 +46,7 @@ export default function SettingsModal({
   const changelog = getChangelog(gameState.settings.language);
   const stats = getGameStatsSummary(gameState);
   const [backupCode, setBackupCode] = useState("");
+  const [changelogVisible, setChangelogVisible] = useState(false);
 
   const handleExport = async () => {
     const exportedBackupCode = await onExportData();
@@ -216,24 +217,57 @@ export default function SettingsModal({
 
           <View style={[styles.section, { backgroundColor: theme.surface }]}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsChangelog}</Text>
-            {changelog.map((entry) => (
-              <View
-                key={entry.dateLabel}
-                style={[styles.changelogCard, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
+            <TouchableOpacity
+              style={[
+                styles.changelogToggleButton,
+                {
+                  backgroundColor: changelogVisible
+                    ? theme.accent
+                    : theme.surfaceMuted,
+                  borderColor: changelogVisible ? theme.accent : theme.border,
+                },
+              ]}
+              onPress={() => setChangelogVisible(!changelogVisible)}
+            >
+              <Text
+                style={[
+                  styles.changelogToggleText,
+                  { color: changelogVisible ? theme.accentText : theme.text },
+                ]}
               >
-                <Text style={[styles.changelogDate, { color: theme.text }]}>
-                  {copy.settingsUpdatedOn}: {entry.dateLabel}
-                </Text>
-                <View style={styles.changelogList}>
-                  {entry.items.map((item) => (
-                    <View key={item} style={styles.changelogRow}>
-                      <Text style={[styles.changelogBullet, { color: theme.accent }]}>•</Text>
-                      <Text style={[styles.changelogItem, { color: theme.mutedText }]}>{item}</Text>
+                {changelogVisible
+                  ? copy.settingsHideChangelog
+                  : copy.settingsViewChangelog}
+              </Text>
+            </TouchableOpacity>
+            {changelogVisible && (
+              <View style={styles.changelogList}>
+                {changelog.map((entry) => (
+                  <View
+                    key={entry.dateLabel}
+                    style={[
+                      styles.changelogCard,
+                      {
+                        backgroundColor: theme.surfaceMuted,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.changelogDate, { color: theme.text }]}>
+                      {copy.settingsUpdatedOn}: {entry.dateLabel}
+                    </Text>
+                    <View style={styles.changelogItems}>
+                      {entry.items.map((item) => (
+                        <View key={item} style={styles.changelogRow}>
+                          <Text style={[styles.changelogBullet, { color: theme.accent }]}>•</Text>
+                          <Text style={[styles.changelogItem, { color: theme.mutedText }]}>{item}</Text>
+                        </View>
+                      ))}
                     </View>
-                  ))}
-                </View>
+                  </View>
+                ))}
               </View>
-            ))}
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -370,12 +404,26 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
   },
+  changelogToggleButton: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  changelogToggleText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
   changelogDate: {
     fontSize: 14,
     fontWeight: "700",
     marginBottom: 10,
   },
   changelogList: {
+    marginTop: 12,
+    gap: 12,
+  },
+  changelogItems: {
     gap: 8,
   },
   changelogRow: {

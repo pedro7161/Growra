@@ -1,9 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
+  BattleConsumableItem,
   GameState,
   SaveData,
   Task,
   Pet,
+  PetRarity,
   TaskStatus,
   AppSettings,
   TaskPriority,
@@ -15,11 +17,15 @@ import { getPredefinedTask } from "../constants/predefinedTasks";
 import {
   completeTask as applyTaskCompletion,
   equipPet as applyPetEquip,
+  equipGearToPet as applyGearEquip,
   fusePet as applyPetFusion,
   getPetTemplateId,
   getPetProgressionSnapshot,
+  exploreExpeditionNode as applyExpeditionNode,
   redeemPityPet as applyPityRedemption,
+  refreshPetGearState,
   sellPet as applyPetSale,
+  resolveExpeditionBattle as applyExpeditionBattle,
   summonPet as applyPetSummon,
   multiSummonPet as applyMultiPetSummon,
 } from "../utils/gameplay";
@@ -32,14 +38,51 @@ const BACKUP_PREFIX = "growra-backup";
 
 type PersistedGameState = Omit<
   GameState,
-  "pityCurrency" | "totalTasksCompleted" | "equippedPetId" | "tutorialCompleted" | "customTaskTemplates"
+  | "pityCurrency"
+  | "totalTasksCompleted"
+  | "equippedPetId"
+  | "tutorialCompleted"
+  | "tutorialRewardGranted"
+  | "customTaskTemplates"
+  | "gearItems"
+  | "battleConsumables"
+  | "expeditionProgress"
 > & {
   pityCurrency?: number;
   totalTasksCompleted?: number;
   equippedPetId?: string;
   tutorialCompleted?: boolean;
+  tutorialRewardGranted?: boolean;
   settings?: AppSettings;
   customTaskTemplates?: CustomTaskTemplate[];
+  gearItems?: {
+    id?: string;
+    name?: string;
+    rarity?: PetRarity;
+    bonusStats?: Pet["stats"];
+    sourceZoneIndex?: number;
+    equippedPetId?: string;
+    acquiredAt?: number;
+  }[];
+  battleConsumables?: {
+    id?: string;
+    name?: string;
+    kind?: BattleConsumableItem["kind"];
+    rarity?: PetRarity;
+    potency?: number;
+    sourceZoneIndex?: number;
+    acquiredAt?: number;
+  }[];
+  expeditionProgress?: {
+    expeditionsSent?: number;
+    revealPoints?: number;
+    activeZoneIndex?: number;
+    activeZoneEndsAt?: number;
+    activeNodeId?: string;
+    activeNodePetId?: string;
+    activeNodeEndsAt?: number;
+    completedNodeIds?: string[];
+  };
   tasks: (
     Omit<Task, "predefinedTaskId" | "customTemplateId" | "category" | "priority" | "calendarColor"> & {
       predefinedTaskId?: string;
@@ -51,14 +94,27 @@ type PersistedGameState = Omit<
     }
   )[];
   pets: (
-    Omit<Pet, "templateId" | "fusionLevel" | "evolutionStage" | "combatPower" | "explorationPower" | "xpMultiplier" | "activeImageVariantId"> & {
+    Omit<
+      Pet,
+      | "templateId"
+      | "baseStats"
+      | "fusionLevel"
+      | "evolutionStage"
+      | "combatPower"
+      | "explorationPower"
+      | "xpMultiplier"
+      | "activeImageVariantId"
+      | "equippedGearId"
+    > & {
       templateId?: string;
+      baseStats?: Pet["stats"];
       fusionLevel?: number;
       evolutionStage?: number;
       combatPower?: number;
       explorationPower?: number;
       xpMultiplier?: number;
       activeImageVariantId?: string;
+      equippedGearId?: string;
     }
   )[];
 };
@@ -96,39 +152,148 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       }
     : defaultTimerAlertSettings;
 
-  return {
-    ...saveData,
-    version: 11,
-    gameState: {
-      ...saveData.gameState,
-      pityCurrency:
-        saveData.gameState.pityCurrency !== undefined ? saveData.gameState.pityCurrency : 0,
-      totalTasksCompleted:
-        saveData.gameState.totalTasksCompleted !== undefined
-          ? saveData.gameState.totalTasksCompleted
-          : saveData.gameState.tasks.filter((task) => task.status === TaskStatus.COMPLETED).length,
-      tutorialCompleted:
-        saveData.gameState.tutorialCompleted !== undefined ? saveData.gameState.tutorialCompleted : false,
-      settings: {
-        ...storedSettings,
-        timerAlert,
-      },
-      customTaskTemplates: saveData.gameState.customTaskTemplates
-        ? saveData.gameState.customTaskTemplates.map((template) => ({
-            ...template,
-          }))
-        : [],
-      tasks: saveData.gameState.tasks.map((task) => ({
-        ...task,
-        predefinedTaskId: task.predefinedTaskId !== undefined ? task.predefinedTaskId : "",
-        customTemplateId: task.customTemplateId !== undefined ? task.customTemplateId : "",
-        category:
-          task.category !== undefined
-            ? task.category
-            : task.predefinedTaskId
-              ? getPredefinedTask(task.predefinedTaskId).category
-              : "custom",
-        priority: task.priority !== undefined ? task.priority : TaskPriority.MEDIUM,
+  const gearItems = saveData.gameState.gearItems
+    ? saveData.gameState.gearItems.map((gearItem) => ({
+        id: gearItem.id !== undefined ? gearItem.id : "",
+        name: gearItem.name !== undefined ? gearItem.name : "",
+        rarity: gearItem.rarity !== undefined ? gearItem.rarity : PetRarity.COMMON,
+        bonusStats:
+          gearItem.bonusStats !== undefined
+            ? gearItem.bonusStats
+            : {
+                attack: 0,
+                defense: 0,
+                speed: 0,
+                luck: 0,
+              },
+        sourceZoneIndex:
+          gearItem.sourceZoneIndex !== undefined ? gearItem.sourceZoneIndex : 0,
+        equippedPetId:
+          gearItem.equippedPetId !== undefined ? gearItem.equippedPetId : "",
+        acquiredAt:
+          gearItem.acquiredAt !== undefined ? gearItem.acquiredAt : Date.now(),
+      }))
+    : [];
+
+  const pets = saveData.gameState.pets.map((pet) => {
+    const templateId =
+      pet.templateId !== undefined ? pet.templateId : getPetTemplateId(pet.name, pet.rarity);
+    const fusionLevel = pet.fusionLevel !== undefined ? pet.fusionLevel : 0;
+    const progression = getPetProgressionSnapshot(templateId, fusionLevel);
+    const baseStats = pet.baseStats !== undefined ? pet.baseStats : progression.stats;
+
+    return {
+      ...pet,
+      templateId,
+      baseStats,
+      fusionLevel,
+      evolutionStage: progression.evolutionStage,
+      stats: baseStats,
+      combatPower: progression.combatPower,
+      explorationPower: progression.explorationPower,
+      taskMultiplier: progression.taskMultiplier,
+      xpMultiplier: progression.xpMultiplier,
+      activeImageVariantId: pet.activeImageVariantId !== undefined ? pet.activeImageVariantId : "default",
+      equippedGearId: pet.equippedGearId !== undefined ? pet.equippedGearId : "",
+      equipped: pet.id === equippedPetId,
+    };
+  });
+
+  const migratedGameState = refreshPetGearState({
+    ...saveData.gameState,
+    pityCurrency:
+      saveData.gameState.pityCurrency !== undefined ? saveData.gameState.pityCurrency : 0,
+    totalTasksCompleted:
+      saveData.gameState.totalTasksCompleted !== undefined
+        ? saveData.gameState.totalTasksCompleted
+        : saveData.gameState.tasks.filter((task) => task.status === TaskStatus.COMPLETED).length,
+    tutorialCompleted:
+      saveData.gameState.tutorialCompleted !== undefined
+        ? saveData.gameState.tutorialCompleted
+        : false,
+    tutorialRewardGranted:
+      saveData.gameState.tutorialRewardGranted !== undefined
+        ? saveData.gameState.tutorialRewardGranted
+        : false,
+    settings: {
+      ...storedSettings,
+      timerAlert,
+    },
+    expeditionProgress: saveData.gameState.expeditionProgress
+    ? {
+        expeditionsSent:
+          saveData.gameState.expeditionProgress.expeditionsSent !== undefined
+            ? saveData.gameState.expeditionProgress.expeditionsSent
+              : 0,
+          revealPoints:
+            saveData.gameState.expeditionProgress.revealPoints !== undefined
+              ? saveData.gameState.expeditionProgress.revealPoints
+              : 0,
+          activeZoneIndex:
+            saveData.gameState.expeditionProgress.activeZoneIndex !== undefined
+              ? saveData.gameState.expeditionProgress.activeZoneIndex
+              : -1,
+          activeZoneEndsAt:
+            saveData.gameState.expeditionProgress.activeZoneEndsAt !== undefined
+              ? saveData.gameState.expeditionProgress.activeZoneEndsAt
+              : 0,
+          activeNodeId:
+            saveData.gameState.expeditionProgress.activeNodeId !== undefined
+              ? saveData.gameState.expeditionProgress.activeNodeId
+              : "",
+          activeNodePetId:
+            saveData.gameState.expeditionProgress.activeNodePetId !== undefined
+              ? saveData.gameState.expeditionProgress.activeNodePetId
+              : "",
+          activeNodeEndsAt:
+            saveData.gameState.expeditionProgress.activeNodeEndsAt !== undefined
+              ? saveData.gameState.expeditionProgress.activeNodeEndsAt
+              : 0,
+          completedNodeIds:
+            saveData.gameState.expeditionProgress.completedNodeIds !== undefined
+              ? saveData.gameState.expeditionProgress.completedNodeIds
+              : [],
+        }
+      : {
+          expeditionsSent: 0,
+          revealPoints: 0,
+          activeZoneIndex: -1,
+          activeZoneEndsAt: 0,
+          activeNodeId: "",
+          activeNodePetId: "",
+          activeNodeEndsAt: 0,
+          completedNodeIds: [],
+        },
+    battleConsumables: saveData.gameState.battleConsumables
+      ? saveData.gameState.battleConsumables.map((item) => ({
+          ...item,
+          id: item.id !== undefined ? item.id : "",
+          name: item.name !== undefined ? item.name : "",
+          kind: item.kind !== undefined ? item.kind : "heal",
+          rarity: item.rarity !== undefined ? item.rarity : PetRarity.COMMON,
+          potency: item.potency !== undefined ? item.potency : 1,
+          sourceZoneIndex:
+            item.sourceZoneIndex !== undefined ? item.sourceZoneIndex : 0,
+          acquiredAt: item.acquiredAt !== undefined ? item.acquiredAt : Date.now(),
+        }))
+      : [],
+    customTaskTemplates: saveData.gameState.customTaskTemplates
+      ? saveData.gameState.customTaskTemplates.map((template) => ({
+          ...template,
+        }))
+      : [],
+    gearItems,
+    tasks: saveData.gameState.tasks.map((task) => ({
+      ...task,
+      predefinedTaskId: task.predefinedTaskId !== undefined ? task.predefinedTaskId : "",
+      customTemplateId: task.customTemplateId !== undefined ? task.customTemplateId : "",
+      category:
+        task.category !== undefined
+          ? task.category
+          : task.predefinedTaskId
+            ? getPredefinedTask(task.predefinedTaskId).category
+            : "custom",
+      priority: task.priority !== undefined ? task.priority : TaskPriority.MEDIUM,
       calendarColor:
         task.calendarColor !== undefined
           ? task.calendarColor
@@ -155,28 +320,14 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
         };
       })(),
     })),
-      equippedPetId,
-      pets: saveData.gameState.pets.map((pet) => {
-        const templateId =
-          pet.templateId !== undefined ? pet.templateId : getPetTemplateId(pet.name, pet.rarity);
-        const fusionLevel = pet.fusionLevel !== undefined ? pet.fusionLevel : 0;
-        const progression = getPetProgressionSnapshot(templateId, fusionLevel);
+    pets,
+    equippedPetId,
+  });
 
-        return {
-          ...pet,
-          templateId,
-          fusionLevel,
-          evolutionStage: progression.evolutionStage,
-          stats: progression.stats,
-          combatPower: progression.combatPower,
-          explorationPower: progression.explorationPower,
-          taskMultiplier: progression.taskMultiplier,
-          xpMultiplier: progression.xpMultiplier,
-          activeImageVariantId: pet.activeImageVariantId ?? "default",
-          equipped: pet.id === equippedPetId,
-        };
-      }),
-    },
+  return {
+    ...saveData,
+    version: 16,
+    gameState: migratedGameState,
   };
 }
 
@@ -297,5 +448,30 @@ export const gameStateService = {
 
   async sellPet(gameState: GameState, petId: string): Promise<GameState> {
     return applyPetSale(gameState, petId);
+  },
+
+  async equipGearToPet(
+    gameState: GameState,
+    gearItemId: string,
+    petId: string,
+  ): Promise<GameState> {
+    return applyGearEquip(gameState, gearItemId, petId);
+  },
+
+  async resolveExpeditionBattle(
+    gameState: GameState,
+    zoneIndex: number,
+    petId: string,
+    battleConsumableIds: string[] = [],
+  ): Promise<GameState> {
+    return applyExpeditionBattle(gameState, zoneIndex, petId, battleConsumableIds);
+  },
+
+  async exploreExpeditionNode(
+    gameState: GameState,
+    nodeId: string,
+    petId: string,
+  ): Promise<GameState> {
+    return applyExpeditionNode(gameState, nodeId, petId);
   },
 };

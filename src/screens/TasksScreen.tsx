@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -31,6 +31,18 @@ interface TasksScreenProps {
   settings: AppSettings;
   tasks: Task[];
   customTaskTemplates: CustomTaskTemplate[];
+  tutorialTarget:
+    | "add-button"
+    | "modal-type-predefined"
+    | "modal-task-drink-water"
+    | "modal-submit"
+    | "task-complete"
+    | null;
+  onTutorialStateChange: (state: {
+    modalVisible: boolean;
+    taskType: TaskType;
+    selectedPredefinedTaskId: string;
+  }) => void;
   onAddTask: (task: Task, customTemplate?: CustomTaskTemplate) => void;
   onCompleteTask: (taskId: string) => void;
   onUpdateTask: (task: Task) => void;
@@ -46,6 +58,8 @@ export default function TasksScreen({
   settings,
   tasks,
   customTaskTemplates,
+  tutorialTarget,
+  onTutorialStateChange,
   onAddTask,
   onCompleteTask,
   onUpdateTask,
@@ -58,6 +72,12 @@ export default function TasksScreen({
 }: TasksScreenProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
+  const tutorialOn = tutorialTarget !== null;
+  const tutorialCreateFlow =
+    tutorialTarget === "add-button" ||
+    tutorialTarget === "modal-type-predefined" ||
+    tutorialTarget === "modal-task-drink-water" ||
+    tutorialTarget === "modal-submit";
   const now = Date.now();
   const [filter, setFilter] = useState<TaskStatus | "all" | "upcoming">("all");
   const [modalVisible, setModalVisible] = useState(false);
@@ -158,6 +178,18 @@ export default function TasksScreen({
         : undefined;
     onAddTask(newTask, customTemplate);
   };
+  const tutorialTargetTaskId =
+    tutorialTarget === "task-complete" && tasks.length > 0 ? tasks[0].id : "";
+
+  useEffect(() => {
+    if (!tutorialCreateFlow && !modalVisible) {
+      onTutorialStateChange({
+        modalVisible: false,
+        taskType: TaskType.CUSTOM,
+        selectedPredefinedTaskId: "",
+      });
+    }
+  }, [modalVisible, onTutorialStateChange, tutorialCreateFlow]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -170,14 +202,25 @@ export default function TasksScreen({
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
-            style={[styles.calendarButton, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
+            style={[
+              styles.calendarButton,
+              { backgroundColor: theme.surfaceMuted, borderColor: theme.border },
+              tutorialOn && styles.tutorialDisabled,
+            ]}
             onPress={onOpenCalendar}
+            disabled={tutorialOn}
           >
             <Text style={[styles.calendarButtonText, { color: theme.text }]}>{copy.tasksCalendar}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.addButton, { backgroundColor: theme.accent }]}
+            style={[
+              styles.addButton,
+              { backgroundColor: theme.accent },
+              tutorialTarget === "add-button" && styles.tutorialHighlight,
+              tutorialOn && tutorialTarget !== "add-button" && styles.tutorialDisabled,
+            ]}
             onPress={() => setModalVisible(true)}
+            disabled={tutorialOn && tutorialTarget !== "add-button"}
           >
             <Text style={[styles.addButtonText, { color: theme.accentText }]}>{copy.tasksAdd}</Text>
           </TouchableOpacity>
@@ -191,24 +234,28 @@ export default function TasksScreen({
           active={filter === "all"}
           onPress={() => setFilter("all")}
           settings={settings}
+          disabled={tutorialOn}
         />
         <FilterTab
           label={copy.tasksFilterActive}
           active={filter === TaskStatus.PENDING}
           onPress={() => setFilter(TaskStatus.PENDING)}
           settings={settings}
+          disabled={tutorialOn}
         />
         <FilterTab
           label={copy.tasksFilterUpcoming}
           active={filter === "upcoming"}
           onPress={() => setFilter("upcoming")}
           settings={settings}
+          disabled={tutorialOn}
         />
         <FilterTab
           label={copy.tasksFilterCompleted}
           active={filter === TaskStatus.COMPLETED}
           onPress={() => setFilter(TaskStatus.COMPLETED)}
           settings={settings}
+          disabled={tutorialOn}
         />
       </View>
 
@@ -221,11 +268,13 @@ export default function TasksScreen({
               borderColor: theme.border,
               color: theme.text,
             },
+            tutorialOn && styles.tutorialDisabled,
           ]}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder={copy.tasksSearchPlaceholder}
           placeholderTextColor={theme.mutedText}
+          editable={!tutorialOn}
         />
       </View>
 
@@ -248,6 +297,8 @@ export default function TasksScreen({
               onPauseTimer={() => onPauseTimer(task.id)}
               onResetTimer={() => onResetTimer(task.id)}
               onTimerReady={() => onTimerReady(task.id)}
+              tutorialEnabled={tutorialOn}
+              tutorialTarget={task.id === tutorialTargetTaskId}
             />
           ))
         )}
@@ -258,6 +309,15 @@ export default function TasksScreen({
         onClose={() => setModalVisible(false)}
         settings={settings}
         customTaskTemplates={customTaskTemplates}
+        tutorialEnabled={tutorialCreateFlow}
+        tutorialTarget={
+          tutorialTarget === "modal-type-predefined" ||
+          tutorialTarget === "modal-task-drink-water" ||
+          tutorialTarget === "modal-submit"
+            ? tutorialTarget
+            : null
+        }
+        onTutorialStateChange={onTutorialStateChange}
         onSubmit={handleAddTask}
       />
       <TaskDetailsModal
@@ -288,6 +348,8 @@ function TaskItem({
   onPauseTimer,
   onResetTimer,
   onTimerReady,
+  tutorialEnabled,
+  tutorialTarget,
 }: {
   task: Task;
   onComplete: () => void;
@@ -297,6 +359,8 @@ function TaskItem({
   onPauseTimer: () => void;
   onResetTimer: () => void;
   onTimerReady: () => void;
+  tutorialEnabled: boolean;
+  tutorialTarget: boolean;
 }) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
@@ -320,6 +384,8 @@ function TaskItem({
           borderLeftColor: theme.accent,
         },
         isCompleted && styles.taskItemCompleted,
+        tutorialTarget && styles.tutorialHighlight,
+        tutorialEnabled && !tutorialTarget && styles.tutorialDisabled,
       ]}
     >
       <TouchableOpacity
@@ -330,13 +396,17 @@ function TaskItem({
             opacity: isScheduled ? 0.45 : 1,
           },
           isCompleted && { backgroundColor: theme.accent, borderColor: theme.accent },
+          tutorialTarget && styles.tutorialTargetButton,
         ]}
         onPress={onComplete}
-        disabled={isCompleted || isScheduled}
+        disabled={isCompleted || isScheduled || (tutorialEnabled && !tutorialTarget)}
       >
         {isCompleted && <Text style={styles.checkmark}>✓</Text>}
       </TouchableOpacity>
-      <TouchableOpacity style={styles.taskContent} onPress={onOpen}>
+      <TouchableOpacity
+        style={styles.taskContent}
+        onPress={tutorialEnabled ? undefined : onOpen}
+      >
         <View style={styles.taskTopRow}>
           <Text
             style={[styles.taskName, { color: theme.text }, isCompleted && styles.taskNameCompleted]}
@@ -375,6 +445,7 @@ function TaskItem({
           onPause={onPauseTimer}
           onReset={onResetTimer}
           onReady={onTimerReady}
+          disabled={tutorialEnabled}
         />
       </TouchableOpacity>
     </View>
@@ -386,11 +457,13 @@ function FilterTab({
   active,
   onPress,
   settings,
+  disabled,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
   settings: AppSettings;
+  disabled: boolean;
 }) {
   const theme = getAppTheme(settings.theme);
 
@@ -401,8 +474,10 @@ function FilterTab({
         {
           backgroundColor: active ? theme.accent : theme.surfaceMuted,
         },
+        disabled && styles.tutorialDisabled,
       ]}
       onPress={onPress}
+      disabled={disabled}
     >
       <Text style={[styles.filterText, { color: active ? theme.accentText : theme.mutedText }]}>
         {label}
@@ -456,6 +531,24 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: "#4ecdc4",
     borderRadius: 6,
+  },
+  tutorialHighlight: {
+    borderWidth: 2,
+    borderColor: "#ffd166",
+    shadowColor: "#ffd166",
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 10,
+  },
+  tutorialDisabled: {
+    opacity: 0.36,
+  },
+  tutorialTargetButton: {
+    borderColor: "#ffd166",
   },
   addButtonText: {
     fontSize: 12,

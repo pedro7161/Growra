@@ -29,6 +29,7 @@ import { getTodayTasks } from "../utils/taskSchedule";
 
 interface DashboardScreenProps {
   gameState: GameState;
+  tutorialLocked: boolean;
   onAddTask: (task: Task, customTemplate?: CustomTaskTemplate) => void;
   onCompleteTask: (taskId: string) => void;
   onOpenSettings: () => void;
@@ -40,6 +41,7 @@ interface DashboardScreenProps {
 
 export default function DashboardScreen({
   gameState,
+  tutorialLocked,
   onAddTask,
   onCompleteTask,
   onOpenSettings,
@@ -166,8 +168,10 @@ export default function DashboardScreen({
                 style={[
                   styles.settingsButton,
                   { backgroundColor: theme.accentSoft },
+                  tutorialLocked && styles.tutorialDisabled,
                 ]}
                 onPress={onOpenSettings}
+                disabled={tutorialLocked}
               >
                 <Text
                   style={[styles.settingsButtonText, { color: theme.accent }]}
@@ -183,8 +187,10 @@ export default function DashboardScreen({
               style={[
                 styles.inlineAddButton,
                 { backgroundColor: theme.accent },
+                tutorialLocked && styles.tutorialDisabled,
               ]}
               onPress={() => setModalVisible(true)}
+              disabled={tutorialLocked}
             >
               <Text
                 style={[
@@ -220,6 +226,7 @@ export default function DashboardScreen({
                   <TouchableOpacity
                     style={[styles.checkbox, { borderColor: theme.border }]}
                     onPress={() => onCompleteTask(task.id)}
+                    disabled={tutorialLocked}
                   />
                   <View style={styles.todayTaskContent}>
                     <Text style={[styles.taskName, { color: theme.text }]}>
@@ -235,6 +242,7 @@ export default function DashboardScreen({
                     <TaskTimerControls
                       task={task}
                       settings={gameState.settings}
+                      disabled={tutorialLocked}
                       onStart={onStartTimer}
                       onPause={onPauseTimer}
                       onReset={onResetTimer}
@@ -263,9 +271,14 @@ export default function DashboardScreen({
               </Text>
             </View>
             <TouchableOpacity
-              style={[styles.summaryCard, { backgroundColor: theme.surface }]}
+              style={[
+                styles.summaryCard,
+                { backgroundColor: theme.surface },
+                tutorialLocked && styles.tutorialDisabled,
+              ]}
               onPress={() => setShowPlayerLevelDetail((prev) => !prev)}
               activeOpacity={0.8}
+              disabled={tutorialLocked}
             >
               <Text style={[styles.summaryLabel, { color: theme.mutedText }]}>
                 {copy.dashboardPlayerLevel}
@@ -346,6 +359,9 @@ export default function DashboardScreen({
         onClose={() => setModalVisible(false)}
         settings={gameState.settings}
         customTaskTemplates={gameState.customTaskTemplates}
+        tutorialEnabled={tutorialLocked}
+        tutorialTarget={null}
+        onTutorialStateChange={() => {}}
         onSubmit={handleAddTask}
       />
     </SafeAreaView>
@@ -353,6 +369,9 @@ export default function DashboardScreen({
 }
 
 const styles = StyleSheet.create({
+  tutorialDisabled: {
+    opacity: 0.34,
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",

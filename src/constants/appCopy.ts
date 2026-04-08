@@ -82,9 +82,54 @@ interface AppCopy {
   petsTitle: string;
   petsCoinsPity: string;
   petsSummonTab: string;
+  petsExplorationTab: string;
   petsPityShopTab: string;
   petsMyPetsTab: string;
   petsSellShopTab: string;
+  petsExplorationTitle: string;
+  petsExplorationSubtitle: string;
+  petsExplorationMapTitle: string;
+  petsExplorationMapHint: string;
+  petsExplorationRosterTitle: string;
+  petsExplorationEmpty: string;
+  petsExplorationSend: string;
+  petsExplorationSent: string;
+  petsExplorationActive: string;
+  petsExplorationNextZone: string;
+  petsExplorationTimeRemaining: string;
+  petsExplorationUnlocked: string;
+  petsExplorationUnknown: string;
+  petsExplorationFog: string;
+  petsBattleTitle: string;
+  petsBattleSubtitle: string;
+  petsBattleWildPet: string;
+  petsBattleWildPower: string;
+  petsBattleFight: string;
+  petsBattleSelectPet: string;
+  petsBattleNoPets: string;
+  petsBattleLocked: string;
+  petsGearTitle: string;
+  petsGearSubtitle: string;
+  petsGearLabel: string;
+  petsGearEquip: string;
+  petsGearEquipped: string;
+  petsGearBonus: string;
+  petsGearNoItems: string;
+  petsDetailTitle: string;
+  petsDetailClose: string;
+  petsDetailOverview: string;
+  petsDetailElement: string;
+  petsDetailDescription: string;
+  petsDetailSource: string;
+  petsDetailStatsTitle: string;
+  petsDetailCurrentGear: string;
+  petsDetailAvailableGear: string;
+  petsDetailActions: string;
+  petsSummonRevealTitle: string;
+  petsSummonRevealSubtitle: string;
+  petsSummonRevealClose: string;
+  petsSummonRevealPrevious: string;
+  petsSummonRevealNext: string;
   petsGachaTitle: string;
   petsGachaOdds: string;
   petsGachaSecret: string;
@@ -144,6 +189,8 @@ interface AppCopy {
   settingsBackupPlaceholder: string;
   settingsExport: string;
   settingsImport: string;
+  settingsViewChangelog: string;
+  settingsHideChangelog: string;
   settingsBackupExported: string;
   settingsBackupImported: string;
   settingsBackupInvalid: string;
@@ -152,6 +199,21 @@ interface AppCopy {
   tutorialSkip: string;
   tutorialNext: string;
   tutorialFinish: string;
+  tutorialGuideTitle: string;
+  tutorialGuideSubtitle: string;
+  tutorialCreateTaskTitle: string;
+  tutorialCreateTaskHint: string;
+  tutorialChoosePredefinedTaskHint: string;
+  tutorialChooseWaterTaskHint: string;
+  tutorialConfirmTaskAddHint: string;
+  tutorialCompleteTaskTitle: string;
+  tutorialCompleteTaskHint: string;
+  tutorialSummonPetTitle: string;
+  tutorialSummonPetHint: string;
+  tutorialEquipPetTitle: string;
+  tutorialEquipPetHint: string;
+  tutorialOpenTasks: string;
+  tutorialOpenRealm: string;
   tutorialRewardTitle: string;
   tutorialRewardBody: string;
   tutorialStep1Title: string;
@@ -255,9 +317,54 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     petsTitle: "Pets",
     petsCoinsPity: "coins",
     petsSummonTab: "Summon",
+    petsExplorationTab: "Explore",
     petsPityShopTab: "Pity Shop",
     petsMyPetsTab: "My Pets",
     petsSellShopTab: "Sell Shop",
+    petsExplorationTitle: "Realm Map",
+    petsExplorationSubtitle: "Send pets into the wild to uncover the world one route at a time.",
+    petsExplorationMapTitle: "Uncharted regions",
+    petsExplorationMapHint: "Each expedition exposes more of the map. Stronger explorers reveal faster.",
+    petsExplorationRosterTitle: "Send a pet",
+    petsExplorationEmpty: "You need at least one pet to begin exploring.",
+    petsExplorationSend: "Send on expedition",
+    petsExplorationSent: "Expeditions sent",
+    petsExplorationActive: "Expedition in progress",
+    petsExplorationNextZone: "Next zone",
+    petsExplorationTimeRemaining: "Time remaining",
+    petsExplorationUnlocked: "Unlocked",
+    petsExplorationUnknown: "Unknown",
+    petsExplorationFog: "Fog covers this route.",
+    petsBattleTitle: "Zone Battles",
+    petsBattleSubtitle: "Choose a revealed zone and fight its wild pet to earn XP and loot.",
+    petsBattleWildPet: "Wild pet",
+    petsBattleWildPower: "Wild power",
+    petsBattleFight: "Fight wild pet",
+    petsBattleSelectPet: "Select fighter",
+    petsBattleNoPets: "You need a pet to start fighting wild encounters.",
+    petsBattleLocked: "Reveal a zone first to unlock wild battles.",
+    petsGearTitle: "Gear Vault",
+    petsGearSubtitle: "Loot from battles can be equipped to boost your pets' base stats.",
+    petsGearLabel: "Gear",
+    petsGearEquip: "Equip",
+    petsGearEquipped: "Equipped",
+    petsGearBonus: "Bonus",
+    petsGearNoItems: "No gear yet. Win a fight to start collecting gear.",
+    petsDetailTitle: "Pet Details",
+    petsDetailClose: "Close",
+    petsDetailOverview: "Overview",
+    petsDetailElement: "Element",
+    petsDetailDescription: "Description",
+    petsDetailSource: "Source zone",
+    petsDetailStatsTitle: "Stats",
+    petsDetailCurrentGear: "Current gear",
+    petsDetailAvailableGear: "Available gear",
+    petsDetailActions: "Actions",
+    petsSummonRevealTitle: "Summon Reveal",
+    petsSummonRevealSubtitle: "The confetti settles and the new pet appears.",
+    petsSummonRevealClose: "Close",
+    petsSummonRevealPrevious: "Previous",
+    petsSummonRevealNext: "Next",
     petsGachaTitle: "Gacha",
     petsGachaOdds: "Summon odds: 70% common • 25% rare • 4% epic • 1% legendary",
     petsGachaSecret: "Secret unit on banner: Nova (legendary).",
@@ -317,6 +424,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsBackupPlaceholder: "Your backup code will appear here. You can also paste one to import.",
     settingsExport: "Export",
     settingsImport: "Import",
+    settingsViewChangelog: "View changelog",
+    settingsHideChangelog: "Hide changelog",
     settingsBackupExported: "Backup code generated.",
     settingsBackupImported: "Backup imported successfully.",
     settingsBackupInvalid: "The backup code is invalid.",
@@ -325,6 +434,21 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tutorialSkip: "Skip",
     tutorialNext: "Next",
     tutorialFinish: "Finish",
+    tutorialGuideTitle: "Tutorial",
+    tutorialGuideSubtitle: "Do the steps in the app to unlock the next one.",
+    tutorialCreateTaskTitle: "Create your first task",
+    tutorialCreateTaskHint: "Open Tasks and add any task.",
+    tutorialChoosePredefinedTaskHint: "Pick the Predefined option.",
+    tutorialChooseWaterTaskHint: "Select the Drink Water task.",
+    tutorialConfirmTaskAddHint: "Tap Add to create your first task.",
+    tutorialCompleteTaskTitle: "Complete that task",
+    tutorialCompleteTaskHint: "Mark the task as done to earn your summon coins.",
+    tutorialSummonPetTitle: "Summon your first pet",
+    tutorialSummonPetHint: "Go to the Realm and summon once the reward is ready.",
+    tutorialEquipPetTitle: "Activate your pet",
+    tutorialEquipPetHint: "Open your pet box and equip the pet you just got.",
+    tutorialOpenTasks: "Open Tasks",
+    tutorialOpenRealm: "Open Realm",
     tutorialRewardTitle: "You're ready!",
     tutorialRewardBody: "Here are 100 coins to summon your first pet. Good luck!",
     tutorialStep1Title: "Welcome to Growra!",
@@ -426,9 +550,54 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     petsTitle: "Pets",
     petsCoinsPity: "moedas",
     petsSummonTab: "Summon",
+    petsExplorationTab: "Explorar",
     petsPityShopTab: "Loja Pity",
     petsMyPetsTab: "Os Meus Pets",
     petsSellShopTab: "Loja de Venda",
+    petsExplorationTitle: "Mapa do Reino",
+    petsExplorationSubtitle: "Envia pets para o terreno e revela o mundo caminho a caminho.",
+    petsExplorationMapTitle: "Regiões por chartar",
+    petsExplorationMapHint: "Cada expedição expõe mais do mapa. Exploradores fortes revelam mais depressa.",
+    petsExplorationRosterTitle: "Enviar um pet",
+    petsExplorationEmpty: "Precisas de pelo menos um pet para começar a explorar.",
+    petsExplorationSend: "Enviar em expedição",
+    petsExplorationSent: "Expedições enviadas",
+    petsExplorationActive: "Expedição em progresso",
+    petsExplorationNextZone: "Próxima zona",
+    petsExplorationTimeRemaining: "Tempo restante",
+    petsExplorationUnlocked: "Desbloqueado",
+    petsExplorationUnknown: "Desconhecido",
+    petsExplorationFog: "A neblina cobre esta rota.",
+    petsBattleTitle: "Batalhas da zona",
+    petsBattleSubtitle: "Escolhe uma zona revelada e luta contra o pet selvagem para ganhar XP e loot.",
+    petsBattleWildPet: "Pet selvagem",
+    petsBattleWildPower: "Poder selvagem",
+    petsBattleFight: "Lutar contra pet selvagem",
+    petsBattleSelectPet: "Selecionar lutador",
+    petsBattleNoPets: "Precisas de um pet para começar a lutar contra encontros selvagens.",
+    petsBattleLocked: "Revela uma zona primeiro para desbloquear batalhas selvagens.",
+    petsGearTitle: "Arsenal",
+    petsGearSubtitle: "O loot das batalhas pode ser equipado para aumentar as estatísticas base dos pets.",
+    petsGearLabel: "Gear",
+    petsGearEquip: "Equipar",
+    petsGearEquipped: "Equipado",
+    petsGearBonus: "Bónus",
+    petsGearNoItems: "Ainda sem gear. Vence uma batalha para começar a colecionar gear.",
+    petsDetailTitle: "Detalhes do pet",
+    petsDetailClose: "Fechar",
+    petsDetailOverview: "Visão geral",
+    petsDetailElement: "Elemento",
+    petsDetailDescription: "Descrição",
+    petsDetailSource: "Zona de origem",
+    petsDetailStatsTitle: "Atributos",
+    petsDetailCurrentGear: "Equipamento atual",
+    petsDetailAvailableGear: "Equipamentos disponíveis",
+    petsDetailActions: "Ações",
+    petsSummonRevealTitle: "Resultado da invocação",
+    petsSummonRevealSubtitle: "Os confetis caem e o novo pet aparece.",
+    petsSummonRevealClose: "Fechar",
+    petsSummonRevealPrevious: "Anterior",
+    petsSummonRevealNext: "Seguinte",
     petsGachaTitle: "Gacha",
     petsGachaOdds: "Probabilidades: 70% comum • 25% raro • 4% épico • 1% lendário",
     petsGachaSecret: "Unidade secreta no banner: Nova (lendário).",
@@ -488,6 +657,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsBackupPlaceholder: "O teu código de backup aparece aqui. Também podes colar um para importar.",
     settingsExport: "Exportar",
     settingsImport: "Importar",
+    settingsViewChangelog: "Ver registo",
+    settingsHideChangelog: "Ocultar registo",
     settingsBackupExported: "Código de backup gerado.",
     settingsBackupImported: "Backup importado com sucesso.",
     settingsBackupInvalid: "O código de backup é inválido.",
@@ -496,6 +667,21 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tutorialSkip: "Pular",
     tutorialNext: "Próximo",
     tutorialFinish: "Terminar",
+    tutorialGuideTitle: "Tutorial",
+    tutorialGuideSubtitle: "Faz as etapas no jogo para desbloquear a seguinte.",
+    tutorialCreateTaskTitle: "Cria a tua primeira tarefa",
+    tutorialCreateTaskHint: "Abre Tarefas e adiciona qualquer tarefa.",
+    tutorialChoosePredefinedTaskHint: "Escolhe a opção Predefinida.",
+    tutorialChooseWaterTaskHint: "Seleciona a tarefa Beber água.",
+    tutorialConfirmTaskAddHint: "Carrega em Adicionar para criar a tua primeira tarefa.",
+    tutorialCompleteTaskTitle: "Conclui essa tarefa",
+    tutorialCompleteTaskHint: "Marca a tarefa como feita para ganhares moedas para invocar.",
+    tutorialSummonPetTitle: "Invoca o teu primeiro pet",
+    tutorialSummonPetHint: "Vai ao Reino e invoca quando a recompensa estiver pronta.",
+    tutorialEquipPetTitle: "Ativa o teu pet",
+    tutorialEquipPetHint: "Abre a caixa de pets e equipa o pet que acabaste de obter.",
+    tutorialOpenTasks: "Abrir tarefas",
+    tutorialOpenRealm: "Abrir reino",
     tutorialRewardTitle: "Estás pronto!",
     tutorialRewardBody: "Aqui estão 100 moedas para invocares o teu primeiro pet. Boa sorte!",
     tutorialStep1Title: "Bem-vindo ao Growra!",

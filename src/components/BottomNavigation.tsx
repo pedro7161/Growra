@@ -15,12 +15,14 @@ interface BottomNavigationProps {
   activeScreen: Screen;
   onNavigate: (screen: Screen) => void;
   settings: AppSettings;
+  tutorialTarget: Screen | null;
 }
 
 export default function BottomNavigation({
   activeScreen,
   onNavigate,
   settings,
+  tutorialTarget,
 }: BottomNavigationProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
@@ -49,18 +51,24 @@ export default function BottomNavigation({
         <NavSlot
           label={copy.navDashboard}
           active={activeScreen === "dashboard"}
+          highlighted={tutorialTarget === "dashboard"}
+          disabled={tutorialTarget !== null && tutorialTarget !== "dashboard"}
           onPress={() => onNavigate("dashboard")}
           settings={settings}
         />
         <NavSlot
           label={copy.navTasks}
           active={activeScreen === "tasks"}
+          highlighted={tutorialTarget === "tasks"}
+          disabled={tutorialTarget !== null && tutorialTarget !== "tasks"}
           onPress={() => onNavigate("tasks")}
           settings={settings}
         />
         <NavSlot
           label={copy.navRealm}
           active={activeScreen === "realm"}
+          highlighted={tutorialTarget === "realm"}
+          disabled={tutorialTarget !== null && tutorialTarget !== "realm"}
           onPress={() => onNavigate("realm")}
           settings={settings}
         />
@@ -72,11 +80,15 @@ export default function BottomNavigation({
 function NavSlot({
   label,
   active,
+  highlighted,
+  disabled,
   onPress,
   settings,
 }: {
   label: string;
   active: boolean;
+  highlighted: boolean;
+  disabled: boolean;
   onPress: () => void;
   settings: AppSettings;
 }) {
@@ -101,6 +113,7 @@ function NavSlot({
         style={[
           styles.item,
           active ? styles.circleItem : styles.rectangleItem,
+          highlighted && styles.highlightedItem,
           active
             ? {
                 backgroundColor: theme.accent,
@@ -110,8 +123,21 @@ function NavSlot({
                 backgroundColor: theme.surfaceMuted,
                 borderColor: theme.border,
               },
+          highlighted && {
+            borderColor: theme.hero,
+            shadowColor: theme.hero,
+            shadowOpacity: 0.35,
+            shadowRadius: 12,
+            shadowOffset: {
+              width: 0,
+              height: 4,
+            },
+            elevation: 12,
+          },
+          disabled && styles.disabledItem,
         ]}
         onPress={onPress}
+        disabled={disabled}
       >
         <Text
           style={[
@@ -161,6 +187,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     zIndex: 1,
+  },
+  highlightedItem: {
+    transform: [{ scale: 1.04 }],
+  },
+  disabledItem: {
+    opacity: 0.42,
   },
   rectangleItem: {
     minWidth: 96,

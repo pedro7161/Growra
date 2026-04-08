@@ -99,6 +99,36 @@ export interface PetStats {
   luck: number;
 }
 
+export interface GearItem {
+  id: string;
+  name: string;
+  rarity: PetRarity;
+  bonusStats: PetStats;
+  sourceZoneIndex: number;
+  equippedPetId: string;
+  acquiredAt: number;
+}
+
+export type ExpeditionNodeType = "main" | "cache" | "shrine" | "elite" | "secret";
+
+export type BattleConsumableKind =
+  | "heal"
+  | "attack"
+  | "shield"
+  | "speed"
+  | "burst"
+  | "revive";
+
+export interface BattleConsumableItem {
+  id: string;
+  name: string;
+  kind: BattleConsumableKind;
+  rarity: PetRarity;
+  potency: number;
+  sourceZoneIndex: number;
+  acquiredAt: number;
+}
+
 export interface PetPassive {
   id: string;
   name: string;
@@ -137,6 +167,7 @@ export interface Pet {
   templateId: string;
   name: string;
   rarity: PetRarity;
+  baseStats: PetStats;
   level: number;
   experience: number;
   fusionLevel: number;
@@ -148,8 +179,20 @@ export interface Pet {
   taskMultiplier: number; // percentage bonus (e.g., 0.05 for 5%)
   xpMultiplier: number; // per-pet XP multiplier (e.g., 0.9 for -10% XP)
   activeImageVariantId: string; // "default" now; cosmetics switch this to a variant name
+  equippedGearId: string;
   equipped: boolean;
   createdAt: number;
+}
+
+export interface ExpeditionProgress {
+  expeditionsSent: number;
+  revealPoints: number;
+  activeZoneIndex: number;
+  activeZoneEndsAt: number;
+  activeNodeId: string;
+  activeNodePetId: string;
+  activeNodeEndsAt: number;
+  completedNodeIds: string[];
 }
 
 // Streak Types
@@ -169,10 +212,14 @@ export interface GameState {
   totalExperience: number;
   totalTasksCompleted: number;
   tutorialCompleted: boolean;
+  tutorialRewardGranted: boolean;
   settings: AppSettings;
   tasks: Task[];
   customTaskTemplates: CustomTaskTemplate[];
   pets: Pet[];
+  gearItems: GearItem[];
+  battleConsumables: BattleConsumableItem[];
+  expeditionProgress: ExpeditionProgress;
   equippedPetId: string;
   streak: Streak;
   createdAt: number;

@@ -1,185 +1,144 @@
-import React, { useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppSettings } from '../types';
-import { getAppCopy } from '../constants/appCopy';
-import { getAppTheme } from '../constants/appTheme';
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { getAppCopy } from "../constants/appCopy";
+import { getAppTheme } from "../constants/appTheme";
+import { AppSettings } from "../types";
+
+type TutorialStep =
+  | "open-tasks"
+  | "tap-add-task"
+  | "choose-predefined-task"
+  | "choose-water-task"
+  | "confirm-task-add"
+  | "complete-task"
+  | "open-realm"
+  | "summon-pet"
+  | "equip-pet"
+  | "done";
 
 interface TutorialOverlayProps {
   visible: boolean;
+  step: TutorialStep;
   settings: AppSettings;
-  onComplete: () => void;
-  onSkip: () => void;
 }
-
-const CONTENT_STEPS = [
-  { titleKey: 'tutorialStep1Title', bodyKey: 'tutorialStep1Body' },
-  { titleKey: 'tutorialStep2Title', bodyKey: 'tutorialStep2Body' },
-  { titleKey: 'tutorialStep3Title', bodyKey: 'tutorialStep3Body' },
-  { titleKey: 'tutorialStep4Title', bodyKey: 'tutorialStep4Body' },
-];
 
 export default function TutorialOverlay({
   visible,
+  step,
   settings,
-  onComplete,
-  onSkip,
 }: TutorialOverlayProps) {
-  const [currentStep, setCurrentStep] = useState(0);
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
 
-  const isRewardStep = currentStep === CONTENT_STEPS.length;
-  const totalSteps = CONTENT_STEPS.length + 1; // +1 for reward
+  if (!visible) {
+    return null;
+  }
 
-  const handleNext = () => {
-    if (isRewardStep) {
-      setCurrentStep(0);
-      onComplete();
-    } else {
-      setCurrentStep(currentStep + 1);
-    }
-  };
+  const message =
+    step === "open-tasks"
+      ? copy.tutorialOpenTasks
+      : step === "tap-add-task"
+        ? copy.tutorialCreateTaskHint
+        : step === "choose-predefined-task"
+          ? copy.tutorialChoosePredefinedTaskHint
+          : step === "choose-water-task"
+            ? copy.tutorialChooseWaterTaskHint
+            : step === "confirm-task-add"
+              ? copy.tutorialConfirmTaskAddHint
+          : step === "complete-task"
+            ? copy.tutorialCompleteTaskHint
+            : step === "open-realm"
+            ? copy.tutorialOpenRealm
+            : step === "summon-pet"
+              ? copy.tutorialSummonPetHint
+              : step === "equip-pet"
+                ? copy.tutorialEquipPetHint
+                : copy.tutorialRewardTitle;
 
-  const handleSkip = () => {
-    setCurrentStep(0);
-    onSkip();
-  };
-
-  const getStepContent = () => {
-    if (isRewardStep) {
-      return {
-        title: copy.tutorialRewardTitle,
-        body: copy.tutorialRewardBody,
-      };
-    }
-    const step = CONTENT_STEPS[currentStep];
-    return {
-      title: copy[step.titleKey as keyof typeof copy] as string,
-      body: copy[step.bodyKey as keyof typeof copy] as string,
-    };
-  };
-
-  const content = getStepContent();
+  const stepLabel =
+    step === "open-tasks" ||
+    step === "tap-add-task" ||
+    step === "choose-predefined-task" ||
+    step === "choose-water-task" ||
+    step === "confirm-task-add"
+      ? "1 / 4"
+      : step === "complete-task"
+        ? "2 / 4"
+        : step === "open-realm" || step === "summon-pet"
+          ? "3 / 4"
+          : step === "equip-pet"
+            ? "4 / 4"
+            : "4 / 4";
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={[styles.backdrop, { backgroundColor: 'rgba(0,0,0,0.65)' }]}>
-        <SafeAreaView style={styles.safeContainer}>
-          <View style={[styles.card, { backgroundColor: theme.surface }]}>
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={[styles.stepLabel, { color: theme.mutedText }]}>
-                {currentStep + 1} / {totalSteps}
-              </Text>
-              <TouchableOpacity onPress={handleSkip}>
-                <Text style={[styles.skipButton, { color: theme.mutedText }]}>
-                  {copy.tutorialSkip}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Content */}
-            <View style={styles.content}>
-              <Text style={[styles.title, { color: theme.text }]}>{content.title}</Text>
-              <Text style={[styles.body, { color: theme.mutedText }]}>{content.body}</Text>
-            </View>
-
-            {/* Footer */}
-            <View style={styles.footer}>
-              {!isRewardStep && (
-                <View style={styles.dots}>
-                  {CONTENT_STEPS.map((_, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.dot,
-                        {
-                          backgroundColor:
-                            index === currentStep ? theme.accent : theme.border,
-                        },
-                      ]}
-                    />
-                  ))}
-                </View>
-              )}
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: theme.accent }]}
-                onPress={handleNext}
-              >
-                <Text style={[styles.buttonText, { color: theme.accentText }]}>
-                  {isRewardStep ? copy.tutorialFinish : copy.tutorialNext}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SafeAreaView>
-      </View>
-    </Modal>
+    <View pointerEvents="none" style={styles.overlayRoot}>
+      <SafeAreaView pointerEvents="none" style={styles.safeArea}>
+        <View
+          style={[
+            styles.bubble,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <Text style={[styles.title, { color: theme.text }]}>
+            {copy.tutorialGuideTitle}
+          </Text>
+          <Text style={[styles.stepLabel, { color: theme.mutedText }]}>
+            {stepLabel}
+          </Text>
+          <Text style={[styles.message, { color: theme.mutedText }]}>
+            {message}
+          </Text>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
+  overlayRoot: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 40,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingHorizontal: 12,
+    paddingTop: 10,
   },
-  safeContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  safeArea: {
+    width: "100%",
   },
-  card: {
-    borderRadius: 20,
-    padding: 24,
-    gap: 24,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  stepLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  skipButton: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  content: {
-    gap: 12,
+  bubble: {
+    alignSelf: "center",
+    maxWidth: 280,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 6,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
-  body: {
-    fontSize: 15,
-    lineHeight: 22,
+  stepLabel: {
+    fontSize: 11,
+    fontWeight: "700",
   },
-  footer: {
-    gap: 12,
-  },
-  dots: {
-    flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'center',
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  button: {
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: '700',
+  message: {
+    fontSize: 12,
+    lineHeight: 16,
   },
 });

@@ -15,6 +15,7 @@ interface TaskDatePickerProps {
   settings: AppSettings;
   value: number;
   onChange: (date: number) => void;
+  disabled?: boolean;
 }
 
 function getLocale(language: AppSettings["language"]): string {
@@ -92,7 +93,12 @@ function formatTaskDate(timestamp: number, language: AppSettings["language"]): s
   }).format(new Date(timestamp));
 }
 
-export default function TaskDatePicker({ settings, value, onChange }: TaskDatePickerProps) {
+export default function TaskDatePicker({
+  settings,
+  value,
+  onChange,
+  disabled = false,
+}: TaskDatePickerProps) {
   const theme = getAppTheme(settings.theme);
   const locale = getLocale(settings.language);
   const todayStart = getStartOfDay(Date.now());
@@ -110,11 +116,13 @@ export default function TaskDatePicker({ settings, value, onChange }: TaskDatePi
             backgroundColor: theme.surfaceMuted,
             borderColor: theme.border,
           },
+          disabled && styles.disabled,
         ]}
         onPress={() => {
           setActiveMonth(getMonthStart(new Date(value)));
           setIsOpen(!isOpen);
         }}
+        disabled={disabled}
       >
         <Text style={[styles.triggerText, { color: theme.text }]}>
           {formatTaskDate(value, settings.language)}
@@ -122,7 +130,7 @@ export default function TaskDatePicker({ settings, value, onChange }: TaskDatePi
         <Text style={[styles.triggerIcon, { color: theme.accent }]}>{isOpen ? "−" : "+"}</Text>
       </TouchableOpacity>
 
-      {isOpen ? (
+      {isOpen && !disabled ? (
         <View style={[styles.calendarCard, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
           <View style={styles.monthHeader}>
             <TouchableOpacity
@@ -186,6 +194,9 @@ export default function TaskDatePicker({ settings, value, onChange }: TaskDatePi
 }
 
 const styles = StyleSheet.create({
+  disabled: {
+    opacity: 0.42,
+  },
   trigger: {
     borderWidth: 1,
     borderRadius: 10,

@@ -8,6 +8,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 interface TaskTimerControlsProps {
   task: Task;
   settings: AppSettings;
+  disabled: boolean;
   onStart: (taskId: string) => void;
   onPause: (taskId: string) => void;
   onReset: (taskId: string) => void;
@@ -30,6 +31,7 @@ function formatDuration(ms: number): string {
 export default function TaskTimerControls({
   task,
   settings,
+  disabled,
   onStart,
   onPause,
   onReset,
@@ -95,13 +97,18 @@ export default function TaskTimerControls({
         <Text style={[styles.remaining, { color: theme.text }]}>{formatDuration(remaining)}</Text>
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: theme.accent }]}
+            style={[
+              styles.primaryButton,
+              { backgroundColor: theme.accent },
+              disabled && styles.disabledButton,
+            ]}
             onPress={primaryHandler}
+            disabled={disabled}
           >
             <Text style={[styles.primaryLabel, { color: theme.accentText }]}>{primaryLabel}</Text>
           </TouchableOpacity>
           {task.timer.state !== "running" && task.timer.state !== "ready" && (
-            <TouchableOpacity onPress={() => onReset(task.id)}>
+            <TouchableOpacity onPress={() => onReset(task.id)} disabled={disabled}>
               <Text style={[styles.resetLabel, { color: theme.mutedText }]}>{copy.timerReset}</Text>
             </TouchableOpacity>
           )}
@@ -145,6 +152,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
+  },
+  disabledButton: {
+    opacity: 0.4,
   },
   primaryLabel: {
     fontSize: 12,

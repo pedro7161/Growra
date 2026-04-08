@@ -49,6 +49,17 @@ interface AddTaskModalProps {
   onClose: () => void;
   settings: AppSettings;
   customTaskTemplates: CustomTaskTemplate[];
+  tutorialEnabled: boolean;
+  tutorialTarget:
+    | "modal-type-predefined"
+    | "modal-task-drink-water"
+    | "modal-submit"
+    | null;
+  onTutorialStateChange: (state: {
+    modalVisible: boolean;
+    taskType: TaskType;
+    selectedPredefinedTaskId: string;
+  }) => void;
   onSubmit: (values: TaskFormValues) => void;
 }
 
@@ -57,6 +68,9 @@ export default function AddTaskModal({
   onClose,
   settings,
   customTaskTemplates,
+  tutorialEnabled,
+  tutorialTarget,
+  onTutorialStateChange,
   onSubmit,
 }: AddTaskModalProps) {
   const copy = getAppCopy(settings.language);
@@ -83,7 +97,13 @@ export default function AddTaskModal({
   const [dueDate, setDueDate] = useState(() => getStartOfDay(Date.now()));
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [showSaveTemplateHelp, setShowSaveTemplateHelp] = useState(false);
+  const [tutorialSelectedPredefinedTaskId, setTutorialSelectedPredefinedTaskId] =
+    useState("");
   const selectedPredefinedTask = getPredefinedTask(predefinedTaskId);
+  const predefinedTutorialTarget = tutorialTarget === "modal-type-predefined";
+  const waterTutorialTarget = tutorialTarget === "modal-task-drink-water";
+  const submitTutorialTarget = tutorialTarget === "modal-submit";
+  const tutorialOn = tutorialEnabled && tutorialTarget !== null;
 
   useEffect(() => {
     setCollapsedCustomCategories((currentValue) => ({
@@ -92,7 +112,24 @@ export default function AddTaskModal({
     }));
   }, [customTaskGroups]);
 
+  useEffect(() => {
+    onTutorialStateChange({
+      modalVisible: visible,
+      taskType: type,
+      selectedPredefinedTaskId: tutorialSelectedPredefinedTaskId,
+    });
+  }, [
+    onTutorialStateChange,
+    tutorialSelectedPredefinedTaskId,
+    type,
+    visible,
+  ]);
+
   const handleSubmit = () => {
+    if (tutorialOn && !submitTutorialTarget) {
+      return;
+    }
+
     if (type === TaskType.CUSTOM && name.trim() && category.trim()) {
       onSubmit({
         name,
@@ -147,12 +184,14 @@ export default function AddTaskModal({
     setDueDate(getStartOfDay(Date.now()));
     setSaveAsTemplate(false);
     setShowSaveTemplateHelp(false);
+    setTutorialSelectedPredefinedTaskId("");
     onClose();
   };
 
   const handleSelectPredefinedTask = (taskId: string) => {
     const selectedTask = getPredefinedTask(taskId);
     setPredefinedTaskId(taskId);
+    setTutorialSelectedPredefinedTaskId(taskId);
     setFrequency(selectedTask.recommendedFrequency);
     setCollapsedCategories({
       ...collapsedCategories,
@@ -186,17 +225,28 @@ export default function AddTaskModal({
     <Modal
       visible={visible}
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={tutorialOn ? () => {} : onClose}
     >
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <ScrollView contentContainerStyle={styles.content} nestedScrollEnabled>
           {/* Header */}
           <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-            <TouchableOpacity onPress={onClose}>
+            <TouchableOpacity
+              onPress={onClose}
+              disabled={tutorialOn}
+              style={tutorialOn ? styles.tutorialDisabled : undefined}
+            >
               <Text style={[styles.cancelButton, { color: theme.mutedText }]}>{copy.addTaskCancel}</Text>
             </TouchableOpacity>
             <Text style={[styles.title, { color: theme.text }]}>{copy.addTaskTitle}</Text>
-            <TouchableOpacity onPress={handleSubmit}>
+            <TouchableOpacity
+              onPress={handleSubmit}
+              disabled={tutorialOn && !submitTutorialTarget}
+              style={[
+                submitTutorialTarget && styles.tutorialHighlight,
+                tutorialOn && !submitTutorialTarget && styles.tutorialDisabled,
+              ]}
+            >
               <Text style={[styles.submitButton, { color: theme.accent }]}>{copy.addTaskConfirm}</Text>
             </TouchableOpacity>
           </View>
@@ -211,6 +261,8 @@ export default function AddTaskModal({
                   active={type === TaskType.CUSTOM}
                   onPress={() => setType(TaskType.CUSTOM)}
                   settings={settings}
+                  highlighted={false}
+                  disabled={tutorialOn}
                 />
                 <TypeButton
                   label={copy.addTaskPredefined}
@@ -220,6 +272,8 @@ export default function AddTaskModal({
                     setFrequency(selectedPredefinedTask.recommendedFrequency);
                   }}
                   settings={settings}
+                  highlighted={predefinedTutorialTarget}
+                  disabled={tutorialOn && !predefinedTutorialTarget}
                 />
               </View>
             </View>
@@ -237,6 +291,7 @@ export default function AddTaskModal({
                       setCustomTemplateId("");
                     }}
                     placeholderTextColor={theme.mutedText}
+                    editable={!tutorialOn}
                   />
                 </View>
 
@@ -253,6 +308,7 @@ export default function AddTaskModal({
                     multiline
                     numberOfLines={4}
                     placeholderTextColor={theme.mutedText}
+                    editable={!tutorialOn}
                   />
                 </View>
 
@@ -267,6 +323,7 @@ export default function AddTaskModal({
                       setCustomTemplateId("");
                     }}
                     placeholderTextColor={theme.mutedText}
+                    editable={!tutorialOn}
                   />
                   {customCategories.length > 0 ? (
                     <View style={styles.categorySuggestions}>
@@ -290,6 +347,7 @@ export default function AddTaskModal({
                               setCategory(customCategory);
                               setCustomTemplateId("");
                             }}
+                            disabled={tutorialOn}
                           >
                             <Text
                               style={[
@@ -320,6 +378,7 @@ export default function AddTaskModal({
                           <TouchableOpacity
                             style={[styles.groupHeader, { borderBottomColor: theme.border }]}
                             onPress={() => handleToggleCustomCategory(group.category)}
+                            disabled={tutorialOn}
                           >
                             <Text style={[styles.groupTitle, { color: theme.mutedText }]}>{group.category}</Text>
                             <Text style={[styles.groupToggle, { color: theme.mutedText }]}>
@@ -339,6 +398,7 @@ export default function AddTaskModal({
                                     },
                                   ]}
                                   onPress={() => handleSelectCustomTemplate(task)}
+                                  disabled={tutorialOn}
                                 >
                                   <View style={styles.predefinedHeader}>
                                     <Text
@@ -383,6 +443,7 @@ export default function AddTaskModal({
                       <TouchableOpacity
                         style={[styles.groupHeader, { borderBottomColor: theme.border }]}
                         onPress={() => handleToggleCategory(group.category)}
+                        disabled={tutorialOn}
                       >
                         <Text style={[styles.groupTitle, { color: theme.mutedText }]}>
                           {group.category}
@@ -397,6 +458,16 @@ export default function AddTaskModal({
                               key={task.id}
                               style={[
                                 styles.predefinedCard,
+                                waterTutorialTarget &&
+                                  task.id === "drink-water" &&
+                                  styles.tutorialHighlight,
+                                tutorialOn &&
+                                  waterTutorialTarget &&
+                                  task.id !== "drink-water" &&
+                                  styles.tutorialDisabled,
+                                tutorialOn &&
+                                  submitTutorialTarget &&
+                                  styles.tutorialDisabled,
                                 predefinedTaskId === task.id && styles.predefinedCardActive,
                                 {
                                   backgroundColor:
@@ -406,6 +477,10 @@ export default function AddTaskModal({
                                 },
                               ]}
                               onPress={() => handleSelectPredefinedTask(task.id)}
+                              disabled={
+                                (tutorialOn && waterTutorialTarget && task.id !== "drink-water") ||
+                                submitTutorialTarget
+                              }
                             >
                               <View style={styles.predefinedHeader}>
                                 <Text
@@ -447,31 +522,39 @@ export default function AddTaskModal({
 
             <View style={styles.field}>
               <Text style={[styles.label, { color: theme.text }]}>{copy.addTaskFrequency}</Text>
-              <View style={styles.buttonGroup}>
+              <View
+                style={[
+                  styles.buttonGroup,
+                  tutorialOn && styles.tutorialDisabled,
+                ]}
+              >
                 <FrequencyButton
                   label={copy.addTaskOnce}
                   active={frequency === TaskFrequency.ONCE}
                   onPress={() => setFrequency(TaskFrequency.ONCE)}
                   settings={settings}
+                  disabled={tutorialOn}
                 />
                 <FrequencyButton
                   label={copy.addTaskDaily}
                   active={frequency === TaskFrequency.DAILY}
                   onPress={() => setFrequency(TaskFrequency.DAILY)}
                   settings={settings}
+                  disabled={tutorialOn}
                 />
                 <FrequencyButton
                   label={copy.addTaskWeekly}
                   active={frequency === TaskFrequency.WEEKLY}
                   onPress={() => setFrequency(TaskFrequency.WEEKLY)}
                   settings={settings}
+                  disabled={tutorialOn}
                 />
               </View>
             </View>
 
             <View style={styles.field}>
               <Text style={[styles.label, { color: theme.text }]}>{copy.tasksPriority}</Text>
-              <View style={styles.row}>
+              <View style={[styles.row, tutorialOn && styles.tutorialDisabled]}>
                 {taskPriorityOptions.map((priorityOption) => (
                   <ChipButton
                     key={priorityOption}
@@ -479,14 +562,20 @@ export default function AddTaskModal({
                     active={priority === priorityOption}
                     onPress={() => setPriority(priorityOption)}
                     settings={settings}
+                    disabled={tutorialOn}
                   />
                 ))}
               </View>
             </View>
 
-            <View style={styles.field}>
+            <View style={[styles.field, tutorialOn && styles.tutorialDisabled]}>
               <Text style={[styles.label, { color: theme.text }]}>{copy.addTaskDate}</Text>
-              <TaskDatePicker settings={settings} value={dueDate} onChange={setDueDate} />
+              <TaskDatePicker
+                settings={settings}
+                value={dueDate}
+                onChange={setDueDate}
+                disabled={tutorialOn}
+              />
             </View>
 
             {type === TaskType.CUSTOM ? (
@@ -499,15 +588,17 @@ export default function AddTaskModal({
                     <TouchableOpacity
                       style={[styles.helpButton, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}
                       onPress={() => setShowSaveTemplateHelp(!showSaveTemplateHelp)}
+                      disabled={tutorialOn}
                     >
                       <Text style={[styles.helpButtonText, { color: theme.mutedText }]}>?</Text>
                     </TouchableOpacity>
                   </View>
                   <Switch
-                    value={saveAsTemplate}
-                    onValueChange={setSaveAsTemplate}
+                  value={saveAsTemplate}
+                    onValueChange={tutorialOn ? () => {} : setSaveAsTemplate}
                     thumbColor={saveAsTemplate ? theme.accent : theme.border}
                     trackColor={{ false: theme.surfaceMuted, true: theme.accentSoft }}
+                    disabled={tutorialOn}
                   />
                 </View>
                 {showSaveTemplateHelp ? (
@@ -518,14 +609,15 @@ export default function AddTaskModal({
               </View>
             ) : null}
 
-            <View style={styles.field}>
+            <View style={[styles.field, tutorialOn && styles.tutorialDisabled]}>
               <View style={styles.timerHeader}>
                 <Text style={[styles.label, { color: theme.text }]}>{copy.addTaskTimer}</Text>
                 <Switch
                   value={timerEnabled}
-                  onValueChange={setTimerEnabled}
+                  onValueChange={tutorialOn ? () => {} : setTimerEnabled}
                   thumbColor={timerEnabled ? theme.accent : theme.border}
                   trackColor={{ false: theme.surfaceMuted, true: theme.accentSoft }}
+                  disabled={tutorialOn}
                 />
               </View>
               {timerEnabled && (
@@ -538,6 +630,9 @@ export default function AddTaskModal({
                     ]}
                     value={timerDurationMinutes.toString()}
                     onChangeText={(value) => {
+                      if (tutorialOn) {
+                        return;
+                      }
                       const parsed = Number(value);
                       if (!Number.isNaN(parsed)) {
                         setTimerDurationMinutes(Math.max(1, parsed));
@@ -546,6 +641,7 @@ export default function AddTaskModal({
                     keyboardType="numeric"
                     placeholder="5"
                     placeholderTextColor={theme.mutedText}
+                    editable={!tutorialOn}
                   />
                   <Text style={[styles.timerLabel, { color: theme.mutedText }]}>min</Text>
                 </View>
@@ -563,11 +659,15 @@ function TypeButton({
   active,
   onPress,
   settings,
+  highlighted = false,
+  disabled = false,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
   settings: AppSettings;
+  highlighted?: boolean;
+  disabled?: boolean;
 }) {
   const theme = getAppTheme(settings.theme);
 
@@ -575,11 +675,14 @@ function TypeButton({
     <TouchableOpacity
       style={[
         styles.button,
+        highlighted && styles.tutorialHighlight,
+        disabled && styles.tutorialDisabled,
         {
           backgroundColor: active ? theme.accent : theme.surfaceMuted,
         },
       ]}
       onPress={onPress}
+      disabled={disabled}
     >
       <Text
         style={[
@@ -600,11 +703,13 @@ function FrequencyButton({
   active,
   onPress,
   settings,
+  disabled = false,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
   settings: AppSettings;
+  disabled?: boolean;
 }) {
   const theme = getAppTheme(settings.theme);
 
@@ -612,11 +717,13 @@ function FrequencyButton({
     <TouchableOpacity
       style={[
         styles.button,
+        disabled && styles.tutorialDisabled,
         {
           backgroundColor: active ? theme.accent : theme.surfaceMuted,
         },
       ]}
       onPress={onPress}
+      disabled={disabled}
     >
       <Text
         style={[
@@ -637,11 +744,13 @@ function ChipButton({
   active,
   onPress,
   settings,
+  disabled = false,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
   settings: AppSettings;
+  disabled?: boolean;
 }) {
   const theme = getAppTheme(settings.theme);
 
@@ -649,12 +758,14 @@ function ChipButton({
     <TouchableOpacity
       style={[
         styles.chipButton,
+        disabled && styles.tutorialDisabled,
         {
           backgroundColor: active ? theme.accent : theme.surfaceMuted,
           borderColor: active ? theme.accent : theme.border,
         },
       ]}
       onPress={onPress}
+      disabled={disabled}
     >
       <Text
         style={[
@@ -878,6 +989,21 @@ const styles = StyleSheet.create({
   },
   predefinedDescriptionActive: {
     color: "#366865",
+  },
+  tutorialHighlight: {
+    borderWidth: 2,
+    borderColor: "#ffd166",
+    shadowColor: "#ffd166",
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 10,
+  },
+  tutorialDisabled: {
+    opacity: 0.34,
   },
   button: {
     flex: 1,

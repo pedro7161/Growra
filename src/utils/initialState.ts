@@ -20,10 +20,23 @@ export function createInitialGameState(): GameState {
     totalExperience: 0,
     totalTasksCompleted: 0,
     tutorialCompleted: false,
+    tutorialRewardGranted: false,
     settings: defaultSettings,
     tasks: [],
     customTaskTemplates: [],
     pets: [],
+    gearItems: [],
+    battleConsumables: [],
+    expeditionProgress: {
+      expeditionsSent: 0,
+      revealPoints: 0,
+      activeZoneIndex: -1,
+      activeZoneEndsAt: 0,
+      activeNodeId: "",
+      activeNodePetId: "",
+      activeNodeEndsAt: 0,
+      completedNodeIds: [],
+    },
     equippedPetId: "",
     streak: createInitialStreak(),
     createdAt: Date.now(),
@@ -35,6 +48,6 @@ export function createSaveData(gameState: GameState): SaveData {
   return {
     gameState,
     lastSavedAt: Date.now(),
-    version: 11,
+    version: 17,
   };
 }
