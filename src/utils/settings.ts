@@ -1,5 +1,14 @@
-import { AppSettings, GameState, PetRarity, TaskStatus, TimerAlertSettings } from "../types";
+import { AppLanguage, AppSettings, GameState, PetRarity, TaskStatus, TimerAlertSettings } from "../types";
 import { getTodayTasks } from "./taskSchedule";
+
+const LOCALE_MAP: Record<AppLanguage, string> = {
+  en: "en-US",
+  pt: "pt-PT",
+};
+
+export function getLocaleFromSettings(settings: AppSettings): string {
+  return LOCALE_MAP[settings.language] ?? "en-US";
+}
 
 export const defaultTimerAlertSettings: TimerAlertSettings = {
   mode: "vibration",

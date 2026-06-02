@@ -18,13 +18,10 @@ import {
     CustomTaskTemplate,
     GameState,
     Task,
-    TaskFrequency,
     TaskStatus,
-    TaskType,
 } from "../types";
-import { createCustomTaskTemplate } from "../utils/customTaskTemplates";
 import { getLevelProgress, PLAYER_LEVEL_BASE_COST } from "../utils/gameplay";
-import { createCustomTask, createPredefinedTask } from "../utils/taskFactory";
+import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
 
 interface DashboardScreenProps {
@@ -82,51 +79,9 @@ export default function DashboardScreen({
     PLAYER_LEVEL_BASE_COST,
   );
 
-  const handleAddTask = (values: {
-    name: string;
-    description: string;
-    predefinedTaskId: string;
-    customTemplateId: string;
-    category: string;
-    type: TaskType;
-    frequency: TaskFrequency;
-    priority: any;
-    dueDate: number;
-    timerEnabled: boolean;
-    timerDurationMinutes: number;
-    saveAsTemplate: boolean;
-  }) => {
-    const newTask =
-      values.type === TaskType.PREDEFINED
-        ? createPredefinedTask(
-            getPredefinedTask(values.predefinedTaskId),
-            values.frequency,
-            values.dueDate,
-            values.timerEnabled,
-            values.timerDurationMinutes,
-            values.priority,
-          )
-        : createCustomTask(
-            values.name,
-            values.description,
-            values.category,
-            values.frequency,
-            values.customTemplateId,
-            values.dueDate,
-            values.timerEnabled,
-            values.timerDurationMinutes,
-            values.priority,
-          );
-    const customTemplate =
-      values.type === TaskType.CUSTOM && values.saveAsTemplate
-        ? createCustomTaskTemplate(
-            values.name,
-            values.description,
-            values.category,
-            values.customTemplateId,
-          )
-        : undefined;
-    onAddTask(newTask, customTemplate);
+  const handleAddTask = (values: TaskFormValues) => {
+    const { task, customTemplate } = buildTaskFromFormValues(values);
+    onAddTask(task, customTemplate);
   };
 
   return (

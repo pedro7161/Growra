@@ -22,10 +22,10 @@ import {
 import AddTaskModal from "../components/AddTaskModal";
 import TaskDetailsModal from "../components/TaskDetailsModal";
 import { getPredefinedTask } from "../constants/predefinedTasks";
-import { createCustomTask, createPredefinedTask } from "../utils/taskFactory";
+import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
 import TaskTimerControls from "../components/TaskTimerControls";
-import { createCustomTaskTemplate } from "../utils/customTaskTemplates";
+import { getLocaleFromSettings } from "../utils/settings";
 
 interface TasksScreenProps {
   settings: AppSettings;
@@ -130,53 +130,9 @@ export default function TasksScreen({
       return rightTask.createdAt - leftTask.createdAt;
     });
 
-  const handleAddTask = (
-    values: {
-      name: string;
-      description: string;
-      predefinedTaskId: string;
-      customTemplateId: string;
-      category: string;
-      type: TaskType;
-      frequency: TaskFrequency;
-      priority: any;
-      dueDate: number;
-      timerEnabled: boolean;
-      timerDurationMinutes: number;
-      saveAsTemplate: boolean;
-    }
-  ) => {
-    const newTask =
-      values.type === TaskType.PREDEFINED
-        ? createPredefinedTask(
-            getPredefinedTask(values.predefinedTaskId),
-            values.frequency,
-            values.dueDate,
-            values.timerEnabled,
-            values.timerDurationMinutes,
-            values.priority
-          )
-        : createCustomTask(
-            values.name,
-            values.description,
-            values.category,
-            values.frequency,
-            values.customTemplateId,
-            values.dueDate,
-            values.timerEnabled,
-            values.timerDurationMinutes,
-            values.priority
-          );
-    const customTemplate =
-      values.type === TaskType.CUSTOM && values.saveAsTemplate
-        ? createCustomTaskTemplate(
-            values.name,
-            values.description,
-            values.category,
-            values.customTemplateId
-          )
-        : undefined;
-    onAddTask(newTask, customTemplate);
+  const handleAddTask = (values: TaskFormValues) => {
+    const { task, customTemplate } = buildTaskFromFormValues(values);
+    onAddTask(task, customTemplate);
   };
   const tutorialTargetTaskId =
     tutorialTarget === "task-complete" && tasks.length > 0 ? tasks[0].id : "";
@@ -364,7 +320,7 @@ function TaskItem({
 }) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
-  const locale = settings.language === "pt" ? "pt-PT" : "en-US";
+  const locale = getLocaleFromSettings(settings);
   const isCompleted = task.status === TaskStatus.COMPLETED;
   const isScheduled = !isCompleted && task.dueDate > Date.now();
   const predefinedTask = task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId) : null;

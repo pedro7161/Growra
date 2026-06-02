@@ -154,6 +154,14 @@ export function finishTaskTimer(task: Task): Task {
   });
 }
 
+export function formatDuration(durationMs: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(durationMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 export function ensureTimerReady(task: Task, now = Date.now()): Task {
   if (!task.timer.enabled || task.timer.state !== "running") {
     return task;

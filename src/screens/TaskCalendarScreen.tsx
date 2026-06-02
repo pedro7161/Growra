@@ -6,6 +6,7 @@ import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, Task, TaskPriority, TaskStatus } from "../types";
 import { getStartOfDay } from "../utils/taskSchedule";
 import { getPredefinedTask } from "../constants/predefinedTasks";
+import { getLocaleFromSettings } from "../utils/settings";
 
 interface TaskCalendarScreenProps {
   settings: AppSettings;
@@ -118,7 +119,7 @@ export default function TaskCalendarScreen({
 }: TaskCalendarScreenProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
-  const locale = settings.language === "pt" ? "pt-PT" : "en-US";
+  const locale = getLocaleFromSettings(settings);
   const [activeMonth, setActiveMonth] = useState(() => getMonthStart(new Date()));
   const [selectedDayStart, setSelectedDayStart] = useState(() => getStartOfDay(Date.now()));
 
