@@ -1,6 +1,6 @@
 # Growra
 
-A habit tracker with game mechanics. Completing real-life tasks earns coins and XP. Companions join when you use Growra in their style (routines, timers, planning ahead…), grow through Bond and evolve; they can still wear gear and go on expeditions with auto-battles. Streaks reward consistency. Everything is stored locally on the device (no account, no backend).
+A habit tracker with game mechanics. Completing real-life tasks earns coins and XP. Companions join when you use Growra in their style (routines, timers, planning ahead…), grow through Bond and evolve. Every active day adds a tile to a road through the valley, with camps to decorate. Streaks reward consistency. Everything is stored locally on the device (no account, no backend).
 
 Design and rules: [`Documents/PROJECT_SPEC.md`](Documents/PROJECT_SPEC.md).
 
@@ -30,8 +30,9 @@ EAS builds (`eas.json`): `eas build -p android --profile production` produces an
 ## Code map
 
 - `src/App.tsx` — screen switching, state persistence, tutorial flow
-- `src/utils/gameplay.ts` — rewards, streaks, pets, expeditions, battles
+- `src/utils/gameplay.ts` — rewards, streaks, companion actions
 - `src/utils/companions.ts` — usage signals, who joins when, Bond, perks, mood
+- `src/utils/journey.ts` — day records, the road (tiles, camps, regions), decorations, focus finds
 - `src/utils/taskSchedule.ts` — due dates and recurring-task resets
 - `src/services/gameStateService.ts` — save/load, migrations, backup codes
 - `src/screens/`, `src/components/` — UI

@@ -14,7 +14,9 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
         "Pick your first companion. The others join when you use Growra in their style (routines, timers, planning ahead and more).",
         "Companions grow through Bond from using the app and evolve at 30 and 100 Bond. Each one has a small perk.",
         "Your companion's mood shows on the dashboard.",
-        "Existing pets are kept; extra copies and pity were turned into coins.",
+        "New Journey tab: every day you complete a task adds a tile to your road, with camps every 7 active days and a new region every 28.",
+        "Decorate your camps with coins. Timer tasks sometimes make your companion bring back a find.",
+        "Expeditions, battles and gear are gone. Existing pets are kept; extra copies, pity, gear and consumables were turned into coins.",
       ],
     },
     {
@@ -59,7 +61,9 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
         "Escolhe o teu primeiro companheiro. Os outros juntam-se quando usas o Growra ao estilo deles (rotinas, temporizadores, planear com antecedência e mais).",
         "Os companheiros crescem com Laço ao usares a app e evoluem com 30 e 100 de Laço. Cada um tem uma pequena vantagem.",
         "O humor do teu companheiro aparece no painel.",
-        "Os pets que já tinhas ficam; cópias extra e pity foram convertidos em moedas.",
+        "Novo separador Jornada: cada dia em que concluis uma tarefa acrescenta um bloco ao teu caminho, com acampamentos a cada 7 dias ativos e uma nova região a cada 28.",
+        "Decora os acampamentos com moedas. As tarefas com temporizador às vezes fazem o teu companheiro trazer um achado.",
+        "Expedições, batalhas e equipamento acabaram. Os pets que já tinhas ficam; cópias extra, pity, equipamento e consumíveis foram convertidos em moedas.",
       ],
     },
     {

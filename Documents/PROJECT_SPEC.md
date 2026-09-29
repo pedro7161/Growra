@@ -144,112 +144,35 @@ No backend required.
 
 ---
 
-## 5.3 Pet System
+## 5.3 Companions
+
+Details and reasoning: [`GAME_REDESIGN.md`](GAME_REDESIGN.md) §4. Rules live in `src/utils/companions.ts`.
 
 ### Core Concept:
 
-* user collects pets
-* user equips 1 pet for tasks
-* pets gain experience from tasks (multiplied by pet's XP multiplier)
-* pets can evolve through multiple stages
-* pets can be fused to increase strength
-* pets support cosmetic variants
+* there is no summoning, fusion or selling; each companion exists once
+* the player picks a first companion (Sprout, Ripple or Glint) in the tutorial
+* the others join when the player uses Growra in their style (routines, timers, planning ahead, priorities, custom tasks, tidying overdue tasks, showing up, big days)
+* one companion is active ("Take along"); it gives a small perk that matches its style
+* companions support cosmetic variants (`activeImageVariantId`)
 
-### Pet Rarity:
+### Bond and Evolution:
 
-* Common
-* Rare
-* Epic
-* Legendary
-
-### Task Interaction:
-
-* each pet has a **task multiplier** (coin reward bonus)
-* each pet has an **XP multiplier** (experience gain per task)
-
-Example (Task Multiplier):
-
-* Common → +5%
-* Rare → +10%
-* Epic → +15%
-
-Example (XP Multiplier — per pet):
-
-* Sprout (Common) → 0.9× (slower leveling)
-* Pebble (Common) → 1.1× (faster leveling)
-* Ember (Rare) → 1.3×
-* Nova (Epic) → 1.65×
-
-### Evolution System:
-
-* pets have multiple evolution stages: base, evolution 1, evolution 2
-* evolution progresses through gameplay
-* each stage has unique visuals and stat progression
-
-### Fusion System:
-
-* pets can be fused with duplicates to increase fusion level
-* maximum fusion level: 4
-* fusion improves pet stats and effectiveness
-* selling a max-fused pet (4 fusions) yields pity coins instead of coins
-
-### Cosmetic Variants:
-
-* pets support variant skins
-* variants can be unlocked or cosmetically applied
-* variants use the `activeImageVariantId` system
-
-### Pet Stats:
-
-* attack
-* defense
-* speed
-* luck
-* combat power (derived from stats)
-* exploration power (derived from stats)
-
-### Pet Passives:
-
-* passive abilities that provide bonuses (e.g., increased loot, exploration speed)
-* passives are trait-based per pet template
-
-### Leveling:
-
-* pets level from 1 to 99
-* milestone levels: 12, 16, 24, 41, 81, 99
-* experience is required to level up
+* +1 Bond per completed task while active (max 5 a day), +1 more when the task matches its style
+* evolves at 30 Bond (evo 1) and 100 Bond (evo 2)
+* mood is derived from today (hi / happy / glowing / sleepy) and never hurts
 
 ---
 
-## 5.4 Adventure System (Secondary)
+## 5.4 Journey
 
-### Purpose:
+Details: [`GAME_REDESIGN.md`](GAME_REDESIGN.md) §5. Rules live in `src/utils/journey.ts`.
 
-* give value to inactive pets
-
-### Rules:
-
-* pets sent on adventures
-* NO coin generation
-* does NOT replace task system
-
-### Rewards:
-
-* materials
-* cosmetics
-* evolution resources
-
-### Stats System:
-
-* attack
-* defense
-* speed
-* luck
-
-### Passives:
-
-* e.g. increased loot
-* increased exploration speed
+* every active day (at least one completed task) adds a tile to a road; missed days never break it
+* tiles show how that day was used (flowers for routines, crystals for timers, a flag for High priority, and so on)
+* a camp every 7 active days with a "this week" look-back card; a new region every 28 (8 regions, then season 2)
+* finished timer tasks: every 3rd one, the active companion brings back a find (a decoration)
+* progress comes only from the user's own activity, never from waiting
 
 ---
 
@@ -257,85 +180,18 @@ Example (XP Multiplier — per pet):
 
 ### Currency:
 
-* coins (main)
+* coins (main), 10 per completed task with streak and companion bonuses; coins stop after 15 completions a day
 
 ### Spending:
 
-1. pets (gacha)
-2. upgrades (light)
-3. cosmetics
+* decorations for camps on the Journey
+* later: cosmetics
 
 ### Explicitly NOT allowed:
 
 * systems that bypass effort
 * streak protection mechanics
-
----
-
-## 5.6 Gacha System
-
-### Single Summon:
-
-* **cost:** 100 coins
-* gives 1 random pet
-* gives 1 pity coin
-
-### Multi-Summon (10+1):
-
-* **cost:** 1,000 coins
-* gives 11 pets (10 random + 1 bonus)
-* gives 10 pity coins
-
-### Pity Shop:
-
-* accumulate pity coins from summoning
-* redeem pity coins to buy specific pets:
-  * Common: 15 pity coins
-  * Rare: 30 pity coins
-  * Epic: 60 pity coins
-
-### Selling Max-Duped Pets:
-
-* normal selling (unfused or not at max): gives coins
-* selling a pet at max fusion (4 fusions): gives **pity coins instead**:
-  * Common: 1 pity coin
-  * Rare: 2 pity coins
-  * Epic: 3 pity coins
-
-### Goal:
-
-* randomness + guaranteed progression + manage excess duplicates
-
----
-
-## 6. Main Screen (Dashboard)
-
-### Layout:
-
-Top:
-
-* equipped pet
-* streak + bonus
-* player level and coins
-
-Middle:
-
-* quick actions (add task)
-
-Main:
-
-* task list (default: Today)
-* shows pending and completed tasks
-
-Bottom:
-
-* bottom navigation (screens: Dashboard, Tasks, Calendar, Pets, Settings)
-
-### Goal:
-
-* fast interaction
-* minimal friction
-* daily usage focus
+* buying companions, Bond or progress
 
 ---
 
@@ -346,7 +202,8 @@ Bottom:
 * **Dashboard** - main view with equipped pet and today's tasks
 * **Tasks** - full task management with filters and search
 * **Task Calendar** - month-based calendar view with task indicators
-* **Pets** - pet collection, equip, summon, fusion, and sell screens
+* **Journey** - the road of active days, camps, look-back cards and decorations
+* **Companions** - the collection, who joins how, Bond and the active companion
 * **Settings** - language, theme, stats, import/export, backup codes
 
 ### Bottom Navigation:

@@ -1,5 +1,6 @@
 import { AppLanguage } from "../types";
 import type { CompanionMood, CompanionStyle } from "../utils/companions";
+import type { TileFeature } from "../utils/journey";
 
 interface CompanionStyleCopy {
   loves: string;
@@ -11,7 +12,8 @@ interface CompanionStyleCopy {
 interface AppCopy {
   navDashboard: string;
   navTasks: string;
-  navRealm: string;
+  navJourney: string;
+  navCompanions: string;
   dashboardToday: string;
   dashboardPendingTasks: string;
   dashboardRewardMultiplier: string;
@@ -88,63 +90,18 @@ interface AppCopy {
   addTaskDescriptionPlaceholder: string;
   petsTitle: string;
   petsCoinsPity: string;
-  petsExplorationTab: string;
-  petsMyPetsTab: string;
-  petsExplorationTitle: string;
-  petsExplorationSubtitle: string;
-  petsExplorationMapTitle: string;
-  petsExplorationMapHint: string;
-  petsExplorationRosterTitle: string;
-  petsExplorationEmpty: string;
-  petsExplorationSend: string;
-  petsExplorationSent: string;
-  petsExplorationActive: string;
-  petsExplorationNextZone: string;
-  petsExplorationTimeRemaining: string;
-  petsExplorationUnlocked: string;
-  petsExplorationUnknown: string;
-  petsExplorationFog: string;
-  petsBattleTitle: string;
-  petsBattleSubtitle: string;
-  petsBattleWildPet: string;
-  petsBattleWildPower: string;
-  petsBattleFight: string;
-  petsBattleSelectPet: string;
-  petsBattleNoPets: string;
-  petsBattleLocked: string;
-  petsGearTitle: string;
-  petsGearSubtitle: string;
-  petsGearLabel: string;
-  petsGearEquip: string;
-  petsGearEquipped: string;
-  petsGearBonus: string;
-  petsGearNoItems: string;
   petsDetailTitle: string;
   petsDetailClose: string;
-  petsDetailOverview: string;
-  petsDetailElement: string;
-  petsDetailDescription: string;
-  petsDetailSource: string;
-  petsDetailStatsTitle: string;
-  petsDetailCurrentGear: string;
-  petsDetailAvailableGear: string;
-  petsDetailActions: string;
   petsSummonRevealClose: string;
   petsSummonRevealPrevious: string;
   petsSummonRevealNext: string;
   petsEvolution: string;
   petsTaskBonus: string;
-  petsCombatPower: string;
-  petsExplorationPower: string;
-  petsExperience: string;
-  petsLevel: string;
-  petsNextEvolution: string;
   petsMaxEvolution: string;
   petsEvolutionBase: string;
   petsEvolutionEvolved: string;
   petsEvolutionAscended: string;
   petsActive: string;
-  petsEquip: string;
   settingsTitle: string;
   settingsLanguage: string;
   settingsTheme: string;
@@ -214,6 +171,38 @@ interface AppCopy {
   companionStyles: Record<CompanionStyle, CompanionStyleCopy>;
   dashboardActiveDays: string;
   tutorialChooseCompanionHint: string;
+  companionFoundTitle: string;
+  companionFoundSubtitle: string;
+  journeyTitle: string;
+  journeySeason: string;
+  journeyProgress: string;
+  journeyEmpty: string;
+  journeyNextTile: string;
+  journeyTodayDone: string;
+  journeyCamp: string;
+  journeyRegion: string;
+  journeyDecorations: string;
+  journeyShop: string;
+  journeyBag: string;
+  journeyBagEmpty: string;
+  journeyBuy: string;
+  journeyFoundOnly: string;
+  journeyEmptySpot: string;
+  journeyPlaceHere: string;
+  journeyPutBack: string;
+  journeyChooseForSpot: string;
+  journeyLookBack: string;
+  journeyLookBackDone: string;
+  journeyLookBackBusiest: string;
+  journeyLookBackTop: string;
+  journeyDayDone: string;
+  journeyDayMore: string;
+  journeyClose: string;
+  journeyMigratedTitle: string;
+  journeyMigratedBody: string;
+  tileFeatures: Record<TileFeature, string>;
+  regionHints: string[];
+  decorationNames: Record<string, string>;
   timerStart: string;
   timerPause: string;
   timerResume: string;
@@ -228,7 +217,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
   en: {
     navDashboard: "Dashboard",
     navTasks: "Tasks",
-    navRealm: "Realm",
+    navJourney: "Journey",
+    navCompanions: "Companions",
     dashboardToday: "Today",
     dashboardPendingTasks: "pending tasks",
     dashboardRewardMultiplier: "reward multiplier",
@@ -305,63 +295,18 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     addTaskDescriptionPlaceholder: "Enter task description (optional)",
     petsTitle: "Companions",
     petsCoinsPity: "coins",
-    petsExplorationTab: "Explore",
-    petsMyPetsTab: "Companions",
-    petsExplorationTitle: "Realm Map",
-    petsExplorationSubtitle: "Send pets into the wild to uncover the world one route at a time.",
-    petsExplorationMapTitle: "Uncharted regions",
-    petsExplorationMapHint: "Each expedition exposes more of the map. Stronger explorers reveal faster.",
-    petsExplorationRosterTitle: "Send a pet",
-    petsExplorationEmpty: "You need at least one pet to begin exploring.",
-    petsExplorationSend: "Send on expedition",
-    petsExplorationSent: "Expeditions sent",
-    petsExplorationActive: "Expedition in progress",
-    petsExplorationNextZone: "Next zone",
-    petsExplorationTimeRemaining: "Time remaining",
-    petsExplorationUnlocked: "Unlocked",
-    petsExplorationUnknown: "Unknown",
-    petsExplorationFog: "Fog covers this route.",
-    petsBattleTitle: "Zone Battles",
-    petsBattleSubtitle: "Choose a revealed zone and fight its wild pet to earn XP and loot.",
-    petsBattleWildPet: "Wild pet",
-    petsBattleWildPower: "Wild power",
-    petsBattleFight: "Fight wild pet",
-    petsBattleSelectPet: "Select fighter",
-    petsBattleNoPets: "You need a pet to start fighting wild encounters.",
-    petsBattleLocked: "Reveal a zone first to unlock wild battles.",
-    petsGearTitle: "Gear Vault",
-    petsGearSubtitle: "Loot from battles can be equipped to boost your pets' base stats.",
-    petsGearLabel: "Gear",
-    petsGearEquip: "Equip",
-    petsGearEquipped: "Equipped",
-    petsGearBonus: "Bonus",
-    petsGearNoItems: "No gear yet. Win a fight to start collecting gear.",
     petsDetailTitle: "Companion",
     petsDetailClose: "Close",
-    petsDetailOverview: "Overview",
-    petsDetailElement: "Element",
-    petsDetailDescription: "Description",
-    petsDetailSource: "Source zone",
-    petsDetailStatsTitle: "Stats",
-    petsDetailCurrentGear: "Current gear",
-    petsDetailAvailableGear: "Available gear",
-    petsDetailActions: "Actions",
     petsSummonRevealClose: "Close",
     petsSummonRevealPrevious: "Previous",
     petsSummonRevealNext: "Next",
     petsEvolution: "Evolution",
     petsTaskBonus: "Task bonus",
-    petsCombatPower: "Combat power",
-    petsExplorationPower: "Exploration power",
-    petsExperience: "XP",
-    petsLevel: "Level",
-    petsNextEvolution: "Next evolution",
     petsMaxEvolution: "Max evolution reached",
     petsEvolutionBase: "Base",
     petsEvolutionEvolved: "Evolved",
     petsEvolutionAscended: "Ascended",
     petsActive: "Active",
-    petsEquip: "Equip",
     settingsTitle: "Settings",
     settingsLanguage: "Language",
     settingsTheme: "Color Theme",
@@ -406,7 +351,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tutorialCompleteTaskTitle: "Complete that task",
     tutorialCompleteTaskHint: "Mark the task as done to earn your first coins.",
     tutorialOpenTasks: "Open Tasks",
-    tutorialOpenRealm: "Open Realm",
+    tutorialOpenRealm: "Open Companions",
     tutorialRewardTitle: "You're ready!",
     tutorialStep1Title: "Welcome to Growra!",
     tutorialStep1Body: "Your dashboard shows today's tasks, your streak bonus, and your equipped pet. Complete tasks to earn coins and XP.",
@@ -449,6 +394,69 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     },
     dashboardActiveDays: "Active days",
     tutorialChooseCompanionHint: "Pick your first companion.",
+    companionFoundTitle: "{name} found something!",
+    companionFoundSubtitle: "A {item} from your focus session. It's in your bag on the Journey.",
+    journeyTitle: "Journey",
+    journeySeason: "Season {season}",
+    journeyProgress: "Active day {tiles} • camp in {camp} • new region in {region}",
+    journeyEmpty: "Complete any task to lay the first tile of your road.",
+    journeyNextTile: "Today's tile appears when you complete a task.",
+    journeyTodayDone: "Today's tile is down. Every active day adds one.",
+    journeyCamp: "Camp {number}",
+    journeyRegion: "Region {number}: {name}",
+    journeyDecorations: "Decorations",
+    journeyShop: "Shop",
+    journeyBag: "Your bag",
+    journeyBagEmpty: "Nothing in your bag yet. Buy something here, or finish timer tasks: your companion brings back finds.",
+    journeyBuy: "Buy • {price}",
+    journeyFoundOnly: "Found during focus sessions",
+    journeyEmptySpot: "Empty spot",
+    journeyPlaceHere: "Place here",
+    journeyPutBack: "Put back in bag",
+    journeyChooseForSpot: "Choose something for this spot",
+    journeyLookBack: "This week",
+    journeyLookBackDone: "{done} tasks done",
+    journeyLookBackBusiest: "Busiest day: {day}",
+    journeyLookBackTop: "Most repeated: {name} ({count}×)",
+    journeyDayDone: "{done} done",
+    journeyDayMore: "…and {count} more",
+    journeyClose: "Close",
+    journeyMigratedTitle: "Expeditions became the Journey",
+    journeyMigratedBody: "Expeditions, battles and gear are gone. Your road is built from the days you completed tasks. Gear and consumables were turned into {coins} coins.",
+    tileFeatures: {
+      lantern: "Active day",
+      flowers: "Daily or weekly task done",
+      crystal: "Timer finished",
+      stone: "Custom task done",
+      flag: "High-priority task done",
+      signpost: "Planned something for later",
+      tree: "Big day (5+ tasks)",
+    },
+    regionHints: [
+      "Warm shores where the first trail markers were planted.",
+      "A soft green wood where roots hum under the path.",
+      "Golden sand that keeps every footprint for a day.",
+      "A high trail above the clouds, windy and bright.",
+      "Still water that glows when someone walks by.",
+      "Glittering plains where the wind rings like chimes.",
+      "Warm stone and ember light, cosy after a long day.",
+      "The top of the valley. You can see the whole road from here.",
+    ],
+    decorationNames: {
+      "flower-pot": "flower pot",
+      "mushroom-ring": "mushroom ring",
+      "paper-lantern": "paper lantern",
+      pennant: "pennant",
+      "wind-chime": "wind chime",
+      snowman: "snowman",
+      "crystal-cluster": "crystal ball",
+      tent: "tent",
+      "star-lamp": "star lamp",
+      shell: "shell",
+      feather: "feather",
+      clover: "four-leaf clover",
+      acorn: "acorn",
+    },
     timerStart: "Start",
     timerPause: "Pause",
     timerResume: "Resume",
@@ -461,7 +469,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
   pt: {
     navDashboard: "Painel",
     navTasks: "Tarefas",
-    navRealm: "Reino",
+    navJourney: "Jornada",
+    navCompanions: "Companheiros",
     dashboardToday: "Hoje",
     dashboardPendingTasks: "tarefas pendentes",
     dashboardRewardMultiplier: "multiplicador de recompensa",
@@ -538,63 +547,18 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     addTaskDescriptionPlaceholder: "Escreve a descrição da tarefa (opcional)",
     petsTitle: "Companheiros",
     petsCoinsPity: "moedas",
-    petsExplorationTab: "Explorar",
-    petsMyPetsTab: "Companheiros",
-    petsExplorationTitle: "Mapa do Reino",
-    petsExplorationSubtitle: "Envia pets para o terreno e revela o mundo caminho a caminho.",
-    petsExplorationMapTitle: "Regiões por chartar",
-    petsExplorationMapHint: "Cada expedição expõe mais do mapa. Exploradores fortes revelam mais depressa.",
-    petsExplorationRosterTitle: "Enviar um pet",
-    petsExplorationEmpty: "Precisas de pelo menos um pet para começar a explorar.",
-    petsExplorationSend: "Enviar em expedição",
-    petsExplorationSent: "Expedições enviadas",
-    petsExplorationActive: "Expedição em progresso",
-    petsExplorationNextZone: "Próxima zona",
-    petsExplorationTimeRemaining: "Tempo restante",
-    petsExplorationUnlocked: "Desbloqueado",
-    petsExplorationUnknown: "Desconhecido",
-    petsExplorationFog: "A neblina cobre esta rota.",
-    petsBattleTitle: "Batalhas da zona",
-    petsBattleSubtitle: "Escolhe uma zona revelada e luta contra o pet selvagem para ganhar XP e loot.",
-    petsBattleWildPet: "Pet selvagem",
-    petsBattleWildPower: "Poder selvagem",
-    petsBattleFight: "Lutar contra pet selvagem",
-    petsBattleSelectPet: "Selecionar lutador",
-    petsBattleNoPets: "Precisas de um pet para começar a lutar contra encontros selvagens.",
-    petsBattleLocked: "Revela uma zona primeiro para desbloquear batalhas selvagens.",
-    petsGearTitle: "Arsenal",
-    petsGearSubtitle: "O loot das batalhas pode ser equipado para aumentar as estatísticas base dos pets.",
-    petsGearLabel: "Gear",
-    petsGearEquip: "Equipar",
-    petsGearEquipped: "Equipado",
-    petsGearBonus: "Bónus",
-    petsGearNoItems: "Ainda sem gear. Vence uma batalha para começar a colecionar gear.",
     petsDetailTitle: "Companheiro",
     petsDetailClose: "Fechar",
-    petsDetailOverview: "Visão geral",
-    petsDetailElement: "Elemento",
-    petsDetailDescription: "Descrição",
-    petsDetailSource: "Zona de origem",
-    petsDetailStatsTitle: "Atributos",
-    petsDetailCurrentGear: "Equipamento atual",
-    petsDetailAvailableGear: "Equipamentos disponíveis",
-    petsDetailActions: "Ações",
     petsSummonRevealClose: "Fechar",
     petsSummonRevealPrevious: "Anterior",
     petsSummonRevealNext: "Seguinte",
     petsEvolution: "Evolução",
     petsTaskBonus: "Bónus de tarefa",
-    petsCombatPower: "Poder de combate",
-    petsExplorationPower: "Poder de exploração",
-    petsExperience: "XP",
-    petsLevel: "Nível",
-    petsNextEvolution: "Próxima evolução",
     petsMaxEvolution: "Evolução máxima atingida",
     petsEvolutionBase: "Base",
     petsEvolutionEvolved: "Evoluído",
     petsEvolutionAscended: "Ascendido",
     petsActive: "Ativo",
-    petsEquip: "Equipar",
     settingsTitle: "Definições",
     settingsLanguage: "Idioma",
     settingsTheme: "Tema de cor",
@@ -639,7 +603,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tutorialCompleteTaskTitle: "Conclui essa tarefa",
     tutorialCompleteTaskHint: "Marca a tarefa como feita para ganhares as primeiras moedas.",
     tutorialOpenTasks: "Abrir tarefas",
-    tutorialOpenRealm: "Abrir reino",
+    tutorialOpenRealm: "Abrir Companheiros",
     tutorialRewardTitle: "Estás pronto!",
     tutorialStep1Title: "Bem-vindo ao Growra!",
     tutorialStep1Body: "O teu painel mostra as tarefas de hoje, o bónus de sequência e o teu pet equipado. Completa tarefas para ganhar moedas e XP.",
@@ -682,6 +646,69 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     },
     dashboardActiveDays: "Dias ativos",
     tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro.",
+    companionFoundTitle: "{name} encontrou uma coisa!",
+    companionFoundSubtitle: "Um(a) {item} da tua sessão de foco. Está na tua mochila na Jornada.",
+    journeyTitle: "Jornada",
+    journeySeason: "Temporada {season}",
+    journeyProgress: "Dia ativo {tiles} • acampamento em {camp} • nova região em {region}",
+    journeyEmpty: "Conclui qualquer tarefa para pôr o primeiro bloco do teu caminho.",
+    journeyNextTile: "O bloco de hoje aparece quando concluíres uma tarefa.",
+    journeyTodayDone: "O bloco de hoje já está. Cada dia ativo acrescenta um.",
+    journeyCamp: "Acampamento {number}",
+    journeyRegion: "Região {number}: {name}",
+    journeyDecorations: "Decorações",
+    journeyShop: "Loja",
+    journeyBag: "A tua mochila",
+    journeyBagEmpty: "A mochila está vazia. Compra algo aqui ou termina tarefas com temporizador: o teu companheiro traz achados.",
+    journeyBuy: "Comprar • {price}",
+    journeyFoundOnly: "Encontrado em sessões de foco",
+    journeyEmptySpot: "Lugar vazio",
+    journeyPlaceHere: "Pôr aqui",
+    journeyPutBack: "Guardar na mochila",
+    journeyChooseForSpot: "Escolhe algo para este lugar",
+    journeyLookBack: "Esta semana",
+    journeyLookBackDone: "{done} tarefas feitas",
+    journeyLookBackBusiest: "Dia mais cheio: {day}",
+    journeyLookBackTop: "Mais repetida: {name} ({count}×)",
+    journeyDayDone: "{done} feitas",
+    journeyDayMore: "…e mais {count}",
+    journeyClose: "Fechar",
+    journeyMigratedTitle: "As expedições deram lugar à Jornada",
+    journeyMigratedBody: "Expedições, batalhas e equipamento acabaram. O teu caminho é feito dos dias em que concluíste tarefas. Equipamento e consumíveis foram convertidos em {coins} moedas.",
+    tileFeatures: {
+      lantern: "Dia ativo",
+      flowers: "Tarefa diária ou semanal feita",
+      crystal: "Temporizador terminado",
+      stone: "Tarefa personalizada feita",
+      flag: "Tarefa de prioridade Alta feita",
+      signpost: "Planeaste algo para mais tarde",
+      tree: "Dia em grande (5+ tarefas)",
+    },
+    regionHints: [
+      "Praias quentes onde foram postos os primeiros marcos do trilho.",
+      "Um bosque verde e suave onde as raízes cantarolam sob o caminho.",
+      "Areia dourada que guarda cada pegada durante um dia.",
+      "Um trilho alto acima das nuvens, ventoso e luminoso.",
+      "Água parada que brilha quando alguém passa.",
+      "Planícies cintilantes onde o vento toca como sinos.",
+      "Pedra morna e luz de brasas, acolhedora depois de um dia longo.",
+      "O topo do vale. Daqui vê-se o caminho todo.",
+    ],
+    decorationNames: {
+      "flower-pot": "vaso de flores",
+      "mushroom-ring": "círculo de cogumelos",
+      "paper-lantern": "lanterna de papel",
+      pennant: "bandeirola",
+      "wind-chime": "espanta-espíritos",
+      snowman: "boneco de neve",
+      "crystal-cluster": "bola de cristal",
+      tent: "tenda",
+      "star-lamp": "candeeiro estrela",
+      shell: "concha",
+      feather: "pena",
+      clover: "trevo de quatro folhas",
+      acorn: "bolota",
+    },
     timerStart: "Começar",
     timerPause: "Pausa",
     timerResume: "Retomar",

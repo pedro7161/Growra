@@ -1,4 +1,5 @@
 import { AppLanguage, AppSettings, GameState, TaskStatus, TimerAlertSettings } from "../types";
+import { getRoadPosition } from "./journey";
 import { getTodayTasks } from "./taskSchedule";
 
 const LOCALE_MAP: Record<AppLanguage, string> = {
@@ -43,7 +44,7 @@ export function getGameStatsSummary(gameState: GameState): GameStatsSummary {
     todayActiveTasks: todayTasks.length,
     totalPets: gameState.pets.length,
     evolvedPets,
-    activeDays: gameState.usage.activeDays,
+    activeDays: getRoadPosition(gameState.days).tiles,
     equippedPetName: equippedPet ? equippedPet.name : "-",
   };
 }

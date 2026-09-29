@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  BattleConsumableItem,
+  DayRecord,
+  Decoration,
   GameState,
   SaveData,
   Task,
@@ -20,14 +21,11 @@ import { getPredefinedTask } from "../constants/predefinedTasks";
 import {
   completeTask as applyTaskCompletion,
   equipPet as applyPetEquip,
-  equipGearToPet as applyGearEquip,
   getPetTemplateId,
   getSellValue,
   withCompanionBond,
-  exploreExpeditionNode as applyExpeditionNode,
-  refreshPetGearState,
-  resolveExpeditionBattle as applyExpeditionBattle,
 } from "../utils/gameplay";
+import { buildDaysFromTasks } from "../utils/journey";
 import { getNextAvailableDate, getStartOfDay } from "../utils/taskSchedule";
 import { defaultSettings, defaultTimerAlertSettings } from "../utils/settings";
 import { createTaskTimer } from "../utils/taskTimer";
@@ -35,6 +33,8 @@ import { BOND_GROWTH_THRESHOLDS, createEmptyUsage } from "../utils/companions";
 
 /** Old saves stored pity currency; it converts to coins at this rate when companions replace gacha. */
 const PITY_TO_COINS = 5;
+/** Coins per battle consumable when the Journey replaced expeditions; gear gets half a pet's sell value. */
+const CONSUMABLE_TO_COINS = 10;
 
 const SAVE_KEY = "growra_save_data";
 const CORRUPT_SAVE_KEY_PREFIX = "growra_save_data_corrupt_";
@@ -59,7 +59,11 @@ type PersistedGameState = Omit<
   | "usage"
   | "companionEvents"
   | "notices"
+  | "days"
+  | "decorations"
 > & {
+  days?: DayRecord[];
+  decorations?: Decoration[];
   usage?: UsageStats;
   companionEvents?: CompanionEvent[];
   notices?: GameNotice[];
@@ -82,7 +86,7 @@ type PersistedGameState = Omit<
   battleConsumables?: {
     id?: string;
     name?: string;
-    kind?: BattleConsumableItem["kind"];
+    kind?: string;
     rarity?: PetRarity;
     potency?: number;
     sourceZoneIndex?: number;
@@ -168,28 +172,13 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       }
     : defaultTimerAlertSettings;
 
-  const gearItems = saveData.gameState.gearItems
-    ? saveData.gameState.gearItems.map((gearItem) => ({
-        id: gearItem.id !== undefined ? gearItem.id : "",
-        name: gearItem.name !== undefined ? gearItem.name : "",
-        rarity: gearItem.rarity !== undefined ? gearItem.rarity : PetRarity.COMMON,
-        bonusStats:
-          gearItem.bonusStats !== undefined
-            ? gearItem.bonusStats
-            : {
-                attack: 0,
-                defense: 0,
-                speed: 0,
-                luck: 0,
-              },
-        sourceZoneIndex:
-          gearItem.sourceZoneIndex !== undefined ? gearItem.sourceZoneIndex : 0,
-        equippedPetId:
-          gearItem.equippedPetId !== undefined ? gearItem.equippedPetId : "",
-        acquiredAt:
-          gearItem.acquiredAt !== undefined ? gearItem.acquiredAt : Date.now(),
-      }))
-    : [];
+  // Journey (GAME_REDESIGN §5): gear and battle consumables are gone; they turn into coins.
+  const gearCoins =
+    (saveData.gameState.gearItems ?? []).reduce(
+      (total, gearItem) => total + Math.floor(getSellValue(gearItem.rarity ?? PetRarity.COMMON) / 2),
+      0,
+    ) + (saveData.gameState.battleConsumables ?? []).length * CONSUMABLE_TO_COINS;
+  const hadExpeditions = saveData.gameState.expeditionProgress !== undefined;
 
   // Companions (GAME_REDESIGN §4): each template exists once. Keep the most-grown copy of each
   // (then the equipped one), turn the other copies into coins at their old sell value.
@@ -240,7 +229,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
           explorationPower: 0,
           xpMultiplier: pet.xpMultiplier ?? 1,
           activeImageVariantId: pet.activeImageVariantId !== undefined ? pet.activeImageVariantId : "default",
-          equippedGearId: pet.equippedGearId !== undefined ? pet.equippedGearId : "",
+          equippedGearId: "",
           equipped: pet.id === activePetId,
         },
         pet.bond,
@@ -255,10 +244,16 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     ),
   ];
 
-  const { pityCurrency: _legacyPity, ...persistedWithoutPity } = saveData.gameState;
-  const migratedGameState = refreshPetGearState({
-    ...persistedWithoutPity,
-    coins: saveData.gameState.coins + convertedCoins,
+  const {
+    pityCurrency: _legacyPity,
+    gearItems: _legacyGear,
+    battleConsumables: _legacyConsumables,
+    expeditionProgress: _legacyExpeditions,
+    ...persistedWithoutLegacy
+  } = saveData.gameState;
+  const migratedGameState: GameState = {
+    ...persistedWithoutLegacy,
+    coins: saveData.gameState.coins + convertedCoins + gearCoins,
     usage: saveData.gameState.usage ?? {
       ...createEmptyUsage(),
       activeDays: completionDays.length,
@@ -268,7 +263,10 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     notices: [
       ...(saveData.gameState.notices ?? []),
       ...(convertedCoins > 0 ? [{ kind: "companions-migrated" as const, coins: convertedCoins }] : []),
+      ...(hadExpeditions ? [{ kind: "journey-migrated" as const, coins: gearCoins }] : []),
     ],
+    days: saveData.gameState.days ?? buildDaysFromTasks(saveData.gameState.tasks as Task[]),
+    decorations: saveData.gameState.decorations ?? [],
     totalTasksCompleted:
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted
@@ -285,75 +283,11 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       ...storedSettings,
       timerAlert,
     },
-    expeditionProgress: saveData.gameState.expeditionProgress
-    ? {
-        expeditionsSent:
-          saveData.gameState.expeditionProgress.expeditionsSent !== undefined
-            ? saveData.gameState.expeditionProgress.expeditionsSent
-              : 0,
-          revealPoints:
-            saveData.gameState.expeditionProgress.revealPoints !== undefined
-              ? saveData.gameState.expeditionProgress.revealPoints
-              : 0,
-          activeZoneIndex:
-            saveData.gameState.expeditionProgress.activeZoneIndex !== undefined
-              ? saveData.gameState.expeditionProgress.activeZoneIndex
-              : -1,
-          activeZoneEndsAt:
-            saveData.gameState.expeditionProgress.activeZoneEndsAt !== undefined
-              ? saveData.gameState.expeditionProgress.activeZoneEndsAt
-              : 0,
-          activeNodeId:
-            saveData.gameState.expeditionProgress.activeNodeId !== undefined
-              ? saveData.gameState.expeditionProgress.activeNodeId
-              : "",
-          activeNodePetId:
-            saveData.gameState.expeditionProgress.activeNodePetId !== undefined
-              ? saveData.gameState.expeditionProgress.activeNodePetId
-              : "",
-          activeNodeEndsAt:
-            saveData.gameState.expeditionProgress.activeNodeEndsAt !== undefined
-              ? saveData.gameState.expeditionProgress.activeNodeEndsAt
-              : 0,
-          completedNodeIds:
-            saveData.gameState.expeditionProgress.completedNodeIds !== undefined
-              ? saveData.gameState.expeditionProgress.completedNodeIds
-              : [],
-        }
-      : {
-          expeditionsSent: 0,
-          revealPoints: 0,
-          activeZoneIndex: -1,
-          activeZoneEndsAt: 0,
-          activeNodeId: "",
-          activeNodePetId: "",
-          activeNodeEndsAt: 0,
-          completedNodeIds: [],
-        },
-    battleConsumables: saveData.gameState.battleConsumables
-      ? saveData.gameState.battleConsumables.map((item) => ({
-          ...item,
-          id: item.id !== undefined ? item.id : "",
-          name: item.name !== undefined ? item.name : "",
-          kind: item.kind !== undefined ? item.kind : "heal",
-          rarity: item.rarity !== undefined ? item.rarity : PetRarity.COMMON,
-          potency: item.potency !== undefined ? item.potency : 1,
-          sourceZoneIndex:
-            item.sourceZoneIndex !== undefined ? item.sourceZoneIndex : 0,
-          acquiredAt: item.acquiredAt !== undefined ? item.acquiredAt : Date.now(),
-        }))
-      : [],
     customTaskTemplates: saveData.gameState.customTaskTemplates
       ? saveData.gameState.customTaskTemplates.map((template) => ({
           ...template,
         }))
       : [],
-    // Gear worn by a removed duplicate goes back to the vault.
-    gearItems: gearItems.map((gearItem) =>
-      gearItem.equippedPetId === "" || keptPetIds.has(gearItem.equippedPetId)
-        ? gearItem
-        : { ...gearItem, equippedPetId: "" },
-    ),
     tasks: saveData.gameState.tasks.map((task) => ({
       ...task,
       predefinedTaskId: task.predefinedTaskId !== undefined ? task.predefinedTaskId : "",
@@ -393,7 +327,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     })),
     pets,
     equippedPetId: activePetId,
-  });
+  };
 
   return {
     ...saveData,
@@ -510,28 +444,4 @@ export const gameStateService = {
 
 
 
-  async equipGearToPet(
-    gameState: GameState,
-    gearItemId: string,
-    petId: string,
-  ): Promise<GameState> {
-    return applyGearEquip(gameState, gearItemId, petId);
-  },
-
-  async resolveExpeditionBattle(
-    gameState: GameState,
-    zoneIndex: number,
-    petId: string,
-    battleConsumableIds: string[] = [],
-  ): Promise<GameState> {
-    return applyExpeditionBattle(gameState, zoneIndex, petId, battleConsumableIds);
-  },
-
-  async exploreExpeditionNode(
-    gameState: GameState,
-    nodeId: string,
-    petId: string,
-  ): Promise<GameState> {
-    return applyExpeditionNode(gameState, nodeId, petId);
-  },
 };

@@ -99,36 +99,6 @@ export interface PetStats {
   luck: number;
 }
 
-export interface GearItem {
-  id: string;
-  name: string;
-  rarity: PetRarity;
-  bonusStats: PetStats;
-  sourceZoneIndex: number;
-  equippedPetId: string;
-  acquiredAt: number;
-}
-
-export type ExpeditionNodeType = "main" | "cache" | "shrine" | "elite" | "secret";
-
-export type BattleConsumableKind =
-  | "heal"
-  | "attack"
-  | "shield"
-  | "speed"
-  | "burst"
-  | "revive";
-
-export interface BattleConsumableItem {
-  id: string;
-  name: string;
-  kind: BattleConsumableKind;
-  rarity: PetRarity;
-  potency: number;
-  sourceZoneIndex: number;
-  acquiredAt: number;
-}
-
 export interface PetPassive {
   id: string;
   name: string;
@@ -204,24 +174,34 @@ export interface UsageStats {
 }
 
 export interface GameNotice {
-  kind: "companions-migrated";
+  kind: "companions-migrated" | "journey-migrated";
   coins: number;
 }
 
 export interface CompanionEvent {
-  kind: "joined" | "evolved";
+  kind: "joined" | "evolved" | "found";
   templateId: string;
+  decorationTypeId?: string; // set for "found"
 }
 
-export interface ExpeditionProgress {
-  expeditionsSent: number;
-  revealPoints: number;
-  activeZoneIndex: number;
-  activeZoneEndsAt: number;
-  activeNodeId: string;
-  activeNodePetId: string;
-  activeNodeEndsAt: number;
-  completedNodeIds: string[];
+// Journey (Documents/GAME_REDESIGN.md §5): one record per day something happened.
+// The road shows a tile for each record with at least one completion.
+export interface DayRecord {
+  date: number; // start of day
+  done: number;
+  recurringDone: number;
+  customDone: number;
+  highPriorityDone: number;
+  timersFinished: number;
+  scheduledAhead: number; // tasks created or moved to a later day
+  completions: { name: string; at: number }[]; // capped, for the tile and look-back cards
+}
+
+export interface Decoration {
+  id: string;
+  typeId: string; // see DECORATION_TYPES in utils/journey.ts
+  camp: number; // camp index it sits at, or -1 while in the bag
+  spot: number;
 }
 
 // Streak Types
@@ -245,13 +225,12 @@ export interface GameState {
   tasks: Task[];
   customTaskTemplates: CustomTaskTemplate[];
   pets: Pet[];
-  gearItems: GearItem[];
-  battleConsumables: BattleConsumableItem[];
-  expeditionProgress: ExpeditionProgress;
   equippedPetId: string;
   usage: UsageStats;
   companionEvents: CompanionEvent[]; // joins/evolutions waiting to be shown
   notices: GameNotice[]; // one-time messages (e.g. the gacha → companions migration)
+  days: DayRecord[];
+  decorations: Decoration[];
   streak: Streak;
   createdAt: number;
   lastPlayedAt: number;

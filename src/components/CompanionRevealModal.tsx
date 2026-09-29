@@ -22,6 +22,7 @@ import {
   getNextEvolutionBond,
 } from "../utils/companions";
 import { getPetTemplates } from "../utils/gameplay";
+import { getDecorationType } from "../utils/journey";
 
 interface CompanionRevealModalProps {
   visible: boolean;
@@ -128,6 +129,13 @@ export default function CompanionRevealModal({
   const activeStyle = getCompanionDefinition(activePet.templateId)?.style;
   const activeProgress = getBondProgress(activePet.bond);
   const nextEvolutionBond = getNextEvolutionBond(activePet.bond);
+  const foundType =
+    activeEvent.kind === "found" && activeEvent.decorationTypeId
+      ? getDecorationType(activeEvent.decorationTypeId)
+      : undefined;
+  const foundName = foundType
+    ? copy.decorationNames[foundType.id] ?? foundType.id
+    : "";
   const evolutionLabel =
     activePet.evolutionStage === 2
       ? copy.petsEvolutionAscended
@@ -159,17 +167,21 @@ export default function CompanionRevealModal({
         <SafeAreaView style={styles.safeArea}>
           <View style={[styles.shell, { backgroundColor: theme.background }]}>
             <View style={[styles.header, { borderBottomColor: theme.border }]}>
-              <View>
+              <View style={styles.headerText}>
                 <Text style={[styles.title, { color: theme.text }]}>
                   {(activeEvent.kind === "joined"
                     ? copy.companionJoinedTitle
-                    : copy.companionEvolvedTitle
+                    : activeEvent.kind === "found"
+                      ? copy.companionFoundTitle
+                      : copy.companionEvolvedTitle
                   ).replace("{name}", activePet.name)}
                 </Text>
                 <Text style={[styles.subtitle, { color: theme.mutedText }]}>
                   {activeEvent.kind === "joined"
                     ? copy.companionRevealSubtitle
-                    : evolutionLabel}
+                    : activeEvent.kind === "found"
+                      ? copy.companionFoundSubtitle.replace("{item}", foundName)
+                      : evolutionLabel}
                 </Text>
               </View>
               <TouchableOpacity
@@ -248,6 +260,9 @@ export default function CompanionRevealModal({
                       style={styles.revealImage}
                       resizeMode="contain"
                     />
+                    {foundType && (
+                      <Text style={styles.foundIcon}>{foundType.icon}</Text>
+                    )}
                   </View>
                   <Text style={[styles.petName, { color: theme.text }]}>
                     {activePet.name}
@@ -457,6 +472,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
+    gap: 12,
+  },
+  headerText: {
+    flex: 1,
   },
   title: {
     fontSize: 22,
@@ -511,6 +530,12 @@ const styles = StyleSheet.create({
     height: 220,
     justifyContent: "center",
     alignItems: "center",
+  },
+  foundIcon: {
+    position: "absolute",
+    right: 10,
+    bottom: 6,
+    fontSize: 48,
   },
   revealGlow: {
     position: "absolute",

@@ -26,6 +26,7 @@ import {
     getPerkStreakBonus,
 } from "../utils/companions";
 import { getLevelProgress, PLAYER_LEVEL_BASE_COST } from "../utils/gameplay";
+import { getRoadPosition } from "../utils/journey";
 import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
 
@@ -300,7 +301,7 @@ export default function DashboardScreen({
                 {copy.dashboardActiveDays}
               </Text>
               <Text style={[styles.summaryValue, { color: theme.text }]}>
-                {gameState.usage.activeDays}
+                {getRoadPosition(gameState.days).tiles}
               </Text>
             </View>
           </View>
