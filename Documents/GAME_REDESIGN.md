@@ -1,193 +1,212 @@
-# Growra: game-layer redesign proposal (pets + map)
+# Growra: game-layer redesign proposal (companion + map)
 
-Status: proposal, 2026-09-29. Nothing here is implemented yet.
-Scope: the game side of the app (companion pets, the world map, and the economy that connects them to tasks). The task system itself stays as it is.
+Status: proposal v2, 2026-09-29. Nothing here is implemented yet.
+
+**Premise:** Growra helps people **plan their day and follow the plan**. The game should reward *good planning habits*: deciding the day in advance, spreading the load, doing things around when you planned them, and closing the day honestly, including moving what didn't happen. It should not reward *what* the tasks are, or raw volume.
+
+Completion is trust-based (spec §5.1), so people can lie. That's fine. The design makes lying pointless rather than trying to detect it: the biggest rewards come from **planning and closing the day**, which you can't really fake, not from ticking boxes.
 
 ---
 
-## 1. Why change it
+## 1. What's wrong with the current game layer
 
-What's in the app today (checked in the build, the code and Play Console):
-
-| Area | Today | Problem |
+| Area | Today | Problem for a day planner |
 |---|---|---|
-| **Link to habits** | Tasks only produce coins, XP and pet XP. Which *kind* of task you do doesn't matter to the game. | The game could sit on top of any to-do app. Nothing in the world reflects *your* life. |
-| **Map** | 8 zones on a pannable board. Progress comes from expeditions on 30–60 s timers, plus zone battles. | Progress comes from waiting and spamming timers, not from real tasks. That breaks the spec's key rule: *"passive progression must never replace real-world action."* |
-| **Pets** | Gacha (100 / 1,000 coins, 10+1, pity currency), duplicates, fusion, sell shop, gear vault, battle consumables, ATK/DEF/SPD/LCK, combat power, exploration power. | Six overlapping systems and a stat sheet. Pets read as loot, not companions. The coin gacha feels like a slot machine inside a self-care app. |
-| **Pet art** | 12 pet lines, 1024 px PNGs, 59 MB total. | 5 lines are placeholders: Tempo, Umbra and Zephie reuse Astra's base image for all 3 stages; Cindra is a copy of Ember; Glint (meant to be crystal) is a copy of Pebble (rock). Most images have baked-in backgrounds with different framings. |
-| **Play** | Internal testing only (versionCode 3, "Tuturial + Pets overhaul"); the listing has a title and nothing else. | The game layer is the store pitch, so it needs to be clear and look finished before the listing is written. |
-
-**The redesign in one line:** *Your habits grow a world.* Each life area is a region of the valley. Each region has a companion who lives there. Real tasks in that area restore the region and evolve its companion. Nothing progresses unless you do something real.
+| **Link to the app's purpose** | Tasks → coins → gacha pets → timed expeditions and battles. | None of it touches *planning*. You could get the same rewards by adding and ticking random tasks all day. |
+| **Map** | 8 zones on a pannable board; progress by 30–60 s expedition timers and zone battles. | Progress comes from waiting, not from how you run your day. It also breaks the spec rule *"passive progression must never replace real-world action."* |
+| **Pets** | Gacha (100 / 1,000 coins, 10+1, pity), duplicates, fusion, sell shop, gear, consumables, 4 stats + 2 power scores. | Six overlapping systems: a loot game bolted onto a planner. |
+| **Pet art** | 12 lines, 1024 px PNGs, 59 MB. | 5 lines are placeholders: Tempo, Umbra and Zephie reuse Astra's base image for all 3 stages; Cindra copies Ember; Glint copies Pebble. Most have baked-in backgrounds. |
+| **Planning features** | Due *day*, frequency, priority, colour, calendar month view, task timers. | No time of day, no "plan the day" moment, no end-of-day step. Unfinished tasks simply stay overdue. |
 
 ---
 
-## 2. Core loop
+## 2. The day loop: Plan → Do → Wrap up
 
-```
-Do a real task (e.g. "Drink water", Health)
-   → coins + XP (as now)
-   → Growth for the Health region (Sunlit Coast)
-   → Bond for its companion (Ripple)
-   → your active companion reacts on the Today screen
-Region growth passes a threshold → a landmark is restored on the map (visible change)
-Companion bond passes a threshold → it evolves (base → evo1 → evo2)
-Coins → decorations and cosmetics (never progress)
-```
+This is the backbone. The game hangs off these three moments.
 
-Three things now carry meaning:
-1. **Category = place.** Every task belongs to one of 8 life areas, and each area is a region.
-2. **Companions mirror you.** Your fitness companion evolves because you exercised, not because you fused duplicates.
-3. **The map is a progress picture of your life.** The whole valley shows at a glance which areas you've been looking after.
+### 2.1 Plan (the morning, or the evening before)
+A **Plan my day** screen (and "Plan tomorrow" after 18:00):
+- Every task due that day, plus anything carried over from yesterday, starts in **Unplanned**.
+- The user drops tasks into **Morning / Afternoon / Evening** (optionally an exact time), or moves them to another day.
+- The companion gives light guidance, never blocking:
+  - *"That's 9 tasks in the afternoon — want to move some to the evening?"* (overload warning: more than X tasks, or more timer minutes than the slot has)
+  - *"3 things carried over from yesterday."*
+  - Recurring tasks go to their usual slot automatically.
+- Tapping **"Start the day"** locks in the plan (it can still be edited). That's the **Plan reward**.
+
+### 2.2 Do (during the day)
+- **Today** shows the day as a short **path of stops**, with the planned tasks grouped by slot and the companion standing on the current slot.
+- Completing a task lights up its stop. Completing it **in its planned slot** counts as *on time* (small bonus); later still counts, just without the bonus.
+- A **timer task** is a *focus session*: the companion sits beside you on the path until the timer ends (see §4.3).
+
+### 2.3 Wrap up (the evening)
+A short **Close the day** review (a nudge in the evening; it can also be done the next morning):
+- For each unfinished planned task: **Done** / **Move to tomorrow** / **Pick a day** / **Drop**.
+- The day is *closed* once every planned task has a decision. That gives the **Close reward**, which is **the same whether things were done or moved.** Being honest costs nothing.
+- A one-line summary follows: planned 6, done 4, moved 2, and a mood for the day.
+
+### 2.4 Why lying isn't worth it
+- The Plan and Close rewards are the largest ones, and they depend on *deciding*, not on ticking.
+- Tasks count fully only if they were **planned before they were done**, meaning placed in a slot earlier than completion (or created at least 10 minutes before). Logging something you already did still goes on the day, but gives a small reward. That supports using Growra as a planner, and makes "add + tick" farming pointless.
+- A daily cap: only the first 12 planned tasks per day give task coins.
+- The streak (spec §5.2) counts **closed days**, not "days with any completion". A day where you planned, did half, and honestly moved the rest keeps your streak.
 
 ---
 
-## 3. Life areas → regions → companions
+## 3. Rewards per day (starting numbers)
 
-The 8 task categories already in `predefinedTasks.ts` map one-to-one onto the 8 existing zones, and every existing pet concept fits one of them. Existing names and art are reused wherever possible.
+| Action | Coins | Companion |
+|---|---|---|
+| Plan the day before the first slot starts | 15 | +1 Bond |
+| Plan tomorrow the evening before | +5 | |
+| Planned task done | 10 (× streak/pet multipliers, as now) | |
+| …done in its planned slot | +2 | |
+| Unplanned task done (logged) | 3 | |
+| Close the day | 15 | +1 Bond, and the day becomes a tile on the map (§5) |
+| Balanced day (tasks in 2+ slots, no overloaded slot) | +5 | |
 
-| Life area (task category) | Region (existing zone) | Home companion(s) | Why it fits |
+A typical honest day (plan, 4 of 6 done, close) earns about 80 coins. A "tick 30 fake tasks" day earns less than a real one.
+
+---
+
+## 4. The companion: a planning buddy (replaces gacha, fusion, gear and battles)
+
+### 4.1 One active companion, more joining over time
+- **Onboarding:** pick a first companion from 3 (Sprout, Ripple, Glint). The tutorial becomes: *pick a buddy → add 2 tasks → plan them into slots → start the day → finish one → close the day*. It teaches the loop, not the shop.
+- **More companions join through planning milestones**, never by rolling. No duplicates, no pity currency, no selling.
+
+### 4.2 Each companion has a planning style (its perk)
+This makes the choice of active companion meaningful, and reuses all 12 existing concepts:
+
+| Companion | Style | Perk while active | Joins when… |
 |---|---|---|---|
-| **Health** (water, sleep, meds) | Sunlit Coast | **Ripple** (water) | water, calm shore |
-| **Fitness** (walk, gym, mobility) | Cinder Hollow | **Ember** (fire), **Cindra** (lava) | heat, energy |
-| **Focus** (deep work, inbox) | Glasswind Expanse | **Glint** (crystal) | clarity, sharp light |
-| **Study** (read, study) | Skyheart Summit | **Astra** (cosmic) | stars, knowledge |
-| **Home** (tidy, laundry) | Mossway Grove | **Sprout**, **Moss**, **Pebble** (forest/earth) | cosy grove village |
-| **Finance** (budget, savings) | Amber Dunes | **Nova** (solar) | gold, caravans, trade |
-| **Mindset** (journal, weekly review) | Moonpool Marsh | **Umbra** (shadow/moon) | reflection, quiet water |
-| **Social** (family, friends) | Cloudbreak Ridge | **Zephie** (wind), **Tempo** (storm) | connection, weather that travels |
+| **Sprout** | Early bird | +5 coins if the day is planned before 10:00 | starter |
+| **Ripple** | Go with the flow | moving a task in Wrap up gives +1 Bond | starter |
+| **Glint** | Focus | timer tasks give +2 coins | starter |
+| **Umbra** | Night owl | planning tomorrow gives +5 more | first time you plan tomorrow the evening before |
+| **Tempo** | Timekeeper | the on-time bonus doubles | 20 tasks done in their planned slot |
+| **Pebble** | Steady | closed days give +1 extra Bond | 7 closed days |
+| **Zephie** | Light load | +5 on balanced days | 5 balanced days |
+| **Astra** | Long view | tasks planned 3+ days ahead give +2 when done | first task scheduled a week ahead in the calendar |
+| **Moss** | Routines | recurring tasks give +2 | 3 recurring tasks created |
+| **Ember** | Big first | +3 when a High-priority task is the first done | 10 High-priority tasks done |
+| **Nova** | Reviewer | the weekly review doubles its reward | first weekly review (§5.3) |
+| **Cindra** | Sprint | 3+ focus timers in one day give +10 | 3 timers finished in one day |
 
-Custom tasks must pick a life area when created. A small chip row with the 8 area icons replaces the free-text "custom" category, and old custom tasks get a one-time "which area is this?" prompt.
+### 4.3 Bond, evolution and mood
+- **Bond** grows from planning and closing days while the companion is active (see the table in §3). base → evo1 at Bond 20 (about 2–3 weeks of normal use), evo1 → evo2 at Bond 60.
+- **Mood** is derived from *today's plan*, never stored and never harmful:
+  - *"Let's plan!"* (no plan yet)
+  - *On our way* (planned, in progress)
+  - *Cozy* (day closed; lantern lit)
+  - *Sleepy* (yesterday wasn't closed; it wakes up on the next action)
+- **Focus sessions:** while a timer task runs, the companion "works with you" (a small animation beside the timer). When the timer finishes, it sometimes brings back a **find** (a decoration or cosmetic). Cancelling means no find. This is the only "exploring", and it only happens while the user is actually focusing.
 
----
-
-## 4. Companions (replaces gacha, fusion, gear and battles)
-
-### 4.1 Getting companions: earned, never rolled
-- **Start:** during onboarding the player picks a first companion from three starters (Sprout / Ripple / Ember), which also sets their first region. The tutorial becomes: *pick companion → add a task in its area → complete it → watch the region wake up.*
-- **More companions join the first time you restore a region's second landmark.** The companion walks out of the region and says hi. That's 12 companions across 8 regions, with some regions offering a second companion at landmark 4.
-- **No duplicates, no pity currency, no summon costs, no selling.** Every companion is unique and permanent.
-
-### 4.2 Growing a companion: Bond
-- **Bond** grows from tasks done in the companion's home area (full value), plus a small share from any other task while it's your **active** companion (25%). This makes it worth rotating your active companion toward areas you're neglecting.
-- **Evolution:** base → evo1 at Bond 30 (about 2–3 weeks of one daily habit), evo1 → evo2 at Bond 120. These are milestones for real consistency, not grinding.
-- Streak bonus and priority keep affecting coins and XP as today. Bond is deliberately flat per task, so evolution tracks *how often* you show up rather than *how hard* you pushed on one day.
-
-### 4.3 Mood: gentle, never punishing
-The active companion shows how *today* is going, computed from today's tasks. It's never stored as damage:
-
-| Today | Mood | Look |
-|---|---|---|
-| Nothing done yet | *Waiting* | idle, looking at you |
-| Some done | *Happy* | bouncing |
-| All of today done | *Glowing* | sparkle, and the region lights up at dusk |
-| Missed yesterday | *Sleepy* (never sad, never sick) | yawning, and recovers with the first task today |
-
-No death, no guilt text. Returning after a break should feel welcoming. The spec's streak-loss rules still apply to the coin/XP bonus, but the companion itself is never harmed.
-
-### 4.4 What the stat sheet becomes
-ATK/DEF/SPD/LCK, combat power and exploration power are removed from the UI. A companion card shows: name, stage, Bond bar to the next stage, home region, days together, and one **perk** (see §6).
+### 4.4 Companion card
+Name, stage, Bond bar, perk, days together, cosmetics, and **"Plan with me"** (set active). ATK/DEF/SPD/LCK and the power scores are removed.
 
 ---
 
-## 5. The valley map (replaces expeditions and zone battles)
+## 5. The map: your days become a journey (replaces expeditions and battles)
 
-### 5.1 What it looks like
-One illustrated valley. Mobile-first, it scrolls vertically, with the 8 regions stacked like a hand-drawn board-game map (a single portrait canvas, no free panning). Each region is a small island vignette with its companion(s) visible when present.
+### 5.1 The idea
+The map is a **road through the valley made of your closed days**. Each day you close adds one **tile** to the road, and the companion walks it. The existing 8 zones become the **8 legs of the journey** that the road passes through: Sunlit Coast → Mossway Grove → Amber Dunes → Cloudbreak Ridge → Moonpool Marsh → Glasswind Expanse → Cinder Hollow → Skyheart Summit.
 
-Regions start **misty and faded**. Tapping a misty region shows: *"Sunlit Coast is asleep. Add a Health task to wake it."* Tapping the button opens Add Task with the Health area preselected.
+### 5.2 Tiles show what kind of day it was
+A day's tile gets features from that day, so scrolling back shows how your planning has been going:
 
-### 5.2 Restoring a region
-Each region has **5 landmarks**, each unlocked by the number of tasks completed in that area:
+| That day you… | The tile shows |
+|---|---|
+| closed the day | a lit lantern (every tile has one) |
+| planned it in advance | a signpost |
+| had a balanced day | flowers |
+| finished 1+ focus timers | a crystal per timer (max 3) |
+| did all planned tasks | a small tree |
+| moved tasks honestly | stepping stones (never shown as failure) |
 
-| Landmark | Tasks in area | Example: Sunlit Coast (Health) |
-|---|---|---|
-| 1 | 3 | Mist lifts, the beach appears |
-| 2 | 10 | Lighthouse relit → **Ripple joins** (if not your starter) |
-| 3 | 25 | Tide pools with little creatures |
-| 4 | 50 | Pier and boats |
-| 5 | 100 | Coral garden and festival lanterns (region "in bloom") |
+Tapping an old tile shows that day's summary (planned / done / moved).
 
-Each landmark visibly changes the region art, and a short lore card pops up. It also unlocks a decoration for that region. These are lifetime counts, so a weekly habit still completes a region over a year, and a daily one in about three months.
+### 5.3 Legs, camps and the weekly review
+- **Every 7 closed days = a camp** on the road, with a campfire scene where the companion sits. Reaching a camp prompts a **Weekly review**: last week's tiles, which slots overflowed, and which tasks keep getting moved (*"'Do laundry' was moved 4 times — plan it on the weekend?"*). Doing the review gives Nova's join milestone and a camp decoration.
+- **Every 4 camps (28 closed days) = next leg of the journey.** The road enters a new region with a new biome, lore, decorations and music. After Skyheart Summit it becomes *season 2*: the same valley in another season (autumn, winter), with new tile art.
+- Pace is set by *closed days*, not calendar days. Missing days never breaks or removes the road; it just waits there, with the companion camped, until you come back.
 
-### 5.3 Journeys: the only "exploring", and only during real focus
-Task timers already exist. When you **start a timer task**, your active companion sets off on a journey in that task's region, shown as a tiny walking icon on the map. When the timer **finishes** (the task becomes ready), it comes back with a **find**: a decoration piece, a cosmetic, or a lore page. Cancelling or resetting the timer calls it back with nothing. Progress happens only while you're doing something real.
-
-### 5.4 Today on the map
-- Time of day follows the real clock (morning / day / dusk / night tint).
-- When everything due today is done, the valley gets a *golden hour* glow that evening.
-- A small **"This week"** ribbon shows which regions grew in the last 7 days. The "Weekly Review" task links straight to it.
+### 5.4 Decorating
+Each camp and region has a few spots where the user places **decorations** bought with coins or found on focus sessions. This is the long-term coin sink, and it makes the road personal.
 
 ---
 
-## 6. Economy (coins without a casino)
+## 6. Economy
+Coins come from §3. They buy **looks and comfort, never progress** (spec §5.5):
+- decorations for camps and the road
+- companion cosmetics (the `activeImageVariantId` field already exists)
+- tile themes, e.g. a "cherry blossom road" skin
 
-Coins stay the reward for tasks (base 10, same streak/pet multipliers). They buy **looks and comfort, never progress** (spec §5.5: "no systems that bypass effort"):
-
-- **Decorations:** placeables for each region's camp (benches, lanterns, flower beds; 50–400 coins). Unlocked by landmarks, bought with coins.
-- **Cosmetics:** hats, scarves and colour variants per companion. The `activeImageVariantId` field already exists for this.
-- **Perks** (one per companion, fixed, never bought), e.g. Ripple: "+5 coins on Health tasks", Glint: "focus timers also give +1 Bond to Focus". Small bonuses that make the choice of active companion matter.
-
-Removed: single and 10+1 summons, pity currency and pity shop, sell shop, fusion, gear vault, battle consumables, zone battles, expedition timers.
+Removed: summons (single and 10+1), pity currency and pity shop, sell shop, fusion, gear vault, battle consumables, zone battles, expedition timers.
 
 ---
 
 ## 7. Screens
+Bottom navigation: **Today · Plan · Journey · Companions** (Settings behind the gear icon).
 
-Bottom navigation becomes **Today · Tasks · Valley · Companions** (Settings stays behind the gear icon).
-
-- **Today:** the active companion large at the top with its mood and a speech line ("Two more to go — we're almost glowing!"). Below it, today's list as now, where each task shows its area icon. Completing a task plays a small growth burst that flies toward the area icon.
-- **Tasks:** as now, plus the area chip on create/edit (required).
-- **Valley:** the map (§5). Tapping a region shows its landmarks, its companions, its decorations shop and the tasks linked to it.
-- **Companions:** a collection grid (joined in colour, not-yet-met as silhouettes with a hint like "Restore Amber Dunes' 2nd landmark"). Tapping one opens its card: Bond, stage, perk, cosmetics, "Walk with me" (set active).
+- **Today:** the companion and its mood, the day's path of stops grouped by slot, the current slot highlighted, and a **Close the day** button in the evening.
+- **Plan:** today or tomorrow in slots (drag and drop), the unplanned tray, carry-overs, overload hints, and a link to the existing month **Calendar** (for scheduling further ahead). The current Tasks list moves in here as an "All tasks" tab.
+- **Journey:** the road map (§5): tiles, camps, regions, the weekly review, decorating.
+- **Companions:** the collection (met ones in colour, others as silhouettes with their "joins when…" hint), companion cards, cosmetics.
 
 ---
 
 ## 8. Art direction (brief for Codex / ComfyUI)
 
-Keep the current style (high-detail cute pixel art, soft glow), but make it **consistent and light**:
-
-- **Companions:** transparent background, **no scenery baked in**; same framing (feet on a baseline at 88% of the height, body filling about 75%); light from the top-left. Master at 1024 px, shipped as **512 px WebP** (≈40 KB each instead of ≈1.5 MB). Target: under 10 MB for all game art, down from 59 MB.
-- **Per companion:** 3 stages × 3 moods (idle, happy, sleepy) = 9 images; the "glowing" mood is an in-app effect, not new art.
-- **Replace the placeholders first:** Tempo, Umbra and Zephie (all currently Astra copies), Cindra (Ember copy) and Glint (Pebble copy). Their written concepts in `petConcepts.ts` are good; the art was never generated.
-- **Regions:** one portrait island vignette per region, drawn as **6 states** (misty + landmarks 1–5), or a base plus 5 overlay layers. Same palette family as the companions, with each region's colour matching its companion's element.
-- Decorations and cosmetics: small transparent sprites on the same baseline rules.
+Keep Growra's cute high-detail pixel style with soft glow, but make it consistent and light:
+- **Companions:** transparent background, no baked-in scenery; same framing (feet on a baseline at 88% of the height, body filling about 75%); light from the top-left. Master at 1024 px, shipped as 512 px WebP. Each: 3 stages × 4 moods (planning, on our way, cozy, sleepy).
+- **Replace the placeholders first:** Tempo, Umbra, Zephie (Astra copies), Cindra (Ember copy) and Glint (Pebble copy). Their written concepts in `petConcepts.ts` still apply.
+- **Road tiles:** one square tile base per region (8), plus small overlay sprites for lantern, signpost, flowers, crystal, tree and stepping stones. The same overlays work on every region's tile.
+- **Camps:** one campfire scene per region. **Region gates:** one banner illustration each.
+- Budget: all game art under 10 MB (it's 59 MB today).
 
 ---
 
 ## 9. Data model changes (sketch)
 
 ```ts
-type LifeArea = "health" | "fitness" | "focus" | "study" | "home" | "finance" | "mindset" | "social";
+type DaySlot = "morning" | "afternoon" | "evening" | "anytime";
 
-interface Task { /* ...existing... */ area: LifeArea }              // replaces free-form category
-
-interface Companion {
-  templateId: string; homeArea: LifeArea; joinedAt: number;
-  bond: number; stage: 0 | 1 | 2; cosmeticId: string;
+interface Task {
+  /* ...existing: dueDate stays the planned day... */
+  slot: DaySlot;              // where it sits in the day
+  plannedTime?: number;       // optional minutes after midnight
+  plannedAt?: number;         // when it was put into a slot (for "planned before done")
+  moveCount: number;          // times moved in Wrap up (feeds the weekly review)
 }
 
-interface RegionState { area: LifeArea; tasksCompleted: number; decorations: string[] }
+interface DayRecord {
+  date: number;               // start of day
+  plannedAt?: number;         // "Start the day" pressed
+  closedAt?: number;          // Wrap up finished
+  planned: number; done: number; onTime: number; moved: number; dropped: number;
+  focusSessions: number; balanced: boolean;
+}
 
-interface Journey { taskId: string; area: LifeArea; companionId: string; startedAt: number }
+interface Companion { templateId: string; bond: number; stage: 0 | 1 | 2; joinedAt: number; cosmeticId: string }
 
 interface GameState {
-  /* keep: coins, level, totalExperience, streak, tasks, settings, tutorial flags */
+  /* keep: coins, level, totalExperience, streak (now counts closed days), tasks, settings, tutorial flags */
+  days: DayRecord[];          // the journey is derived from closed days
   companions: Companion[]; activeCompanionId: string;
-  regions: Record<LifeArea, RegionState>;
-  activeJourney: Journey | null;
+  decorations: { id: string; spotId: string }[];
   ownedCosmetics: string[];
   // removed: pets, gearItems, battleConsumables, pityCurrency, expeditionProgress
 }
 ```
 
-Mood is **derived** from today's tasks and never stored, so it can't go stale or "die".
+The journey (tiles, camps, current region) is **derived** from `days`, so there's no separate map progress to go out of sync.
 
 ### Migrating existing saves (no one loses anything)
-- Every distinct pet template the player owns → that companion joins, keeping its **highest** evolution stage (Bond set to that stage's threshold).
-- Equipped pet → active companion.
-- Duplicates, gear, consumables and pity currency → converted to coins at their current sell values, with a one-time "thank you" note.
-- Completed tasks with a known category → counted into their region, so an existing player opens a partly restored valley on day one.
-- Tasks in the old "custom" category → a one-time prompt asks which area they belong to.
+- Each distinct pet the player owns → that companion joins, keeping its highest evolution stage. The equipped pet becomes the active companion.
+- Duplicates, gear, consumables and pity currency → converted to coins at their current sell values, with a one-time note.
+- Existing tasks get `slot: "anytime"` and `moveCount: 0`.
+- Past completion history → pre-closed `DayRecord`s, so the road starts with a few tiles already there.
 
 ---
 
@@ -195,18 +214,15 @@ Mood is **derived** from today's tasks and never stored, so it can't go stale or
 
 | Phase | What | Why first |
 |---|---|---|
-| **1. Areas + Today companion** | `area` on tasks (with a picker), regions counted, companion with mood on Today, Bond + evolution from home-area tasks. | Proves the core idea (my habits change my companion) with little new art. |
-| **2. Valley map** | Portrait map, misty/restored states, landmarks + lore, journeys tied to task timers. Remove expeditions and battles. | The biggest visible payoff. Needs region art. |
-| **3. Collection + economy** | Companions screen, earned joins, perks, decorations and cosmetics shop. Remove gacha, fusion, sell and gear. Save migration. | Removes the old systems once the new ones fully replace them. |
-| **4. Art pass + store** | Replace the 5 placeholder lines; 512 px WebP; moods; region art. Then write the Play listing (screenshots of the valley + companion). | Needed before any public track. |
-
-Each phase ships on its own and stays true to "real action only".
+| **1. The day loop** | Slots on tasks, Plan screen (today/tomorrow), Close the day, DayRecord, the new reward table, streak = closed days. | It's the app's actual purpose, and useful even with zero game art. |
+| **2. Companion** | Active companion on Today with moods, Bond and evolution from planning and closing, perks, focus-session finds, milestone joins. Remove gacha, fusion, sell and gear. Save migration. | Makes the loop feel alive. Mostly reuses existing art. |
+| **3. Journey map** | Road of tiles, tile features, camps plus the weekly review, legs through the 8 regions, decorating. Remove expeditions and battles. | The big visual payoff. Needs tile and camp art. |
+| **4. Art pass + store** | Placeholder pets redone, 512 px WebP, moods, tiles and camps. Then the Play listing (screenshots: Plan screen, Today path, Journey road). | Needed before any public track. |
 
 ---
 
 ## 11. Decisions for you
-
-1. **Remove the coin gacha completely?** (Recommended.) The alternative is to keep a small cosmetic-only "capsule" for hats and colours, with no companions in it.
-2. **Starter choice:** pick 1 of 3 at onboarding (recommended), or always start with Sprout?
-3. **Landmark pacing:** 3 / 10 / 25 / 50 / 100 tasks per region. Faster early rewards (1 / 5 / …) feel better in week one but empty the map sooner.
-4. **Art style:** keep Growra's cute pixel-glow style (recommended for a habit app), or move it toward the shared art base used by the other games?
+1. **Slots:** Morning / Afternoon / Evening plus optional exact times (recommended), or exact times only?
+2. **Planned-before-done rule:** reduced reward for unplanned tasks, as proposed, or no difference?
+3. **Remove the coin gacha completely?** (Recommended; companions join through planning milestones instead.)
+4. **Journey pace:** a camp every 7 closed days and a new region every 28, or faster (every 5 / 20) so new players see more change early?
