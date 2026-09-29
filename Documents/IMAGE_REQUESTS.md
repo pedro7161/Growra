@@ -92,7 +92,7 @@ Files: `assets/journey/decorations/<id>.png`.
 - **Cosmetics** (for monetization, GAME_REDESIGN §12): 3 hats/scarves that work on all companions, as separate overlay sprites.
 
 ## Delivery checklist
-- [ ] P0 icon set + splash (items 1–6), then the Play icon and feature graphic (7–8)
+- [x] P0 icon set + splash (items 1–6), then the Play icon and feature graphic (7–8). Done 2026-09-29 from Sprout's real art (cut out with rembg) plus a ComfyUI valley for the feature graphic. The Play files are in `Documents/store/` and **not uploaded yet**.
 - [ ] P1 the 5 placeholder companions × 3 stages
 - [ ] P2 the 7 existing companions redone transparent (21 images)
 - [ ] P3 Journey: 8 tiles, 7 features, 8 camps, 8 banners, 14 decoration sprites
