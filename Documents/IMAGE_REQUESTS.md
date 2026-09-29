@@ -95,5 +95,5 @@ Files: `assets/journey/decorations/<id>.png`.
 - [x] P0 icon set + splash (items 1–6), then the Play icon and feature graphic (7–8). Done 2026-09-29 from Sprout's real art (cut out with rembg) plus a ComfyUI valley for the feature graphic. The Play files are in `Documents/store/` and **not uploaded yet**.
 - [ ] P1 the 5 placeholder companions × 3 stages
 - [ ] P2 the 7 existing companions redone transparent (21 images)
-- [ ] P3 Journey: 8 tiles, 7 features, 8 camps, 8 banners, 14 decoration sprites
+- [x] P3 Journey: 8 tiles, 7 features, 8 camps, 8 banners, 14 decoration sprites. Done 2026-09-29 in ComfyUI (pixel-art LoRA) and wired into `JourneyScreen` through `src/constants/journeyImages.ts`. They ship as small JPG/PNG (2 MB total); the emoji stay as a fallback.
 - [ ] P4 sleepy moods, cosmetics

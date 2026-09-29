@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   Image,
+  ImageBackground,
   Modal,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
+import {
+  EMPTY_SPOT_IMAGE,
+  getDecorationImage,
+  getFeatureImage,
+  getRegionImages,
+} from "../constants/journeyImages";
 import { getPetImage } from "../constants/petImages";
 import { AppSettings, DayRecord, Decoration, GameState } from "../types";
 import { getActiveCompanion } from "../utils/companions";
@@ -25,7 +32,6 @@ import {
   isPlaced,
   REGIONS,
   SPOTS_PER_CAMP,
-  TILE_FEATURE_ICONS,
   TILES_PER_CAMP,
   TILES_PER_REGION,
   TileFeature,
@@ -44,6 +50,12 @@ interface JourneyScreenProps {
 /** Horizontal offsets that make the road wind left and right. */
 const WIND_OFFSETS = [0, 44, 88, 44];
 const MAX_DAY_ITEMS = 12;
+/** Where the 3 camp spots sit on the camp scene (left, centre-right, right), as % of the scene. */
+const SCENE_SPOTS = [
+  { left: "8%", bottom: "8%" },
+  { left: "50%", bottom: "4%" },
+  { left: "76%", bottom: "12%" },
+] as const;
 
 type CopyShape = ReturnType<typeof getAppCopy>;
 
@@ -56,6 +68,25 @@ function fill(template: string, values: Record<string, string | number>): string
 
 function getDecorationName(copy: CopyShape, typeId: string): string {
   return copy.decorationNames[typeId] ?? typeId;
+}
+
+function getCampRegion(campIndex: number) {
+  // A camp belongs to the region of the tile it closes.
+  return REGIONS[getRegionForTile((campIndex + 1) * TILES_PER_CAMP - 1).regionIndex];
+}
+
+function DecorationIcon({ typeId, size }: { typeId?: string; size: number }) {
+  const source = typeId ? getDecorationImage(typeId) : EMPTY_SPOT_IMAGE;
+  if (!source) {
+    return <Text style={{ fontSize: size * 0.8 }}>{getDecorationType(typeId ?? "")?.icon ?? "◌"}</Text>;
+  }
+  return <Image source={source} style={{ width: size, height: size }} resizeMode="contain" />;
+}
+
+function FeatureIcon({ feature, size }: { feature: TileFeature; size: number }) {
+  return (
+    <Image source={getFeatureImage(feature)} style={{ width: size, height: size }} resizeMode="contain" />
+  );
 }
 
 export default function JourneyScreen({
@@ -120,12 +151,18 @@ export default function JourneyScreen({
           onPress={() => setSelectedDay(day)}
           activeOpacity={0.85}
         >
-          <Text style={styles.tileIcons}>
-            {getTileFeatures(day)
-              .map((feature) => TILE_FEATURE_ICONS[feature])
-              .join("")}
-          </Text>
-          <Text style={styles.tileDate}>{formatDay(day.date)}</Text>
+          <ImageBackground
+            source={getRegionImages(tileRegion.id).tile}
+            style={styles.tileInner}
+            imageStyle={styles.tileImage}
+          >
+            <View style={styles.tileIcons}>
+              {getTileFeatures(day).map((feature, featureIndex) => (
+                <FeatureIcon key={`${feature}-${featureIndex}`} feature={feature} size={20} />
+              ))}
+            </View>
+            <Text style={styles.tileDate}>{formatDay(day.date)}</Text>
+          </ImageBackground>
         </TouchableOpacity>
         {index === tiles.length - 1 && companion && (
           <Image
@@ -161,12 +198,14 @@ export default function JourneyScreen({
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View
+      <ImageBackground
+        source={getRegionImages(region.id).banner}
         style={[
           styles.header,
           { backgroundColor: region.color, borderBottomColor: region.borderColor },
         ]}
       >
+        <View style={styles.headerShade} />
         <View style={styles.headerRow}>
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>{region.name}</Text>
@@ -191,7 +230,7 @@ export default function JourneyScreen({
             region: position.tilesToNextRegion,
           })}
         </Text>
-      </View>
+      </ImageBackground>
 
       <ScrollView contentContainerStyle={styles.road}>
         <View
@@ -255,19 +294,23 @@ function CampCard({
       onPress={onPress}
       activeOpacity={0.85}
     >
-      <Text style={styles.campFire}>🔥</Text>
+      <Image
+        source={getRegionImages(getCampRegion(campIndex).id).camp}
+        style={styles.campThumb}
+        resizeMode="cover"
+      />
       <View style={styles.campBody}>
         <Text style={[styles.campTitle, { color: theme.text }]}>
           {fill(copy.journeyCamp, { number: campIndex + 1 })}
         </Text>
-        <Text style={[styles.campSpots, { color: theme.mutedText }]}>
+        <View style={styles.campSpots}>
           {Array.from({ length: SPOTS_PER_CAMP }, (_, spot) => {
             const placed = decorations.find(
               (decoration) => decoration.camp === campIndex && decoration.spot === spot,
             );
-            return placed ? getDecorationType(placed.typeId)?.icon ?? "◌" : "◌";
-          }).join("  ")}
-        </Text>
+            return <DecorationIcon key={spot} typeId={placed?.typeId} size={26} />;
+          })}
+        </View>
       </View>
       <Text style={[styles.campChevron, { color: theme.mutedText }]}>›</Text>
     </TouchableOpacity>
@@ -367,9 +410,12 @@ function DayModal({
       )}
       <View style={styles.featureList}>
         {features.map((feature) => (
-          <Text key={feature} style={[styles.featureLine, { color: theme.mutedText }]}>
-            {TILE_FEATURE_ICONS[feature]}  {copy.tileFeatures[feature]}
-          </Text>
+          <View key={feature} style={styles.featureRow}>
+            <FeatureIcon feature={feature} size={22} />
+            <Text style={[styles.featureLine, { color: theme.mutedText }]}>
+              {copy.tileFeatures[feature]}
+            </Text>
+          </View>
         ))}
       </View>
     </SheetModal>
@@ -418,10 +464,25 @@ function CampModal({
   return (
     <SheetModal
       visible
-      title={`🔥 ${fill(copy.journeyCamp, { number: campIndex + 1 })}`}
+      title={fill(copy.journeyCamp, { number: campIndex + 1 })}
       settings={settings}
       onClose={close}
     >
+      <ImageBackground
+        source={getRegionImages(getCampRegion(campIndex).id).camp}
+        style={styles.campScene}
+        imageStyle={styles.campSceneImage}
+      >
+        {Array.from({ length: SPOTS_PER_CAMP }, (_, spot) => {
+          const placed = placedAt(spot);
+          return placed ? (
+            <View key={spot} style={[styles.sceneSpot, SCENE_SPOTS[spot]]}>
+              <DecorationIcon typeId={placed.typeId} size={64} />
+            </View>
+          ) : null;
+        })}
+      </ImageBackground>
+
       {lookBack && (
         <View style={[styles.lookBack, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.journeyLookBack}</Text>
@@ -462,7 +523,7 @@ function CampModal({
               ]}
               onPress={() => setSelectedSpot(spot)}
             >
-              <Text style={styles.spotIcon}>{type ? type.icon : "◌"}</Text>
+              <DecorationIcon typeId={type?.id} size={40} />
               <Text style={[styles.spotLabel, { color: theme.mutedText }]} numberOfLines={1}>
                 {placed ? getDecorationName(copy, placed.typeId) : copy.journeyEmptySpot}
               </Text>
@@ -493,8 +554,8 @@ function CampModal({
                 key={decoration.id}
                 style={[styles.listRow, { backgroundColor: theme.surface }]}
               >
+                <DecorationIcon typeId={decoration.typeId} size={32} />
                 <Text style={[styles.listRowText, { color: theme.text }]}>
-                  {getDecorationType(decoration.typeId)?.icon}{"  "}
                   {getDecorationName(copy, decoration.typeId)}
                 </Text>
                 <TouchableOpacity
@@ -554,7 +615,7 @@ function DecorationsModal({
         <View style={styles.bagGrid}>
           {[...bagCounts.entries()].map(([typeId, count]) => (
             <View key={typeId} style={[styles.bagItem, { backgroundColor: theme.surface }]}>
-              <Text style={styles.spotIcon}>{getDecorationType(typeId)?.icon}</Text>
+              <DecorationIcon typeId={typeId} size={40} />
               <Text style={[styles.spotLabel, { color: theme.mutedText }]} numberOfLines={1}>
                 {getDecorationName(copy, typeId)}
                 {count > 1 ? ` ×${count}` : ""}
@@ -569,8 +630,8 @@ function DecorationsModal({
         const affordable = gameState.coins >= type.price;
         return (
           <View key={type.id} style={[styles.listRow, { backgroundColor: theme.surface }]}>
+            <DecorationIcon typeId={type.id} size={32} />
             <Text style={[styles.listRowText, { color: theme.text }]}>
-              {type.icon}{"  "}
               {getDecorationName(copy, type.id)}
             </Text>
             {type.price > 0 ? (
@@ -612,6 +673,10 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 14,
     borderBottomWidth: 3,
+  },
+  headerShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.28)",
   },
   headerRow: {
     flexDirection: "row",
@@ -679,19 +744,35 @@ const styles = StyleSheet.create({
     minHeight: 64,
     borderRadius: 16,
     borderWidth: 3,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    overflow: "hidden",
+  },
+  tileInner: {
+    flex: 1,
+    minHeight: 58,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     justifyContent: "space-between",
   },
+  tileImage: {
+    borderRadius: 13,
+  },
   tileIcons: {
-    fontSize: 16,
-    letterSpacing: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignSelf: "flex-start",
+    gap: 1,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    backgroundColor: "rgba(255, 255, 255, 0.55)",
   },
   tileDate: {
     fontSize: 11,
     fontWeight: "700",
     color: "#fff",
     marginTop: 4,
+    textShadowColor: "rgba(0, 0, 0, 0.6)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   tileCompanion: {
     width: 64,
@@ -716,8 +797,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: 12,
   },
-  campFire: {
-    fontSize: 28,
+  campThumb: {
+    width: 72,
+    height: 48,
+    borderRadius: 10,
   },
   campBody: {
     flex: 1,
@@ -727,8 +810,19 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   campSpots: {
-    fontSize: 18,
+    flexDirection: "row",
+    gap: 8,
     marginTop: 4,
+  },
+  campScene: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+  },
+  campSceneImage: {
+    borderRadius: 14,
+  },
+  sceneSpot: {
+    position: "absolute",
   },
   campChevron: {
     fontSize: 26,
@@ -801,6 +895,11 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 6,
   },
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   featureLine: {
     fontSize: 13,
   },
@@ -823,9 +922,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     paddingVertical: 12,
     paddingHorizontal: 6,
-  },
-  spotIcon: {
-    fontSize: 28,
   },
   spotLabel: {
     fontSize: 11,
