@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "Version 1.6.1 · September 29, 2026",
+      items: [
+        "New app icon and splash screen starring Sprout.",
+        "The Journey has real art: each region has its own ground, banner and campfire scene.",
+        "Tile features and decorations are drawn as little pixel sprites, and placed decorations appear in the camp scene.",
+      ],
+    },
+    {
       dateLabel: "Version 1.6.0 · September 29, 2026",
       items: [
         "Pets are now companions: no more summons, fusion or selling. Each companion exists once.",
@@ -49,6 +57,14 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "Versão 1.6.1 · 29 de setembro de 2026",
+      items: [
+        "Novo ícone e ecrã de arranque com o Sprout.",
+        "A Jornada tem arte a sério: cada região tem o seu chão, faixa e cena de acampamento.",
+        "As marcas dos mosaicos e as decorações passam a ser pequenos sprites, e as decorações colocadas aparecem na cena do acampamento.",
+      ],
+    },
     {
       dateLabel: "Versão 1.6.0 · 29 de setembro de 2026",
       items: [
