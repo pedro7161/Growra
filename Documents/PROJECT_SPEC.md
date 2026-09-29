@@ -4,15 +4,15 @@
 
 ## 1. Vision
 
-Growra is a **gamified task management mobile app** where users improve their real-life habits through a game-like system involving pets, progression, and rewards.
+Growra is a **free-form task app with game mechanics**. Each person decides what it's for: habits, planning the day, chores, study, lists, or a mix. That's why custom tasks sit alongside the predefined ones. No workflow is imposed, and every tool (recurrence, due dates, priorities, timers, the calendar) is optional.
 
 The core idea:
 
-* completing real-life tasks → gives rewards
-* rewards → progress pets and unlock content
-* consistency → increases efficiency through streak bonuses
+* using Growra in any style → rewards (coins, XP, companion Bond)
+* the way you use it → which companions join you and how your Journey road looks
+* showing up → streak bonus and a new tile on the road
 
-The app is based on **self-accountability**, not external validation.
+The app is based on **self-accountability**, not external validation. Completion is trust-based: anti-farming stays light (a daily coin cap) and honesty isn't policed.
 
 ---
 
@@ -330,9 +330,9 @@ Users must always:
 
 Growra is:
 
-* a habit-building app
-* with game mechanics
-* focused on consistency and progression
+* a free-form task app: the user chooses what to use it for
+* with game mechanics that reward any style of use
+* focused on showing up and following through, never on one workflow
 * simple at first, expandable later
 
 ---

@@ -1,6 +1,6 @@
 # Growra
 
-A habit tracker with game mechanics. Completing real-life tasks earns coins and XP. Companions join when you use Growra in their style (routines, timers, planning ahead…), grow through Bond and evolve. Every active day adds a tile to a road through the valley, with camps to decorate. Streaks reward consistency. Everything is stored locally on the device (no account, no backend).
+A free-form task app with game mechanics: use it for habits, planning your day, chores, lists, or all of them. Completing tasks earns coins and XP. Companions join when you use Growra in their style (routines, timers, planning ahead…), grow through Bond and evolve. Every active day adds a tile to a road through the valley, with camps to decorate. Streaks reward consistency. Everything is stored locally on the device (no account, no backend).
 
 Design and rules: [`Documents/PROJECT_SPEC.md`](Documents/PROJECT_SPEC.md).
 
