@@ -5,11 +5,68 @@ import {
   TaskType,
   TaskFrequency,
   TaskStatus,
+  CustomTaskTemplate,
 } from "../types";
 import { DEFAULT_TASK_CALENDAR_COLOR } from "../constants/taskConfig";
+import { getPredefinedTask } from "../constants/predefinedTasks";
 import { getStartOfDay } from "./taskSchedule";
 import { createTaskTimer } from "./taskTimer";
 import { generateId } from "./idUtils";
+import { createCustomTaskTemplate } from "./customTaskTemplates";
+
+export interface TaskFormValues {
+  name: string;
+  description: string;
+  predefinedTaskId: string;
+  customTemplateId: string;
+  category: string;
+  type: TaskType;
+  frequency: TaskFrequency;
+  priority: TaskPriority;
+  dueDate: number;
+  timerEnabled: boolean;
+  timerDurationMinutes: number;
+  saveAsTemplate: boolean;
+}
+
+export function buildTaskFromFormValues(values: TaskFormValues): {
+  task: Task;
+  customTemplate?: CustomTaskTemplate;
+} {
+  const task =
+    values.type === TaskType.PREDEFINED
+      ? createPredefinedTask(
+          getPredefinedTask(values.predefinedTaskId),
+          values.frequency,
+          values.dueDate,
+          values.timerEnabled,
+          values.timerDurationMinutes,
+          values.priority,
+        )
+      : createCustomTask(
+          values.name,
+          values.description,
+          values.category,
+          values.frequency,
+          values.customTemplateId,
+          values.dueDate,
+          values.timerEnabled,
+          values.timerDurationMinutes,
+          values.priority,
+        );
+
+  const customTemplate =
+    values.type === TaskType.CUSTOM && values.saveAsTemplate
+      ? createCustomTaskTemplate(
+          values.name,
+          values.description,
+          values.category,
+          values.customTemplateId,
+        )
+      : undefined;
+
+  return { task, customTemplate };
+}
 
 export function createTask(
   name: string,

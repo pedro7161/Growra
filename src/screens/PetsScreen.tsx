@@ -47,6 +47,7 @@ import {
     previewExpeditionBattleOutcome,
     SUMMON_COST,
 } from "../utils/gameplay";
+import { formatDuration } from "../utils/taskTimer";
 
 interface PetsScreenProps {
   gameState: GameState;
@@ -142,14 +143,6 @@ export default function PetsScreen({
       clearInterval(intervalId);
     };
   }, []);
-
-  const formatDuration = (durationMs: number) => {
-    const totalSeconds = Math.max(0, Math.ceil(durationMs / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-
-    return `${minutes}:${String(seconds).padStart(2, "0")}`;
-  };
 
   return (
     <SafeAreaView
@@ -1366,14 +1359,6 @@ function MapExplorerModal({
   const mapSheetTranslateY = useSharedValue(0);
   const mapSheetStartY = useSharedValue(0);
   const mapDetailCollapseDistance = 316;
-
-  const formatDuration = (durationMs: number) => {
-    const totalSeconds = Math.max(0, Math.ceil(durationMs / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-
-    return `${minutes}:${String(seconds).padStart(2, "0")}`;
-  };
 
   useEffect(() => {
     if (!visible) {

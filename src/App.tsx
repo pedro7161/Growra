@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { AppState, StyleSheet, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, AppState, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import BattleRewardModal from "./components/BattleRewardModal";
@@ -166,6 +166,9 @@ function shouldCompleteTutorial(gameState: GameState): boolean {
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<Screen>("dashboard");
   const [gameState, setGameState] = useState<GameState | null>(null);
+  // Latest state for event handlers. Reading `gameState` from the render closure lets two
+  // quick taps both act on the same old state (e.g. completing one task twice).
+  const gameStateRef = useRef<GameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [tutorialVisible, setTutorialVisible] = useState(false);
@@ -259,13 +262,13 @@ export default function App() {
   }, [gameState, expeditionEndsAt, expeditionZoneIndex]);
 
   const loadGame = async () => {
-    const saveData = await gameStateService.loadGame();
+    const loadResult = await gameStateService.loadGame();
 
     let resolvedGameState: GameState;
 
-    if (saveData) {
+    if (loadResult.status === "loaded") {
       const syncedGameState = applyTutorialReward(
-        resolveExpeditionProgress(syncRecurringTasks(saveData.gameState)),
+        resolveExpeditionProgress(syncRecurringTasks(loadResult.saveData.gameState)),
       );
       const resolvedTutorialState = shouldCompleteTutorial(syncedGameState)
         ? { ...syncedGameState, tutorialCompleted: true }
@@ -273,11 +276,19 @@ export default function App() {
       await gameStateService.saveGame(createSaveData(resolvedTutorialState));
       resolvedGameState = resolvedTutorialState;
     } else {
+      if (loadResult.status === "corrupt") {
+        Alert.alert(
+          "Save could not be loaded",
+          "Your previous progress couldn't be read, so a new game was started. " +
+            "A copy of the old save was kept on this device and can still be recovered.",
+        );
+      }
       const newGameState = createInitialGameState();
       await gameStateService.saveGame(createSaveData(newGameState));
       resolvedGameState = newGameState;
     }
 
+    gameStateRef.current = resolvedGameState;
     setGameState(resolvedGameState);
     if (!resolvedGameState.tutorialCompleted) {
       setTutorialVisible(true);
@@ -293,6 +304,7 @@ export default function App() {
     const resolvedTutorialState = shouldCompleteTutorial(syncedGameState)
       ? { ...syncedGameState, tutorialCompleted: true }
       : syncedGameState;
+    gameStateRef.current = resolvedTutorialState;
     setGameState(resolvedTutorialState);
     await gameStateService.saveGame(createSaveData(resolvedTutorialState));
     if (resolvedTutorialState.tutorialCompleted && !syncedGameState.tutorialCompleted) {
@@ -304,6 +316,7 @@ export default function App() {
     task: Task,
     customTemplate?: CustomTaskTemplate,
   ) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState({
@@ -320,12 +333,14 @@ export default function App() {
   };
 
   const handleCompleteTask = async (taskId: string) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState(completeTask(gameState, taskId));
   };
 
   const handleUpdateTask = async (updatedTask: Task) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState({
@@ -338,6 +353,7 @@ export default function App() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState({
@@ -351,6 +367,7 @@ export default function App() {
     taskId: string,
     updater: (task: Task) => Task,
   ) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState({
@@ -375,6 +392,7 @@ export default function App() {
   };
 
   const handleTimerReady = async (taskId: string) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await applyTimerUpdate(taskId, finishTaskTimer);
@@ -382,12 +400,14 @@ export default function App() {
   };
 
   const handleEquipPet = async (petId: string) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState(equipPet(gameState, petId));
   };
 
   const handleSummonPet = async () => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
     if (!gameState.tutorialRewardGranted && !gameState.tutorialCompleted) {
       return;
@@ -401,6 +421,7 @@ export default function App() {
   };
 
   const handleMultiSummonPet = async () => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
     if (!gameState.tutorialRewardGranted && !gameState.tutorialCompleted) {
       return;
@@ -414,18 +435,21 @@ export default function App() {
   };
 
   const handleRedeemPityPet = async (templateId: string) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState(redeemPityPet(gameState, templateId));
   };
 
   const handleFusePet = async (targetPetId: string, sourcePetId: string) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState(fusePet(gameState, targetPetId, sourcePetId));
   };
 
   const handleSellPet = async (petId: string) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState(sellPet(gameState, petId));
@@ -436,6 +460,7 @@ export default function App() {
     petId: string,
     battleConsumableIds: string[],
   ) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     const outcome = previewExpeditionBattleOutcome(
@@ -471,24 +496,28 @@ export default function App() {
   };
 
   const handleExploreNode = async (nodeId: string, petId: string) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState(exploreExpeditionNode(gameState, nodeId, petId));
   };
 
   const handleEquipGear = async (gearItemId: string, petId: string) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState(equipGearToPet(gameState, gearItemId, petId));
   };
 
   const handleSendPetOnExpedition = async (petId: string) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState(sendPetOnExpedition(gameState, petId));
   };
 
   const handleLanguageChange = async (language: AppLanguage) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState({
@@ -501,6 +530,7 @@ export default function App() {
   };
 
   const handleThemeChange = async (theme: AppThemeId) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState({
@@ -513,6 +543,7 @@ export default function App() {
   };
 
   const handleTimerAlertModeChange = async (mode: TimerAlertMode) => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await persistGameState({
@@ -528,6 +559,7 @@ export default function App() {
   };
 
   const handlePickTimerAlertSound = async () => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     const pickedSound = await pickTimerAlertSound(
@@ -552,6 +584,7 @@ export default function App() {
   };
 
   const handleClearTimerAlertSound = async () => {
+    const gameState = gameStateRef.current;
     if (!gameState) return;
 
     await removeStoredTimerAlertSound(gameState.settings.timerAlert.soundUri);

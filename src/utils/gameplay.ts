@@ -13,11 +13,10 @@ import {
     Task,
     TaskStatus,
 } from "../types";
-import { getNextAvailableDate, getStartOfDay } from "./taskSchedule";
+import { getCalendarDayDifference, getNextAvailableDate, getStartOfDay } from "./taskSchedule";
 import { finishTaskTimer } from "./taskTimer";
 import { generateId } from "./idUtils";
 
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const STREAK_BONUS_PER_DAY = 0.05;
 const STREAK_BONUS_CAP = 1.0;
 export const PLAYER_LEVEL_BASE_COST = 50;
@@ -689,15 +688,6 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
     },
   ],
 };
-
-function getDayDifference(
-  previousTimestamp: number,
-  nextTimestamp: number,
-): number {
-  return Math.floor(
-    (getStartOfDay(nextTimestamp) - getStartOfDay(previousTimestamp)) / DAY_IN_MS,
-  );
-}
 
 function getExperienceForLevel(level: number, baseCost: number): number {
   return baseCost * level * (level - 1);
@@ -1496,7 +1486,7 @@ export function calculateUpdatedStreak(
     };
   }
 
-  const dayDifference = getDayDifference(streak.lastCompletedDate, completedAt);
+  const dayDifference = getCalendarDayDifference(streak.lastCompletedDate, completedAt);
 
   if (dayDifference === 0) {
     return {
@@ -1543,7 +1533,8 @@ export function calculateUpdatedStreak(
 
 export function completeTask(gameState: GameState, taskId: string): GameState {
   const targetTask = gameState.tasks.find((task) => task.id === taskId);
-  if (!targetTask || targetTask.dueDate > Date.now()) {
+  // Only a pending task can be completed; a repeat call (e.g. a double tap) must not pay twice.
+  if (!targetTask || targetTask.status !== TaskStatus.PENDING || targetTask.dueDate > Date.now()) {
     return gameState;
   }
 
@@ -1618,6 +1609,10 @@ export function equipPet(gameState: GameState, petId: string): GameState {
 }
 
 export function summonPet(gameState: GameState): GameState {
+  if (gameState.coins < SUMMON_COST) {
+    return gameState;
+  }
+
   const summonedPet = createPet(getRandomRarity());
 
   return {
@@ -1630,6 +1625,10 @@ export function summonPet(gameState: GameState): GameState {
 }
 
 export function multiSummonPet(gameState: GameState): GameState {
+  if (gameState.coins < MULTI_SUMMON_COST) {
+    return gameState;
+  }
+
   const summonedPets = Array.from({ length: MULTI_SUMMON_COUNT }, () =>
     createPet(getRandomRarity()),
   );
@@ -1649,6 +1648,10 @@ export function redeemPityPet(
 ): GameState {
   const selectedTemplate = getPetTemplate(templateId);
   const pityCost = getPityCost(selectedTemplate.rarity);
+  if (gameState.pityCurrency < pityCost) {
+    return gameState;
+  }
+
   const redeemedPet = createPetFromTemplate(selectedTemplate);
 
   return {
