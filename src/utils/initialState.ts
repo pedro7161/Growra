@@ -1,6 +1,7 @@
 import { GameState, SaveData, Streak } from "../types";
 import { defaultSettings } from "./settings";
 import { generateId } from "./idUtils";
+import { createEmptyUsage } from "./companions";
 
 export function createInitialStreak(): Streak {
   return {
@@ -16,7 +17,6 @@ export function createInitialGameState(): GameState {
     playerId: generateId(),
     level: 1,
     coins: 0,
-    pityCurrency: 0,
     totalExperience: 0,
     totalTasksCompleted: 0,
     tutorialCompleted: false,
@@ -25,19 +25,12 @@ export function createInitialGameState(): GameState {
     tasks: [],
     customTaskTemplates: [],
     pets: [],
-    gearItems: [],
-    battleConsumables: [],
-    expeditionProgress: {
-      expeditionsSent: 0,
-      revealPoints: 0,
-      activeZoneIndex: -1,
-      activeZoneEndsAt: 0,
-      activeNodeId: "",
-      activeNodePetId: "",
-      activeNodeEndsAt: 0,
-      completedNodeIds: [],
-    },
     equippedPetId: "",
+    usage: createEmptyUsage(),
+    companionEvents: [],
+    notices: [],
+    days: [],
+    decorations: [],
     streak: createInitialStreak(),
     createdAt: Date.now(),
     lastPlayedAt: Date.now(),

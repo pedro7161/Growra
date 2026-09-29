@@ -5,7 +5,7 @@ import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings } from "../types";
 
-type TutorialStep =
+export type TutorialStep =
   | "open-tasks"
   | "tap-add-task"
   | "choose-predefined-task"
@@ -13,8 +13,7 @@ type TutorialStep =
   | "confirm-task-add"
   | "complete-task"
   | "open-realm"
-  | "summon-pet"
-  | "equip-pet"
+  | "choose-companion"
   | "done";
 
 interface TutorialOverlayProps {
@@ -50,11 +49,9 @@ export default function TutorialOverlay({
             ? copy.tutorialCompleteTaskHint
             : step === "open-realm"
             ? copy.tutorialOpenRealm
-            : step === "summon-pet"
-              ? copy.tutorialSummonPetHint
-              : step === "equip-pet"
-                ? copy.tutorialEquipPetHint
-                : copy.tutorialRewardTitle;
+            : step === "choose-companion"
+              ? copy.tutorialChooseCompanionHint
+              : copy.tutorialRewardTitle;
 
   const stepLabel =
     step === "open-tasks" ||
@@ -62,14 +59,10 @@ export default function TutorialOverlay({
     step === "choose-predefined-task" ||
     step === "choose-water-task" ||
     step === "confirm-task-add"
-      ? "1 / 4"
+      ? "1 / 3"
       : step === "complete-task"
-        ? "2 / 4"
-        : step === "open-realm" || step === "summon-pet"
-          ? "3 / 4"
-          : step === "equip-pet"
-            ? "4 / 4"
-            : "4 / 4";
+        ? "2 / 3"
+        : "3 / 3";
 
   return (
     <View pointerEvents="none" style={styles.overlayRoot}>

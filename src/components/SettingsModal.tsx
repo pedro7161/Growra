@@ -170,13 +170,10 @@ export default function SettingsModal({
             <StatRow label={copy.settingsUncompletedTasks} value={String(stats.uncompletedTasks)} themeId={theme.id} />
             <StatRow label={copy.settingsTodayActiveTasks} value={String(stats.todayActiveTasks)} themeId={theme.id} />
             <StatRow label={copy.settingsTotalPets} value={String(stats.totalPets)} themeId={theme.id} />
-            <StatRow label={copy.settingsCommonPets} value={String(stats.commonPets)} themeId={theme.id} />
-            <StatRow label={copy.settingsRarePets} value={String(stats.rarePets)} themeId={theme.id} />
-            <StatRow label={copy.settingsEpicPets} value={String(stats.epicPets)} themeId={theme.id} />
-            <StatRow label={copy.settingsFusedPets} value={String(stats.fusedPets)} themeId={theme.id} />
+            <StatRow label={copy.settingsEvolvedPets} value={String(stats.evolvedPets)} themeId={theme.id} />
             <StatRow label={copy.settingsEquippedPet} value={stats.equippedPetName} themeId={theme.id} />
             <StatRow label={copy.dashboardCoins} value={String(gameState.coins)} themeId={theme.id} />
-            <StatRow label={copy.dashboardPityCurrency} value={String(gameState.pityCurrency)} themeId={theme.id} />
+            <StatRow label={copy.dashboardActiveDays} value={String(stats.activeDays)} themeId={theme.id} />
             <StatRow label={copy.dashboardPlayerLevel} value={String(gameState.level)} themeId={theme.id} />
           </View>
 

@@ -1,6 +1,13 @@
 # Growra: game-layer redesign proposal (companion + map)
 
-Status: proposal v3, 2026-09-29. Nothing here is implemented yet.
+Status: proposal v3, 2026-09-29. **Phases 1 and 2 are implemented** on `feat/companions`:
+- **Companions (phase 1):** gacha, pity, fusion and selling are gone; a starter is picked in the tutorial; the others join by usage style; Bond drives evolution (30 / 100); perks, mood on the dashboard, the daily coin cap (15).
+- **Journey (phase 2):** day records, the road with tile features, camps with look-back cards, the 8 regions and seasons, decorations bought with coins, focus-buddy finds (every 3rd timer task). Expeditions, battles and gear are removed.
+- **Saves migrate:** duplicates, pity, gear and consumables become coins, and the road is rebuilt from past completions.
+
+Not built yet: phase 3 (Plan my day / Wrap up, so no bench on tiles) and the phase 4 art pass. Tiles, camps and decorations use emoji until the art exists.
+
+Where the build differs from the tables below: Sprout, Ripple and Glint are the starters, and the two not picked join later (Sprout after 3 active days, Ripple on the first task moved later, Glint on the first timer task). Nova is "the long run" (joins after 30 active days, +10% streak bonus), since Plan my day doesn't exist yet. `src/utils/companions.ts` is the source of truth.
 
 **Premise:** Growra is a **free-form task app**. Each person decides what it's for: daily habits, a day planner, chores, study sessions, a shopping list, or all of them together. That's why custom tasks exist. The game layer must therefore:
 

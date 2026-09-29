@@ -20,7 +20,13 @@ import {
     Task,
     TaskStatus,
 } from "../types";
+import {
+    getActiveStyle,
+    getCompanionMood,
+    getPerkStreakBonus,
+} from "../utils/companions";
 import { getLevelProgress, PLAYER_LEVEL_BASE_COST } from "../utils/gameplay";
+import { getRoadPosition } from "../utils/journey";
 import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
 
@@ -62,9 +68,17 @@ export default function DashboardScreen({
   const systemTasksToday = pendingTasks.filter(
     (task) => task.predefinedTaskId,
   ).length;
+  const streakBonus =
+    gameState.streak.bonus + getPerkStreakBonus(getActiveStyle(gameState));
   const activeMultiplier = equippedPet
-    ? (1 + gameState.streak.bonus) * (1 + equippedPet.taskMultiplier)
-    : 1 + gameState.streak.bonus;
+    ? (1 + streakBonus) * (1 + equippedPet.taskMultiplier)
+    : 1 + streakBonus;
+  const moodLine = equippedPet
+    ? copy.companionMood[getCompanionMood(gameState, now)].replace(
+        "{name}",
+        equippedPet.name,
+      )
+    : "";
 
   const currentLevel = gameState.level;
   const levelStartExp =
@@ -101,6 +115,11 @@ export default function DashboardScreen({
               <Text style={[styles.heroMeta, { color: theme.heroMuted }]}>
                 x{activeMultiplier.toFixed(2)} {copy.dashboardRewardMultiplier}
               </Text>
+              {moodLine !== "" && (
+                <Text style={[styles.heroMood, { color: theme.heroText }]}>
+                  {moodLine}
+                </Text>
+              )}
             </View>
             {equippedPet && (
               <Image
@@ -279,10 +298,10 @@ export default function DashboardScreen({
               style={[styles.summaryCard, { backgroundColor: theme.surface }]}
             >
               <Text style={[styles.summaryLabel, { color: theme.mutedText }]}>
-                {copy.dashboardPityCurrency}
+                {copy.dashboardActiveDays}
               </Text>
               <Text style={[styles.summaryValue, { color: theme.text }]}>
-                {gameState.pityCurrency}
+                {getRoadPosition(gameState.days).tiles}
               </Text>
             </View>
           </View>
@@ -365,9 +384,14 @@ const styles = StyleSheet.create({
   heroMeta: {
     fontSize: 14,
   },
+  heroMood: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 10,
+  },
   heroPetImage: {
     width: 96,
-    aspectRatio: 1,
+    height: 96,
   },
   settingsButton: {
     borderRadius: 999,

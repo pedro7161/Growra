@@ -15,12 +15,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { getPetImage } from "../constants/petImages";
-import { AppSettings, Pet } from "../types";
-import { getLevelProgress, getPetTemplates, PET_LEVEL_BASE_COST } from "../utils/gameplay";
+import { AppSettings, CompanionEvent, Pet } from "../types";
+import {
+  getBondProgress,
+  getCompanionDefinition,
+  getNextEvolutionBond,
+} from "../utils/companions";
+import { getPetTemplates } from "../utils/gameplay";
+import { getDecorationType } from "../utils/journey";
 
-interface SummonRevealModalProps {
+interface CompanionRevealModalProps {
   visible: boolean;
   settings: AppSettings;
+  /** Joins and evolutions waiting to be shown, oldest first. */
+  events: CompanionEvent[];
   pets: Pet[];
   onClose: () => void;
 }
@@ -38,12 +46,13 @@ interface ConfettiPiece {
 
 const CONFETTI_COUNT = 28;
 
-export default function SummonRevealModal({
+export default function CompanionRevealModal({
   visible,
   settings,
-  pets,
+  events,
+  pets: ownedPets,
   onClose,
-}: SummonRevealModalProps) {
+}: CompanionRevealModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const { height } = useWindowDimensions();
@@ -52,6 +61,11 @@ export default function SummonRevealModal({
   const confettiProgress = useRef(new Animated.Value(0)).current;
   const cardScale = useRef(new Animated.Value(0.82)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
+  const reveals = events.flatMap((event) => {
+    const pet = ownedPets.find((ownedPet) => ownedPet.templateId === event.templateId);
+    return pet ? [{ event, pet }] : [];
+  });
+  const pets = reveals.map((reveal) => reveal.pet);
 
   useEffect(() => {
     if (!visible) {
@@ -111,7 +125,23 @@ export default function SummonRevealModal({
   const activeTemplate = getPetTemplates().filter(
     (template) => template.id === activePet.templateId,
   )[0];
-  const activeProgress = getLevelProgress(activePet.experience, PET_LEVEL_BASE_COST);
+  const activeEvent = reveals[activeIndex].event;
+  const activeStyle = getCompanionDefinition(activePet.templateId)?.style;
+  const activeProgress = getBondProgress(activePet.bond);
+  const nextEvolutionBond = getNextEvolutionBond(activePet.bond);
+  const foundType =
+    activeEvent.kind === "found" && activeEvent.decorationTypeId
+      ? getDecorationType(activeEvent.decorationTypeId)
+      : undefined;
+  const foundName = foundType
+    ? copy.decorationNames[foundType.id] ?? foundType.id
+    : "";
+  const evolutionLabel =
+    activePet.evolutionStage === 2
+      ? copy.petsEvolutionAscended
+      : activePet.evolutionStage === 1
+        ? copy.petsEvolutionEvolved
+        : copy.petsEvolutionBase;
 
   const handlePrevious = () => {
     if (activeIndex === 0) {
@@ -137,12 +167,21 @@ export default function SummonRevealModal({
         <SafeAreaView style={styles.safeArea}>
           <View style={[styles.shell, { backgroundColor: theme.background }]}>
             <View style={[styles.header, { borderBottomColor: theme.border }]}>
-              <View>
+              <View style={styles.headerText}>
                 <Text style={[styles.title, { color: theme.text }]}>
-                  {copy.petsSummonRevealTitle}
+                  {(activeEvent.kind === "joined"
+                    ? copy.companionJoinedTitle
+                    : activeEvent.kind === "found"
+                      ? copy.companionFoundTitle
+                      : copy.companionEvolvedTitle
+                  ).replace("{name}", activePet.name)}
                 </Text>
                 <Text style={[styles.subtitle, { color: theme.mutedText }]}>
-                  {copy.petsSummonRevealSubtitle}
+                  {activeEvent.kind === "joined"
+                    ? copy.companionRevealSubtitle
+                    : activeEvent.kind === "found"
+                      ? copy.companionFoundSubtitle.replace("{item}", foundName)
+                      : evolutionLabel}
                 </Text>
               </View>
               <TouchableOpacity
@@ -221,6 +260,9 @@ export default function SummonRevealModal({
                       style={styles.revealImage}
                       resizeMode="contain"
                     />
+                    {foundType && (
+                      <Text style={styles.foundIcon}>{foundType.icon}</Text>
+                    )}
                   </View>
                   <Text style={[styles.petName, { color: theme.text }]}>
                     {activePet.name}
@@ -233,7 +275,9 @@ export default function SummonRevealModal({
                       ]}
                     >
                       <Text style={[styles.badgeText, { color: theme.accent }]}>
-                        {activePet.rarity}
+                        {activeStyle
+                          ? `${copy.companionLoves} ${copy.companionStyles[activeStyle].loves}`
+                          : activePet.rarity}
                       </Text>
                     </View>
                     <View
@@ -251,10 +295,14 @@ export default function SummonRevealModal({
                     {activeTemplate.description}
                   </Text>
                   <View style={styles.statGrid}>
-                    <StatPill label={copy.petsLevel} value={String(activePet.level)} themeColor={theme.text} mutedColor={theme.mutedText} bgColor={theme.surfaceMuted} />
-                    <StatPill label={copy.petsCombatPower} value={String(activePet.combatPower)} themeColor={theme.text} mutedColor={theme.mutedText} bgColor={theme.surfaceMuted} />
-                    <StatPill label={copy.petsExplorationPower} value={String(activePet.explorationPower)} themeColor={theme.text} mutedColor={theme.mutedText} bgColor={theme.surfaceMuted} />
+                    <StatPill label={copy.companionBond} value={String(activePet.bond)} themeColor={theme.text} mutedColor={theme.mutedText} bgColor={theme.surfaceMuted} />
+                    <StatPill label={copy.petsEvolution} value={evolutionLabel} themeColor={theme.text} mutedColor={theme.mutedText} bgColor={theme.surfaceMuted} />
                   </View>
+                  {activeStyle && (
+                    <Text style={[styles.petDescription, { color: theme.text }]}>
+                      {copy.companionPerk}: {copy.companionStyles[activeStyle].perk}
+                    </Text>
+                  )}
                   <View
                     style={[
                       styles.xpTrack,
@@ -271,6 +319,11 @@ export default function SummonRevealModal({
                       ]}
                     />
                   </View>
+                  <Text style={[styles.petDescription, { color: theme.mutedText }]}>
+                    {nextEvolutionBond === null
+                      ? copy.petsMaxEvolution
+                      : copy.companionNextEvolution.replace("{bond}", String(nextEvolutionBond))}
+                  </Text>
                 </Animated.View>
               </View>
 
@@ -311,7 +364,7 @@ export default function SummonRevealModal({
 
                     return (
                       <TouchableOpacity
-                        key={pet.id}
+                        key={`${pet.id}-${index}`}
                         style={[
                           styles.thumbnailCard,
                           {
@@ -419,6 +472,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
+    gap: 12,
+  },
+  headerText: {
+    flex: 1,
   },
   title: {
     fontSize: 22,
@@ -473,6 +530,12 @@ const styles = StyleSheet.create({
     height: 220,
     justifyContent: "center",
     alignItems: "center",
+  },
+  foundIcon: {
+    position: "absolute",
+    right: 10,
+    bottom: 6,
+    fontSize: 48,
   },
   revealGlow: {
     position: "absolute",
@@ -571,6 +634,7 @@ const styles = StyleSheet.create({
   thumbnailRow: {
     gap: 10,
     paddingBottom: 8,
+    alignItems: "flex-start",
   },
   thumbnailCard: {
     width: 94,

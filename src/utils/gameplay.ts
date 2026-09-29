@@ -1,14 +1,9 @@
 import {
-    BattleConsumableItem,
-    BattleConsumableKind,
-    ExpeditionProgress,
-    ExpeditionNodeType,
-    GearItem,
+    CompanionEvent,
     GameState,
     Pet,
     PetImages,
     PetRarity,
-    PetStats,
     Streak,
     Task,
     TaskStatus,
@@ -16,6 +11,25 @@ import {
 import { getCalendarDayDifference, getNextAvailableDate, getStartOfDay } from "./taskSchedule";
 import { finishTaskTimer } from "./taskTimer";
 import { generateId } from "./idUtils";
+import {
+  COMPANIONS,
+  DAILY_COIN_TASK_CAP,
+  STARTER_TEMPLATE_IDS,
+  getActiveCompanion,
+  getActiveStyle,
+  getBondGain,
+  getCompletionFacts,
+  getGrowthLevel,
+  getPerkCoins,
+  getPerkStreakBonus,
+  isReschedule,
+  recordCompletion,
+  recordOverdueDeleted,
+  recordReschedule,
+  recordTaskCreated,
+  withToday,
+} from "./companions";
+import { getFocusFind, recordDayCompletion, recordDayScheduledAhead } from "./journey";
 
 const STREAK_BONUS_PER_DAY = 0.05;
 const STREAK_BONUS_CAP = 1.0;
@@ -27,117 +41,12 @@ const EVOLUTION_STAGE_TWO_FUSIONS = 4;
 
 export const BASE_TASK_COIN_REWARD = 10;
 export const BASE_TASK_PLAYER_EXPERIENCE_REWARD = 8;
-export const BASE_TASK_PET_EXPERIENCE_REWARD = 6;
-export const SUMMON_COST = 100;
-export const MULTI_SUMMON_COUNT = 11;
-export const MULTI_SUMMON_COST = 1000;
-export const MULTI_SUMMON_PITY = 10;
-export const PITY_CURRENCY_PER_SUMMON = 1;
-export const EXPEDITION_MAP_REGIONS = 8;
-export const EXPEDITION_POINTS_PER_REGION = 5;
-const EXPEDITION_BASE_DURATION_MS = 30_000;
-const EXPEDITION_DURATION_STEP_MS = 15_000;
-const EXPEDITION_POWER_REDUCTION_MS = 250;
-const EXPEDITION_MIN_DURATION_MS = 15_000;
-const EXPEDITION_FIGHT_BASE_XP = 14;
-const EXPEDITION_FIGHT_XP_STEP = 6;
-export const COMMON_PITY_COST = 15;
-export const RARE_PITY_COST = 30;
-export const EPIC_PITY_COST = 60;
-export const LEGENDARY_PITY_COST = 120;
-export const MAX_PET_FUSIONS = 4;
 export const COMMON_SELL_VALUE = 25;
 export const RARE_SELL_VALUE = 60;
 export const EPIC_SELL_VALUE = 120;
 export const LEGENDARY_SELL_VALUE = 240;
 export const LEVEL_THRESHOLDS = [12, 16, 24, 41, 81, 99];
 
-const MAX_DUPE_PITY_VALUE: Record<PetRarity, number> = {
-  [PetRarity.COMMON]: 1,
-  [PetRarity.RARE]: 2,
-  [PetRarity.EPIC]: 3,
-  [PetRarity.LEGENDARY]: 5,
-};
-
-const EXPEDITION_WILD_PET_NAMES = [
-  "Driftclaw",
-  "Rootglow",
-  "Duneburst",
-  "Cloudjaw",
-  "Mirewhisper",
-  "Glassstride",
-  "Ashthorn",
-  "Skyfang",
-];
-
-const EXPEDITION_GEAR_NAMES = [
-  "Coastline Talisman",
-  "Grovecap Charm",
-  "Duneweave Guard",
-  "Cloudbreak Emblem",
-  "Moonpool Sigil",
-  "Glasswind Crest",
-  "Cinder Hollow Relic",
-  "Skyheart Crown",
-];
-
-const GEAR_RARITY_BY_ZONE: PetRarity[] = [
-  PetRarity.COMMON,
-  PetRarity.COMMON,
-  PetRarity.RARE,
-  PetRarity.RARE,
-  PetRarity.EPIC,
-  PetRarity.EPIC,
-  PetRarity.LEGENDARY,
-  PetRarity.LEGENDARY,
-];
-
-const BATTLE_CONSUMABLE_KIND_NAMES: Record<BattleConsumableKind, string> = {
-  heal: "Restorative Draught",
-  attack: "Rage Tonic",
-  shield: "Bulwark Charm",
-  speed: "Gale Tonic",
-  burst: "Burst Flask",
-  revive: "Second Wind Sigil",
-};
-
-const BATTLE_CONSUMABLE_KIND_DESCRIPTIONS: Record<
-  BattleConsumableKind,
-  string
-> = {
-  heal: "Restores endurance and softens the next hit.",
-  attack: "Raises attack output for the next battle.",
-  shield: "Adds a barrier that absorbs pressure in battle.",
-  speed: "Sharpens initiative and lets your pet strike faster.",
-  burst: "Delivers a sudden damage spike at the start of battle.",
-  revive: "Prevents a defeat from ending the fight too soon.",
-};
-
-interface ExpeditionSideNodeBlueprint {
-  id: string;
-  zoneIndex: number;
-  name: string;
-  type: ExpeditionNodeType;
-  requiredElement: string;
-  rewardKind: "reveal" | "xp" | "gear" | "consumable";
-  rewardLabel: string;
-  rewardPower: number;
-  description: string;
-  mapX: number;
-  mapY: number;
-}
-
-interface ExpeditionZoneBlueprint {
-  index: number;
-  name: string;
-  hint: string;
-  color: string;
-  borderColor: string;
-  requiredElement: string;
-  mapX: number;
-  mapY: number;
-  sideNodes: ExpeditionSideNodeBlueprint[];
-}
 
 interface PetTemplate {
   id: string;
@@ -159,297 +68,6 @@ interface PetProgressionSnapshot {
   combatPower: number;
   explorationPower: number;
 }
-
-interface ExpeditionEncounter {
-  wildPetName: string;
-  wildPower: number;
-  gearName: string;
-  gearRarity: PetRarity;
-  enemyTrait: string;
-  enemyTraitDescription: string;
-  enemyModifier: number;
-}
-
-const EXPEDITION_ZONE_BLUEPRINTS: ExpeditionZoneBlueprint[] = [
-  {
-    index: 0,
-    name: "Sunlit Coast",
-    hint: "Warm shores where the first trail markers were planted.",
-    color: "#d69363",
-    borderColor: "#b76d39",
-    requiredElement: "",
-    mapX: 120,
-    mapY: 300,
-    sideNodes: [
-      {
-        id: "zone-0-cache",
-        zoneIndex: 0,
-        name: "Tide Cache",
-        type: "cache",
-        requiredElement: "wind",
-        rewardKind: "reveal",
-        rewardLabel: "Map reveal",
-        rewardPower: 2,
-        description: "A hidden crate that reveals a nearby route fragment.",
-        mapX: 230,
-        mapY: 190,
-      },
-      {
-        id: "zone-0-shrine",
-        zoneIndex: 0,
-        name: "Shell Shrine",
-        type: "shrine",
-        requiredElement: "forest",
-        rewardKind: "xp",
-        rewardLabel: "XP",
-        rewardPower: 18,
-        description: "A calm shrine that rewards patient scouts with XP.",
-        mapX: 50,
-        mapY: 430,
-      },
-    ],
-  },
-  {
-    index: 1,
-    name: "Mossway Grove",
-    hint: "Dense woodland paths that open only after careful scouting.",
-    color: "#5f8f67",
-    borderColor: "#41704a",
-    requiredElement: "",
-    mapX: 370,
-    mapY: 180,
-    sideNodes: [
-      {
-        id: "zone-1-cache",
-        zoneIndex: 1,
-        name: "Root Cache",
-        type: "cache",
-        requiredElement: "earth",
-        rewardKind: "consumable",
-        rewardLabel: "Battle item",
-        rewardPower: 1,
-        description: "A buried satchel containing a battle consumable.",
-        mapX: 510,
-        mapY: 320,
-      },
-    ],
-  },
-  {
-    index: 2,
-    name: "Amber Dunes",
-    hint: "Wind-carved ridges that hide caravan routes under shifting sand.",
-    color: "#c98b42",
-    borderColor: "#9f6424",
-    requiredElement: "",
-    mapX: 620,
-    mapY: 320,
-    sideNodes: [
-      {
-        id: "zone-2-elite",
-        zoneIndex: 2,
-        name: "Dune Sentinel",
-        type: "elite",
-        requiredElement: "fire",
-        rewardKind: "gear",
-        rewardLabel: "Gear",
-        rewardPower: 1,
-        description: "An elite outcrop that guards a stronger gear drop.",
-        mapX: 540,
-        mapY: 100,
-      },
-      {
-        id: "zone-2-secret",
-        zoneIndex: 2,
-        name: "Buried Caravan",
-        type: "secret",
-        requiredElement: "water",
-        rewardKind: "reveal",
-        rewardLabel: "Map reveal",
-        rewardPower: 3,
-        description: "A secret route cache that pushes the map further ahead.",
-        mapX: 760,
-        mapY: 430,
-      },
-    ],
-  },
-  {
-    index: 3,
-    name: "Cloudbreak Ridge",
-    hint: "A high pass where map fragments drift between cliff shadows.",
-    color: "#6c89b8",
-    borderColor: "#476794",
-    requiredElement: "",
-    mapX: 880,
-    mapY: 170,
-    sideNodes: [
-      {
-        id: "zone-3-shrine",
-        zoneIndex: 3,
-        name: "Storm Shrine",
-        type: "shrine",
-        requiredElement: "storm",
-        rewardKind: "xp",
-        rewardLabel: "XP",
-        rewardPower: 24,
-        description: "A wind-cut altar that teaches a scout how to read the sky.",
-        mapX: 820,
-        mapY: 60,
-      },
-      {
-        id: "zone-3-cache",
-        zoneIndex: 3,
-        name: "Ridge Cache",
-        type: "cache",
-        requiredElement: "wind",
-        rewardKind: "consumable",
-        rewardLabel: "Battle item",
-        rewardPower: 2,
-        description: "A ledge cache with a higher-tier consumable inside.",
-        mapX: 1010,
-        mapY: 300,
-      },
-    ],
-  },
-  {
-    index: 4,
-    name: "Moonpool Marsh",
-    hint: "Still water and silver reeds reflecting what lies further north.",
-    color: "#738f84",
-    borderColor: "#547265",
-    requiredElement: "",
-    mapX: 1140,
-    mapY: 340,
-    sideNodes: [
-      {
-        id: "zone-4-gear",
-        zoneIndex: 4,
-        name: "Moonpool Reliquary",
-        type: "secret",
-        requiredElement: "water",
-        rewardKind: "gear",
-        rewardLabel: "Gear",
-        rewardPower: 2,
-        description: "A rare reliquary that tends to drop stronger gear.",
-        mapX: 1260,
-        mapY: 170,
-      },
-    ],
-  },
-  {
-    index: 5,
-    name: "Glasswind Expanse",
-    hint: "Open plains where the route becomes visible after repeated passes.",
-    color: "#7a9cba",
-    borderColor: "#547792",
-    requiredElement: "",
-    mapX: 1400,
-    mapY: 210,
-    sideNodes: [
-      {
-        id: "zone-5-cache",
-        zoneIndex: 5,
-        name: "Glass Cache",
-        type: "cache",
-        requiredElement: "crystal",
-        rewardKind: "reveal",
-        rewardLabel: "Map reveal",
-        rewardPower: 2,
-        description: "A reflective cache that helps uncover hidden branches.",
-        mapX: 1350,
-        mapY: 470,
-      },
-      {
-        id: "zone-5-shrine",
-        zoneIndex: 5,
-        name: "Wind Shrine",
-        type: "shrine",
-        requiredElement: "wind",
-        rewardKind: "xp",
-        rewardLabel: "XP",
-        rewardPower: 30,
-        description: "A fast-moving shrine that rewards precision scouting.",
-        mapX: 1560,
-        mapY: 80,
-      },
-    ],
-  },
-  {
-    index: 6,
-    name: "Cinder Hollow",
-    hint: "A volcanic basin that glows brighter with each expedition return.",
-    color: "#b75d4b",
-    borderColor: "#8d3b2f",
-    requiredElement: "",
-    mapX: 1680,
-    mapY: 360,
-    sideNodes: [
-      {
-        id: "zone-6-elite",
-        zoneIndex: 6,
-        name: "Forge Beast",
-        type: "elite",
-        requiredElement: "lava",
-        rewardKind: "gear",
-        rewardLabel: "Gear",
-        rewardPower: 2,
-        description: "A heat-shimmering elite node with strong item rewards.",
-        mapX: 1600,
-        mapY: 180,
-      },
-      {
-        id: "zone-6-consumable",
-        zoneIndex: 6,
-        name: "Cinder Cache",
-        type: "cache",
-        requiredElement: "fire",
-        rewardKind: "consumable",
-        rewardLabel: "Battle item",
-        rewardPower: 2,
-        description: "A smoldering cache that yields combat supplies.",
-        mapX: 1835,
-        mapY: 470,
-      },
-    ],
-  },
-  {
-    index: 7,
-    name: "Skyheart Summit",
-    hint: "The final landmark, revealed only when the map is nearly complete.",
-    color: "#7d6fb7",
-    borderColor: "#564b8c",
-    requiredElement: "",
-    mapX: 1960,
-    mapY: 180,
-    sideNodes: [
-      {
-        id: "zone-7-secret",
-        zoneIndex: 7,
-        name: "Starfall Vault",
-        type: "secret",
-        requiredElement: "solar",
-        rewardKind: "gear",
-        rewardLabel: "Gear",
-        rewardPower: 3,
-        description: "A high summit vault with the best gear and loot odds.",
-        mapX: 1910,
-        mapY: 70,
-      },
-      {
-        id: "zone-7-elite",
-        zoneIndex: 7,
-        name: "Summit Trial",
-        type: "elite",
-        requiredElement: "cosmic",
-        rewardKind: "reveal",
-        rewardLabel: "Map reveal",
-        rewardPower: 4,
-        description: "A final trial that can push the map to its limit.",
-        mapX: 2040,
-        mapY: 420,
-      },
-    ],
-  },
-];
 
 const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
   [PetRarity.COMMON]: [
@@ -714,27 +332,6 @@ export function getLevelProgress(
   return Math.min(1, Math.max(0, (experience - levelStart) / nextLevelCost));
 }
 
-export function getExpeditionMapRegionCount(
-  expeditionProgress: ExpeditionProgress,
-): number {
-  return Math.min(
-    EXPEDITION_MAP_REGIONS,
-    Math.floor(expeditionProgress.revealPoints / EXPEDITION_POINTS_PER_REGION),
-  );
-}
-
-export function getExpeditionDurationMs(
-  zoneIndex: number,
-  explorationPower: number,
-): number {
-  return Math.max(
-    EXPEDITION_MIN_DURATION_MS,
-    EXPEDITION_BASE_DURATION_MS +
-      zoneIndex * EXPEDITION_DURATION_STEP_MS -
-      explorationPower * EXPEDITION_POWER_REDUCTION_MS,
-  );
-}
-
 function getBonusFromLevel(level: number): number {
   return Math.min(level * STREAK_BONUS_PER_DAY, STREAK_BONUS_CAP);
 }
@@ -781,42 +378,6 @@ function getRewardMultiplier(
   return (1 + streakBonus) * (1 + petMultiplier);
 }
 
-function addStats(left: PetStats, right: PetStats): PetStats {
-  return {
-    attack: left.attack + right.attack,
-    defense: left.defense + right.defense,
-    speed: left.speed + right.speed,
-    luck: left.luck + right.luck,
-  };
-}
-
-function getZeroStats(): PetStats {
-  return {
-    attack: 0,
-    defense: 0,
-    speed: 0,
-    luck: 0,
-  };
-}
-
-function getRandomRarity(): PetRarity {
-  const roll = Math.random();
-
-  if (roll < 0.7) {
-    return PetRarity.COMMON;
-  }
-
-  if (roll < 0.95) {
-    return PetRarity.RARE;
-  }
-
-  if (roll < 0.99) {
-    return PetRarity.EPIC;
-  }
-
-  return PetRarity.LEGENDARY;
-}
-
 function createPetFromTemplate(template: PetTemplate): Pet {
   const createdAt = Date.now();
   const progression = getPetProgressionSnapshot(template.id, 0);
@@ -841,6 +402,7 @@ function createPetFromTemplate(template: PetTemplate): Pet {
     equippedGearId: "",
     equipped: false,
     createdAt,
+    bond: 0,
   };
 }
 
@@ -874,22 +436,6 @@ export function getPetElement(templateId: string): string {
 
 export function getPetTemplates(): PetTemplate[] {
   return Object.values(PET_TEMPLATES).flat();
-}
-
-export function getPityCost(rarity: PetRarity): number {
-  if (rarity === PetRarity.LEGENDARY) {
-    return LEGENDARY_PITY_COST;
-  }
-
-  if (rarity === PetRarity.EPIC) {
-    return EPIC_PITY_COST;
-  }
-
-  if (rarity === PetRarity.RARE) {
-    return RARE_PITY_COST;
-  }
-
-  return COMMON_PITY_COST;
 }
 
 export function getSellValue(rarity: PetRarity): number {
@@ -943,534 +489,6 @@ export function getPetProgressionSnapshot(
     combatPower: getCombatPower(stats, evolutionStage),
     explorationPower: getExplorationPower(stats, evolutionStage),
   };
-}
-
-function getExpeditionEncounter(zoneIndex: number): ExpeditionEncounter {
-  const encounterIndex = Math.min(zoneIndex, EXPEDITION_WILD_PET_NAMES.length - 1);
-  const wildPower = 18 + encounterIndex * 14;
-  const enemyTraitIndex = Math.min(zoneIndex, 4);
-  const enemyTraits = [
-    {
-      name: "Brutal",
-      description: "Hits harder than its size suggests.",
-      modifier: 4,
-    },
-    {
-      name: "Guarded",
-      description: "Tanks damage and drags the fight longer.",
-      modifier: 6,
-    },
-    {
-      name: "Swift",
-      description: "Punishes slow loadouts and weak initiative.",
-      modifier: 5,
-    },
-    {
-      name: "Aggressive",
-      description: "Presses the attack and rewards stronger burst items.",
-      modifier: 7,
-    },
-    {
-      name: "Relentless",
-      description: "A late-zone threat that tests every part of the loadout.",
-      modifier: 10,
-    },
-  ];
-  const enemyTrait = enemyTraits[enemyTraitIndex];
-
-  return {
-    wildPetName: EXPEDITION_WILD_PET_NAMES[encounterIndex],
-    wildPower: wildPower + enemyTrait.modifier,
-    gearName: EXPEDITION_GEAR_NAMES[encounterIndex],
-    gearRarity: GEAR_RARITY_BY_ZONE[encounterIndex],
-    enemyTrait: enemyTrait.name,
-    enemyTraitDescription: enemyTrait.description,
-    enemyModifier: enemyTrait.modifier,
-  };
-}
-
-export function getExpeditionBattlePreview(zoneIndex: number): ExpeditionEncounter {
-  return getExpeditionEncounter(zoneIndex);
-}
-
-export function getExpeditionZoneBlueprints(): ExpeditionZoneBlueprint[] {
-  return EXPEDITION_ZONE_BLUEPRINTS;
-}
-
-export function getExpeditionZoneBlueprint(zoneIndex: number): ExpeditionZoneBlueprint {
-  return EXPEDITION_ZONE_BLUEPRINTS[
-    Math.min(zoneIndex, EXPEDITION_ZONE_BLUEPRINTS.length - 1)
-  ];
-}
-
-export function getExpeditionSideNodeById(
-  nodeId: string,
-): ExpeditionSideNodeBlueprint {
-  const node = EXPEDITION_ZONE_BLUEPRINTS.flatMap((zone) => zone.sideNodes).find(
-    (candidate) => candidate.id === nodeId,
-  );
-
-  if (node) {
-    return node;
-  }
-
-  return EXPEDITION_ZONE_BLUEPRINTS[0].sideNodes[0];
-}
-
-export function getExpeditionNodeDurationMs(
-  nodeId: string,
-  petId: string,
-  gameState: GameState,
-): number {
-  const node = getExpeditionSideNodeById(nodeId);
-  const scout = gameState.pets.filter((pet) => pet.id === petId)[0];
-  const baseDuration = 18000 + node.rewardPower * 3200;
-  const speedBonus = scout.explorationPower * 85;
-
-  return Math.max(9000, baseDuration - speedBonus);
-}
-
-function applyExpeditionNodeReward(
-  gameState: GameState,
-  nodeId: string,
-  petId: string,
-): GameState {
-  const node = getExpeditionSideNodeById(nodeId);
-  const scout = gameState.pets.filter((pet) => pet.id === petId)[0];
-  const scoutElement = getPetElement(scout.templateId);
-  const elementMatched = scoutElement === node.requiredElement;
-
-  if (isExpeditionNodeCompleted(gameState, nodeId)) {
-    return gameState;
-  }
-
-  if (!elementMatched) {
-    return gameState;
-  }
-
-  const rewardMultiplier = elementMatched ? 2 : 1;
-  const nextGameState = {
-    ...gameState,
-    battleConsumables:
-      node.rewardKind === "consumable"
-        ? [
-            ...gameState.battleConsumables,
-            createBattleConsumableDrop(
-              node.zoneIndex,
-              true,
-              node.rewardPower + rewardMultiplier,
-            ),
-          ]
-        : gameState.battleConsumables,
-    gearItems:
-      node.rewardKind === "gear"
-        ? [
-            ...gameState.gearItems,
-            createGearDrop(node.zoneIndex, true, node.rewardPower + rewardMultiplier),
-          ]
-        : gameState.gearItems,
-    pets:
-      node.rewardKind === "xp"
-        ? gameState.pets.map((pet) => {
-            if (pet.id !== petId) {
-              return pet;
-            }
-
-            const experience = pet.experience + node.rewardPower * rewardMultiplier;
-
-            return {
-              ...pet,
-              experience,
-              level: getLevel(experience, PET_LEVEL_BASE_COST),
-            };
-          })
-        : gameState.pets,
-    expeditionProgress: {
-      ...gameState.expeditionProgress,
-      revealPoints:
-        gameState.expeditionProgress.revealPoints +
-        (node.rewardKind === "reveal"
-          ? node.rewardPower * rewardMultiplier
-          : rewardMultiplier),
-      completedNodeIds: [...gameState.expeditionProgress.completedNodeIds, node.id],
-    },
-    lastPlayedAt: Date.now(),
-  };
-
-  return refreshPetGearState(nextGameState);
-}
-
-function getGearBonusStats(rarity: PetRarity, zoneIndex: number): PetStats {
-  const tierBonus = rarity === PetRarity.LEGENDARY ? 4 : rarity === PetRarity.EPIC ? 3 : rarity === PetRarity.RARE ? 2 : 1;
-  const spreadBonus = Math.floor(zoneIndex / 2);
-
-  return {
-    attack: tierBonus + spreadBonus,
-    defense: tierBonus + spreadBonus,
-    speed: Math.max(1, tierBonus - 1 + spreadBonus),
-    luck: Math.max(1, Math.floor(tierBonus / 2) + spreadBonus),
-  };
-}
-
-function getGearDropName(zoneIndex: number): string {
-  return EXPEDITION_GEAR_NAMES[Math.min(zoneIndex, EXPEDITION_GEAR_NAMES.length - 1)];
-}
-
-function boostGearRarity(rarity: PetRarity, boost: number): PetRarity {
-  if (boost <= 0) {
-    return rarity;
-  }
-
-  if (rarity === PetRarity.COMMON) {
-    return boost >= 2 ? PetRarity.RARE : PetRarity.COMMON;
-  }
-
-  if (rarity === PetRarity.RARE) {
-    return boost >= 2 ? PetRarity.EPIC : PetRarity.RARE;
-  }
-
-  if (rarity === PetRarity.EPIC) {
-    return boost >= 2 ? PetRarity.LEGENDARY : PetRarity.EPIC;
-  }
-
-  return PetRarity.LEGENDARY;
-}
-
-function getUnequippedGearItems(gameState: GameState, petId: string): GearItem[] {
-  return gameState.gearItems.filter((gearItem) => gearItem.equippedPetId === petId);
-}
-
-function getBattleConsumableRarity(zoneIndex: number): PetRarity {
-  if (zoneIndex >= 6) {
-    return PetRarity.LEGENDARY;
-  }
-
-  if (zoneIndex >= 4) {
-    return PetRarity.EPIC;
-  }
-
-  if (zoneIndex >= 2) {
-    return PetRarity.RARE;
-  }
-
-  return PetRarity.COMMON;
-}
-
-export function getBattleConsumableKindLabel(kind: BattleConsumableKind): string {
-  return BATTLE_CONSUMABLE_KIND_NAMES[kind];
-}
-
-export function getBattleConsumableDescription(kind: BattleConsumableKind): string {
-  return BATTLE_CONSUMABLE_KIND_DESCRIPTIONS[kind];
-}
-
-function getBattleConsumableKind(zoneIndex: number, victory: boolean): BattleConsumableKind {
-  const kinds: BattleConsumableKind[] = [
-    "heal",
-    "attack",
-    "shield",
-    "speed",
-    "burst",
-    "revive",
-  ];
-  const offset = victory ? zoneIndex : zoneIndex + 2;
-
-  return kinds[offset % kinds.length];
-}
-
-function createBattleConsumableDrop(
-  zoneIndex: number,
-  victory: boolean,
-  powerBonus: number,
-): BattleConsumableItem {
-  const kind = getBattleConsumableKind(zoneIndex, victory);
-  const rarity = getBattleConsumableRarity(zoneIndex);
-  const zoneName = getExpeditionZoneBlueprint(zoneIndex).name;
-
-  return {
-    id: generateId(),
-    name: `${BATTLE_CONSUMABLE_KIND_NAMES[kind]} of ${zoneName}`,
-    kind,
-    rarity,
-    potency: Math.max(1, powerBonus),
-    sourceZoneIndex: zoneIndex,
-    acquiredAt: Date.now(),
-  };
-}
-
-function getBattleConsumableBonus(item: BattleConsumableItem): number {
-  const rarityBonus =
-    item.rarity === PetRarity.LEGENDARY
-      ? 6
-      : item.rarity === PetRarity.EPIC
-        ? 4
-        : item.rarity === PetRarity.RARE
-          ? 2
-          : 1;
-
-  return item.potency + rarityBonus;
-}
-
-function getBattleConsumableEffectTotals(
-  consumables: BattleConsumableItem[],
-): Record<BattleConsumableKind, number> {
-  return consumables.reduce(
-    (totals, item) => ({
-      ...totals,
-      [item.kind]: totals[item.kind] + getBattleConsumableBonus(item),
-    }),
-    {
-      heal: 0,
-      attack: 0,
-      shield: 0,
-      speed: 0,
-      burst: 0,
-      revive: 0,
-    },
-  );
-}
-
-export interface ExpeditionBattleOutcome {
-  zoneIndex: number;
-  victory: boolean;
-  playerPower: number;
-  enemyPower: number;
-  xpReward: number;
-  encounter: ExpeditionEncounter;
-  loadout: BattleConsumableItem[];
-}
-
-export function getBattleConsumablesForLoadout(
-  gameState: GameState,
-  itemIds: string[],
-): BattleConsumableItem[] {
-  return itemIds
-    .map(
-      (itemId) =>
-        gameState.battleConsumables.filter((item) => item.id === itemId)[0]!,
-    );
-}
-
-export function getBattleLoadoutPower(
-  gameState: GameState,
-  itemIds: string[],
-): number {
-  return getBattleConsumableEffectTotals(
-    getBattleConsumablesForLoadout(gameState, itemIds),
-  ).attack;
-}
-
-export function previewExpeditionBattleOutcome(
-  gameState: GameState,
-  zoneIndex: number,
-  petId: string,
-  battleConsumableIds: string[] = [],
-): ExpeditionBattleOutcome {
-  const fighter = gameState.pets.filter((pet) => pet.id === petId)[0];
-  const encounter = getExpeditionEncounter(zoneIndex);
-  const loadout = getBattleConsumablesForLoadout(gameState, battleConsumableIds);
-  const loadoutTotals = getBattleConsumableEffectTotals(loadout);
-  const playerPower =
-    fighter.combatPower +
-    loadoutTotals.attack * 11 +
-    loadoutTotals.speed * 7 +
-    loadoutTotals.shield * 9 +
-    loadoutTotals.heal * 5 +
-    loadoutTotals.burst * 13 +
-    loadoutTotals.revive * 18;
-  const enemyPower =
-    encounter.wildPower +
-    zoneIndex * 5 +
-    encounter.enemyModifier +
-    (loadout.length === 0 ? 8 : 0);
-  const victory =
-    playerPower >= enemyPower ||
-    (loadoutTotals.revive > 0 &&
-      playerPower + loadoutTotals.revive * 12 >= enemyPower);
-  const xpReward = Math.round(
-    EXPEDITION_FIGHT_BASE_XP +
-      zoneIndex * EXPEDITION_FIGHT_XP_STEP +
-      (victory ? fighter.combatPower * 0.25 : fighter.combatPower * 0.1) +
-      loadoutTotals.attack * 2 +
-      loadoutTotals.heal,
-  );
-
-  return {
-    zoneIndex,
-    victory,
-    playerPower,
-    enemyPower,
-    xpReward,
-    encounter,
-    loadout,
-  };
-}
-
-function getPetGearBonus(gameState: GameState, petId: string): PetStats {
-  return getUnequippedGearItems(gameState, petId).reduce(
-    (bonus, gearItem) => addStats(bonus, gearItem.bonusStats),
-    getZeroStats(),
-  );
-}
-
-export function refreshPetGearState(gameState: GameState): GameState {
-  return {
-    ...gameState,
-    pets: gameState.pets.map((pet) => {
-      const gearBonus = getPetGearBonus(gameState, pet.id);
-      const stats = addStats(pet.baseStats, gearBonus);
-
-      return {
-        ...pet,
-        equippedGearId: getUnequippedGearItems(gameState, pet.id)[0]
-          ? getUnequippedGearItems(gameState, pet.id)[0].id
-          : "",
-        stats,
-        combatPower: getCombatPower(stats, pet.evolutionStage),
-        explorationPower: getExplorationPower(stats, pet.evolutionStage),
-      };
-    }),
-  };
-}
-
-export function equipGearToPet(
-  gameState: GameState,
-  gearItemId: string,
-  petId: string,
-): GameState {
-  const nextGameState = {
-    ...gameState,
-    gearItems: gameState.gearItems.map((gearItem) =>
-      gearItem.equippedPetId === petId
-        ? {
-            ...gearItem,
-            equippedPetId: gearItem.id === gearItemId ? petId : "",
-          }
-        : gearItem.id === gearItemId
-          ? {
-              ...gearItem,
-              equippedPetId: petId,
-            }
-          : gearItem,
-    ),
-  };
-
-  return refreshPetGearState(nextGameState);
-}
-
-function createGearDrop(
-  zoneIndex: number,
-  victory: boolean,
-  rarityBoost: number = 0,
-): GearItem {
-  const encounter = getExpeditionEncounter(zoneIndex);
-  const dropRarity = victory
-    ? encounter.gearRarity
-    : GEAR_RARITY_BY_ZONE[Math.max(0, zoneIndex - 1)];
-  const adjustedRarity = boostGearRarity(dropRarity, rarityBoost);
-  const bonusStats = getGearBonusStats(adjustedRarity, zoneIndex + rarityBoost);
-
-  return {
-    id: generateId(),
-    name: getGearDropName(zoneIndex),
-    rarity: adjustedRarity,
-    bonusStats,
-    sourceZoneIndex: zoneIndex,
-    equippedPetId: "",
-    acquiredAt: Date.now(),
-  };
-}
-
-export function getNextEvolutionFusionTarget(
-  fusionLevel: number,
-): number | null {
-  if (fusionLevel < EVOLUTION_STAGE_ONE_FUSIONS) {
-    return EVOLUTION_STAGE_ONE_FUSIONS;
-  }
-
-  if (fusionLevel < EVOLUTION_STAGE_TWO_FUSIONS) {
-    return EVOLUTION_STAGE_TWO_FUSIONS;
-  }
-
-  return null;
-}
-
-function getProtectedPetId(pets: Pet[]): string {
-  const sortedPets = [...pets].sort((leftPet, rightPet) => {
-    if (leftPet.fusionLevel !== rightPet.fusionLevel) {
-      return rightPet.fusionLevel - leftPet.fusionLevel;
-    }
-
-    if (leftPet.equipped !== rightPet.equipped) {
-      return leftPet.equipped ? -1 : 1;
-    }
-
-    return leftPet.createdAt - rightPet.createdAt;
-  });
-
-  return sortedPets[0].id;
-}
-
-export function getFuseSourcePets(
-  gameState: GameState,
-  targetPetId: string,
-): Pet[] {
-  const targetPet = gameState.pets.find((pet) => pet.id === targetPetId);
-
-  return gameState.pets.filter(
-    (pet) =>
-      pet.templateId === targetPet?.templateId &&
-      pet.id !== targetPetId &&
-      !pet.equipped,
-  );
-}
-
-export function getSellablePets(gameState: GameState): Pet[] {
-  const templateIds = [...new Set(gameState.pets.map((pet) => pet.templateId))];
-
-  return templateIds.flatMap((templateId) => {
-    const matchingPets = gameState.pets.filter(
-      (pet) => pet.templateId === templateId,
-    );
-
-    if (matchingPets.length <= 1) {
-      return [];
-    }
-
-    const protectedPetId = getProtectedPetId(matchingPets);
-
-    return matchingPets.filter(
-      (pet) => pet.id !== protectedPetId && !pet.equipped,
-    );
-  });
-}
-
-export function createPet(rarity: PetRarity): Pet {
-  const templatePool = PET_TEMPLATES[rarity];
-  const template =
-    templatePool[Math.floor(Math.random() * templatePool.length)];
-
-  return createPetFromTemplate(template);
-}
-
-export function createStarterPet(): Pet {
-  const template = PET_TEMPLATES[PetRarity.COMMON][0];
-
-  return { ...createPetFromTemplate(template), equipped: true };
-}
-
-export function getAllPets(): Pet[] {
-  const allPets: Pet[] = [];
-
-  for (const rarity of Object.values(PetRarity)) {
-    const templates = PET_TEMPLATES[rarity] || [];
-    for (const template of templates) {
-      const pet = createPetFromTemplate(template);
-      allPets.push(pet);
-    }
-  }
-
-  return allPets;
 }
 
 export function calculateUpdatedStreak(
@@ -1543,22 +561,39 @@ export function completeTask(gameState: GameState, taskId: string): GameState {
   }
 
   const completedAt = Date.now();
+  const usageToday = withToday(gameState.usage, completedAt);
+  const facts = getCompletionFacts(targetTask, usageToday, completedAt);
+  const activeStyle = getActiveStyle(gameState);
   const nextStreak = calculateUpdatedStreak(gameState.streak, completedAt);
   const equippedPet = gameState.pets.find(
     (pet) => pet.id === gameState.equippedPetId,
   );
   const petMultiplier = equippedPet ? equippedPet.taskMultiplier : 0;
-  const rewardMultiplier = getRewardMultiplier(nextStreak.bonus, petMultiplier);
-  const gainedCoins = Math.round(BASE_TASK_COIN_REWARD * rewardMultiplier);
+  const rewardMultiplier = getRewardMultiplier(
+    nextStreak.bonus + getPerkStreakBonus(activeStyle),
+    petMultiplier,
+  );
+  // Light anti-farming only (§6): coins stop after the daily cap; XP and Bond keep counting.
+  const paysCoins = usageToday.todayCoinTasks < DAILY_COIN_TASK_CAP;
+  const gainedCoins = paysCoins
+    ? Math.round(BASE_TASK_COIN_REWARD * rewardMultiplier) + getPerkCoins(activeStyle, facts)
+    : 0;
   const gainedPlayerExperience = Math.round(
     BASE_TASK_PLAYER_EXPERIENCE_REWARD * rewardMultiplier,
   );
-  const gainedPetExperience = Math.round(
-    BASE_TASK_PET_EXPERIENCE_REWARD * rewardMultiplier,
-  );
   const totalExperience = gameState.totalExperience + gainedPlayerExperience;
+  const bondGain = getBondGain(activeStyle, facts, usageToday);
+  const usage = recordCompletion(
+    {
+      ...usageToday,
+      todayCoinTasks: usageToday.todayCoinTasks + (paysCoins ? 1 : 0),
+      todayBaseBond: usageToday.todayBaseBond + (bondGain.countsTowardBaseCap ? 1 : 0),
+    },
+    facts,
+    completedAt,
+  );
 
-  return {
+  const afterCompletion: GameState = {
     ...gameState,
     level: getLevel(totalExperience, PLAYER_LEVEL_BASE_COST),
     coins: gameState.coins + gainedCoins,
@@ -1578,22 +613,152 @@ export function completeTask(gameState: GameState, taskId: string): GameState {
 
       return finishTaskTimer(completedTask);
     }),
-    pets: gameState.pets.map((pet) => {
-      if (pet.id !== gameState.equippedPetId) {
-        return pet;
-      }
-
-      const experience = pet.experience + gainedPetExperience;
-
-      return {
-        ...pet,
-        experience,
-        level: getLevel(experience, PET_LEVEL_BASE_COST),
-      };
-    }),
+    usage,
+    days: recordDayCompletion(gameState.days, targetTask, facts, completedAt),
     streak: nextStreak,
     lastPlayedAt: completedAt,
   };
+
+  const withBond = equippedPet
+    ? addCompanionBond(afterCompletion, equippedPet.id, bondGain.bond)
+    : afterCompletion;
+  const find = facts.timer && equippedPet ? getFocusFind(usage.timersFinished) : null;
+  const withFind =
+    find && equippedPet
+      ? {
+          ...withBond,
+          decorations: [
+            ...withBond.decorations,
+            { id: generateId(), typeId: find.id, camp: -1, spot: -1 },
+          ],
+          companionEvents: [
+            ...withBond.companionEvents,
+            { kind: "found" as const, templateId: equippedPet.templateId, decorationTypeId: find.id },
+          ],
+        }
+      : withBond;
+  return applyCompanionJoins(withFind);
+}
+
+/** Creates a companion from a template (every companion exists once; see utils/companions.ts). */
+export function createCompanion(templateId: string, bond: number = 0): Pet {
+  return withCompanionBond(createPetFromTemplate(getPetTemplate(templateId)), bond);
+}
+
+/** Sets a companion's Bond and recomputes its growth, evolution stage and stats. */
+export function withCompanionBond(pet: Pet, bond: number): Pet {
+  const progression = getPetProgressionSnapshot(pet.templateId, getGrowthLevel(bond));
+  return {
+    ...pet,
+    bond,
+    fusionLevel: getGrowthLevel(bond),
+    baseStats: progression.stats,
+    evolutionStage: progression.evolutionStage,
+    stats: progression.stats,
+    combatPower: progression.combatPower,
+    explorationPower: progression.explorationPower,
+    taskMultiplier: progression.taskMultiplier,
+  };
+}
+
+export function addCompanionBond(gameState: GameState, petId: string, amount: number): GameState {
+  if (amount <= 0) {
+    return gameState;
+  }
+
+  const events: CompanionEvent[] = [];
+  const pets = gameState.pets.map((pet) => {
+    if (pet.id !== petId) {
+      return pet;
+    }
+    const grown = withCompanionBond(pet, pet.bond + amount);
+    if (grown.evolutionStage > pet.evolutionStage) {
+      events.push({ kind: "evolved", templateId: pet.templateId });
+    }
+    return grown;
+  });
+
+  return {
+    ...gameState,
+    pets,
+    companionEvents: [...gameState.companionEvents, ...events],
+  };
+}
+
+/** Adds every companion whose "joins when…" rule is now met (§4.1). */
+export function applyCompanionJoins(gameState: GameState): GameState {
+  // Nobody joins before the player has picked a starter in the tutorial.
+  if (gameState.pets.length === 0) {
+    return gameState;
+  }
+
+  const owned = new Set(gameState.pets.map((pet) => pet.templateId));
+  const joining = COMPANIONS.filter(
+    (companion) => !owned.has(companion.templateId) && companion.joinsWhen(gameState.usage),
+  );
+  if (joining.length === 0) {
+    return gameState;
+  }
+
+  return {
+    ...gameState,
+    pets: [...gameState.pets, ...joining.map((companion) => createCompanion(companion.templateId))],
+    companionEvents: [
+      ...gameState.companionEvents,
+      ...joining.map((companion) => ({ kind: "joined" as const, templateId: companion.templateId })),
+    ],
+  };
+}
+
+/** Tutorial / first launch: the player picks one of the starters, who becomes active. */
+export function adoptStarter(gameState: GameState, templateId: string): GameState {
+  if (gameState.pets.length > 0 || !STARTER_TEMPLATE_IDS.includes(templateId)) {
+    return gameState;
+  }
+
+  const starter = { ...createCompanion(templateId), equipped: true };
+  return {
+    ...gameState,
+    pets: [starter],
+    equippedPetId: starter.id,
+    lastPlayedAt: Date.now(),
+  };
+}
+
+export function applyTaskCreated(gameState: GameState, task: Task): GameState {
+  const now = Date.now();
+  return applyCompanionJoins({
+    ...gameState,
+    usage: recordTaskCreated(gameState.usage, task, now),
+    days: recordDayScheduledAhead(gameState.days, task.dueDate, now),
+  });
+}
+
+export function applyTaskUpdated(gameState: GameState, before: Task, after: Task): GameState {
+  if (!isReschedule(before, after)) {
+    return gameState;
+  }
+
+  const now = Date.now();
+  const rescheduled = {
+    ...gameState,
+    usage: recordReschedule(gameState.usage, before, after, now),
+    days: recordDayScheduledAhead(gameState.days, after.dueDate, now),
+  };
+  // Ripple ("go with the flow") gets +1 Bond when a task is moved.
+  const active = getActiveCompanion(rescheduled);
+  const withRippleBond =
+    active && getActiveStyle(rescheduled) === "flow"
+      ? addCompanionBond(rescheduled, active.id, 1)
+      : rescheduled;
+  return applyCompanionJoins(withRippleBond);
+}
+
+export function applyTaskDeleted(gameState: GameState, task: Task): GameState {
+  return applyCompanionJoins({
+    ...gameState,
+    usage: recordOverdueDeleted(gameState.usage, task, Date.now()),
+  });
 }
 
 export function equipPet(gameState: GameState, petId: string): GameState {
@@ -1606,369 +771,4 @@ export function equipPet(gameState: GameState, petId: string): GameState {
     })),
     lastPlayedAt: Date.now(),
   };
-}
-
-export function summonPet(gameState: GameState): GameState {
-  if (gameState.coins < SUMMON_COST) {
-    return gameState;
-  }
-
-  const summonedPet = createPet(getRandomRarity());
-
-  return {
-    ...gameState,
-    coins: gameState.coins - SUMMON_COST,
-    pityCurrency: gameState.pityCurrency + PITY_CURRENCY_PER_SUMMON,
-    pets: [...gameState.pets, summonedPet],
-    lastPlayedAt: Date.now(),
-  };
-}
-
-export function multiSummonPet(gameState: GameState): GameState {
-  if (gameState.coins < MULTI_SUMMON_COST) {
-    return gameState;
-  }
-
-  const summonedPets = Array.from({ length: MULTI_SUMMON_COUNT }, () =>
-    createPet(getRandomRarity()),
-  );
-
-  return {
-    ...gameState,
-    coins: gameState.coins - MULTI_SUMMON_COST,
-    pityCurrency: gameState.pityCurrency + MULTI_SUMMON_PITY,
-    pets: [...gameState.pets, ...summonedPets],
-    lastPlayedAt: Date.now(),
-  };
-}
-
-export function redeemPityPet(
-  gameState: GameState,
-  templateId: string,
-): GameState {
-  const selectedTemplate = getPetTemplate(templateId);
-  const pityCost = getPityCost(selectedTemplate.rarity);
-  if (gameState.pityCurrency < pityCost) {
-    return gameState;
-  }
-
-  const redeemedPet = createPetFromTemplate(selectedTemplate);
-
-  return {
-    ...gameState,
-    pityCurrency: gameState.pityCurrency - pityCost,
-    pets: [...gameState.pets, redeemedPet],
-    lastPlayedAt: Date.now(),
-  };
-}
-
-export function fusePet(
-  gameState: GameState,
-  targetPetId: string,
-  sourcePetId: string,
-): GameState {
-  const targetPet = gameState.pets.find((pet) => pet.id === targetPetId);
-  if (!targetPet) return gameState;
-  const nextFusionLevel = targetPet.fusionLevel + 1;
-  const progression = getPetProgressionSnapshot(
-    targetPet.templateId,
-    nextFusionLevel,
-  );
-
-  const nextGameState = {
-    ...gameState,
-    gearItems: gameState.gearItems.map((gearItem) =>
-      gearItem.equippedPetId === sourcePetId
-        ? {
-            ...gearItem,
-            equippedPetId: "",
-          }
-        : gearItem,
-    ),
-    pets: gameState.pets
-      .filter((pet) => pet.id !== sourcePetId)
-      .map((pet) =>
-        pet.id === targetPetId
-          ? {
-              ...pet,
-              baseStats: progression.stats,
-              fusionLevel: nextFusionLevel,
-              evolutionStage: progression.evolutionStage,
-              stats: progression.stats,
-              combatPower: progression.combatPower,
-              explorationPower: progression.explorationPower,
-              taskMultiplier: progression.taskMultiplier,
-            }
-          : pet,
-      ),
-    lastPlayedAt: Date.now(),
-  };
-
-  return refreshPetGearState(nextGameState);
-}
-
-export function sellPet(gameState: GameState, petId: string): GameState {
-  const soldPet = gameState.pets.find((pet) => pet.id === petId);
-  if (!soldPet) return gameState;
-  const nextGameState = {
-    ...gameState,
-    gearItems: gameState.gearItems.map((gearItem) =>
-      gearItem.equippedPetId === petId
-        ? {
-            ...gearItem,
-            equippedPetId: "",
-          }
-        : gearItem,
-    ),
-  };
-  const isMaxDupe = soldPet.fusionLevel >= MAX_PET_FUSIONS;
-
-  if (isMaxDupe) {
-    return refreshPetGearState({
-      ...nextGameState,
-      pityCurrency:
-        gameState.pityCurrency + MAX_DUPE_PITY_VALUE[soldPet.rarity],
-      pets: gameState.pets.filter((pet) => pet.id !== petId),
-      lastPlayedAt: Date.now(),
-    });
-  }
-
-  return refreshPetGearState({
-    ...nextGameState,
-    coins: gameState.coins + getSellValue(soldPet.rarity),
-    pets: gameState.pets.filter((pet) => pet.id !== petId),
-    lastPlayedAt: Date.now(),
-  });
-}
-
-export function completePetExpedition(
-  gameState: GameState,
-  now: number = Date.now(),
-): GameState {
-  if (gameState.expeditionProgress.activeZoneEndsAt > now) {
-    return gameState;
-  }
-
-  if (gameState.expeditionProgress.activeZoneIndex < 0) {
-    return gameState;
-  }
-
-  return {
-    ...gameState,
-    expeditionProgress: {
-      ...gameState.expeditionProgress,
-      revealPoints:
-        gameState.expeditionProgress.revealPoints +
-        EXPEDITION_POINTS_PER_REGION,
-      activeZoneIndex: -1,
-      activeZoneEndsAt: 0,
-    },
-    lastPlayedAt: now,
-  };
-}
-
-function getCompletedNodeIds(gameState: GameState): string[] {
-  return gameState.expeditionProgress.completedNodeIds;
-}
-
-export function isExpeditionNodeCompleted(
-  gameState: GameState,
-  nodeId: string,
-): boolean {
-  return getCompletedNodeIds(gameState).includes(nodeId);
-}
-
-export function exploreExpeditionNode(
-  gameState: GameState,
-  nodeId: string,
-  petId: string,
-): GameState {
-  const node = getExpeditionSideNodeById(nodeId);
-  const scout = gameState.pets.filter((pet) => pet.id === petId)[0];
-  const scoutElement = getPetElement(scout.templateId);
-  const elementMatched = scoutElement === node.requiredElement;
-
-  if (isExpeditionNodeCompleted(gameState, nodeId)) {
-    return gameState;
-  }
-
-  if (!elementMatched) {
-    return gameState;
-  }
-
-  const nextGameState = {
-    ...gameState,
-    expeditionProgress: {
-      ...gameState.expeditionProgress,
-      activeNodeId: node.id,
-      activeNodePetId: petId,
-      activeNodeEndsAt: Date.now() + getExpeditionNodeDurationMs(nodeId, petId, gameState),
-    },
-    lastPlayedAt: Date.now(),
-  };
-
-  return nextGameState;
-}
-
-export function completeExpeditionNode(
-  gameState: GameState,
-  nodeId: string,
-  petId: string,
-): GameState {
-  if (gameState.expeditionProgress.activeNodeId !== nodeId) {
-    return gameState;
-  }
-
-  const nextGameState = {
-    ...applyExpeditionNodeReward(gameState, nodeId, petId),
-    expeditionProgress: {
-      ...gameState.expeditionProgress,
-      activeNodeId: "",
-      activeNodePetId: "",
-      activeNodeEndsAt: 0,
-      completedNodeIds: [...gameState.expeditionProgress.completedNodeIds, nodeId],
-    },
-    lastPlayedAt: Date.now(),
-  };
-
-  return refreshPetGearState(nextGameState);
-}
-
-export function sendPetOnExpedition(
-  gameState: GameState,
-  petId: string,
-): GameState {
-  const now = Date.now();
-
-  if (gameState.expeditionProgress.activeZoneEndsAt > now) {
-    return gameState;
-  }
-
-  const expeditionPet = gameState.pets.filter((pet) => pet.id === petId)[0]!;
-  const nextZoneIndex = getExpeditionMapRegionCount(
-    gameState.expeditionProgress,
-  );
-  if (nextZoneIndex >= EXPEDITION_MAP_REGIONS) {
-    return gameState;
-  }
-  const nextZone = getExpeditionZoneBlueprint(nextZoneIndex);
-  if (
-    nextZone.requiredElement !== "" &&
-    getPetElement(expeditionPet.templateId) !== nextZone.requiredElement
-  ) {
-    return gameState;
-  }
-  const durationMs = getExpeditionDurationMs(
-    nextZoneIndex,
-    expeditionPet.explorationPower,
-  );
-
-  return {
-    ...gameState,
-    expeditionProgress: {
-      expeditionsSent: gameState.expeditionProgress.expeditionsSent + 1,
-      revealPoints: gameState.expeditionProgress.revealPoints,
-      activeZoneIndex: nextZoneIndex,
-      activeZoneEndsAt: now + durationMs,
-      activeNodeId: "",
-      activeNodePetId: "",
-      activeNodeEndsAt: 0,
-      completedNodeIds: gameState.expeditionProgress.completedNodeIds,
-    },
-    lastPlayedAt: now,
-  };
-}
-
-export function resolveExpeditionBattle(
-  gameState: GameState,
-  zoneIndex: number,
-  petId: string,
-  battleConsumableIds: string[] = [],
-): GameState {
-  const fighter = gameState.pets.filter((pet) => pet.id === petId)[0];
-  const encounter = getExpeditionEncounter(zoneIndex);
-  const loadout = getBattleConsumablesForLoadout(gameState, battleConsumableIds);
-  const loadoutTotals = getBattleConsumableEffectTotals(loadout);
-  const playerPower =
-    fighter.combatPower +
-    loadoutTotals.attack * 11 +
-    loadoutTotals.speed * 7 +
-    loadoutTotals.shield * 9 +
-    loadoutTotals.heal * 5 +
-    loadoutTotals.burst * 13 +
-    loadoutTotals.revive * 18;
-  const enemyPower =
-    encounter.wildPower +
-    zoneIndex * 5 +
-    encounter.enemyModifier +
-    (loadout.length === 0 ? 8 : 0);
-  const victory =
-    playerPower >= enemyPower ||
-    (loadoutTotals.revive > 0 &&
-      playerPower + loadoutTotals.revive * 12 >= enemyPower);
-  const xpReward = Math.round(
-    EXPEDITION_FIGHT_BASE_XP +
-      zoneIndex * EXPEDITION_FIGHT_XP_STEP +
-      (victory ? fighter.combatPower * 0.25 : fighter.combatPower * 0.1) +
-      loadoutTotals.attack * 2 +
-      loadoutTotals.heal,
-  );
-  const gearDrop = createGearDrop(zoneIndex, victory, loadoutTotals.burst > 0 ? 1 : 0);
-  const consumableDrop = createBattleConsumableDrop(
-    zoneIndex,
-    victory,
-    loadoutTotals.speed + loadoutTotals.shield + 1,
-  );
-
-  const nextGameState = {
-    ...gameState,
-    gearItems: [...gameState.gearItems, gearDrop],
-    battleConsumables: [
-      ...gameState.battleConsumables.filter(
-        (item) => !battleConsumableIds.includes(item.id),
-      ),
-      consumableDrop,
-    ],
-    pets: gameState.pets.map((pet) => {
-      if (pet.id !== petId) {
-        return pet;
-      }
-
-      const experience = pet.experience + xpReward;
-
-      return {
-        ...pet,
-        experience,
-        level: getLevel(experience, PET_LEVEL_BASE_COST),
-      };
-    }),
-    lastPlayedAt: Date.now(),
-  };
-
-  return refreshPetGearState(nextGameState);
-}
-
-export function resolveExpeditionProgress(
-  gameState: GameState,
-  now: number = Date.now(),
-): GameState {
-  if (
-    gameState.expeditionProgress.activeNodeId !== "" &&
-    gameState.expeditionProgress.activeNodeEndsAt <= now
-  ) {
-    return completeExpeditionNode(
-      gameState,
-      gameState.expeditionProgress.activeNodeId,
-      gameState.expeditionProgress.activeNodePetId,
-    );
-  }
-
-  if (
-    gameState.expeditionProgress.activeZoneIndex < 0 ||
-    gameState.expeditionProgress.activeZoneEndsAt > now
-  ) {
-    return gameState;
-  }
-
-  return completePetExpedition(gameState, now);
 }

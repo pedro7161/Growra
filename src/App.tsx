@@ -2,13 +2,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { Alert, AppState, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
-import BattleRewardModal from "./components/BattleRewardModal";
 import SettingsModal from "./components/SettingsModal";
-import SummonRevealModal from "./components/SummonRevealModal";
-import TutorialOverlay from "./components/TutorialOverlay";
+import CompanionRevealModal from "./components/CompanionRevealModal";
+import TutorialOverlay, { TutorialStep } from "./components/TutorialOverlay";
+import { getAppCopy } from "./constants/appCopy";
 import { getAppTheme } from "./constants/appTheme";
 import DashboardScreen from "./screens/DashboardScreen";
-import PetsScreen from "./screens/PetsScreen";
+import CompanionsScreen from "./screens/CompanionsScreen";
+import JourneyScreen from "./screens/JourneyScreen";
 import TaskCalendarScreen from "./screens/TaskCalendarScreen";
 import TasksScreen from "./screens/TasksScreen";
 import { gameStateService } from "./services/gameStateService";
@@ -16,10 +17,7 @@ import {
   AppLanguage,
   AppThemeId,
   CustomTaskTemplate,
-  BattleConsumableItem,
-  GearItem,
   GameState,
-  Pet,
   Task,
   TaskType,
   TaskStatus,
@@ -27,20 +25,18 @@ import {
 } from "./types";
 import { upsertCustomTaskTemplate } from "./utils/customTaskTemplates";
 import {
+  adoptStarter,
+  applyTaskCreated,
+  applyTaskDeleted,
+  applyTaskUpdated,
   completeTask,
   equipPet,
-  equipGearToPet,
-  fusePet,
-  multiSummonPet,
-  redeemPityPet,
-  sellPet,
-  exploreExpeditionNode,
-  sendPetOnExpedition,
-  resolveExpeditionProgress,
-  resolveExpeditionBattle,
-  previewExpeditionBattleOutcome,
-  summonPet,
 } from "./utils/gameplay";
+import {
+  buyDecoration,
+  placeDecoration,
+  removeDecoration,
+} from "./utils/journey";
 import { createInitialGameState, createSaveData } from "./utils/initialState";
 import { syncRecurringTasks } from "./utils/taskSchedule";
 import {
@@ -55,18 +51,7 @@ import {
   removeStoredTimerAlertSound,
 } from "./utils/timerAlert";
 
-type Screen = "dashboard" | "tasks" | "task-calendar" | "realm";
-type TutorialStep =
-  | "open-tasks"
-  | "tap-add-task"
-  | "choose-predefined-task"
-  | "choose-water-task"
-  | "confirm-task-add"
-  | "complete-task"
-  | "open-realm"
-  | "summon-pet"
-  | "equip-pet"
-  | "done";
+type Screen = "dashboard" | "tasks" | "task-calendar" | "journey" | "companions";
 
 interface TaskTutorialUiState {
   modalVisible: boolean;
@@ -140,12 +125,8 @@ function getTutorialStep(
     return activeScreen === "tasks" ? "complete-task" : "open-tasks";
   }
 
-  if (!hasPet) {
-    return activeScreen === "realm" ? "summon-pet" : "open-realm";
-  }
-
-  if (!hasEquippedPet) {
-    return activeScreen === "realm" ? "equip-pet" : "open-realm";
+  if (!hasPet || !hasEquippedPet) {
+    return activeScreen === "companions" ? "choose-companion" : "open-realm";
   }
 
   return "done";
@@ -177,29 +158,9 @@ export default function App() {
     taskType: TaskType.CUSTOM,
     selectedPredefinedTaskId: "",
   });
-  const [summonRevealPets, setSummonRevealPets] = useState<Pet[]>([]);
-  const [battleRewardVisible, setBattleRewardVisible] = useState(false);
-  const [battleRewardOutcome, setBattleRewardOutcome] =
-    useState<ReturnType<typeof previewExpeditionBattleOutcome> | null>(null);
-  const [battleRewardPetId, setBattleRewardPetId] = useState("");
-  const [battleRewardGearItems, setBattleRewardGearItems] = useState<GearItem[]>(
-    [],
-  );
-  const [battleRewardConsumables, setBattleRewardConsumables] = useState<
-    BattleConsumableItem[]
-  >([]);
   const tutorialStep = gameState
     ? getTutorialStep(gameState, activeScreen, taskTutorialUiState)
     : "done";
-  const expeditionEndsAt = gameState
-    ? gameState.expeditionProgress.activeNodeId !== ""
-      ? gameState.expeditionProgress.activeNodeEndsAt
-      : gameState.expeditionProgress.activeZoneEndsAt
-    : 0;
-  const expeditionZoneIndex = gameState
-    ? gameState.expeditionProgress.activeZoneIndex
-    : -1;
-
   useEffect(() => {
     loadGame();
   }, []);
@@ -216,9 +177,7 @@ export default function App() {
           return;
         }
 
-        const syncedGameState = resolveExpeditionProgress(
-          syncRecurringTasks(gameState),
-        );
+        const syncedGameState = syncRecurringTasks(gameState);
 
         if (syncedGameState !== gameState) {
           await persistGameState(syncedGameState);
@@ -231,36 +190,6 @@ export default function App() {
     };
   }, [gameState]);
 
-  useEffect(() => {
-    if (!gameState) {
-      return;
-    }
-
-    const activeEndsAt =
-      gameState.expeditionProgress.activeNodeId !== ""
-        ? gameState.expeditionProgress.activeNodeEndsAt
-        : gameState.expeditionProgress.activeZoneEndsAt;
-
-    if (activeEndsAt <= 0) {
-      return;
-    }
-
-    const remainingMs = activeEndsAt - Date.now();
-
-    if (remainingMs <= 0) {
-      void persistGameState(gameState);
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      void persistGameState(gameState);
-    }, remainingMs);
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [gameState, expeditionEndsAt, expeditionZoneIndex]);
-
   const loadGame = async () => {
     const loadResult = await gameStateService.loadGame();
 
@@ -268,7 +197,7 @@ export default function App() {
 
     if (loadResult.status === "loaded") {
       const syncedGameState = applyTutorialReward(
-        resolveExpeditionProgress(syncRecurringTasks(loadResult.saveData.gameState)),
+        syncRecurringTasks(loadResult.saveData.gameState),
       );
       const resolvedTutorialState = shouldCompleteTutorial(syncedGameState)
         ? { ...syncedGameState, tutorialCompleted: true }
@@ -288,6 +217,19 @@ export default function App() {
       resolvedGameState = newGameState;
     }
 
+    if (resolvedGameState.notices.length > 0) {
+      const copy = getAppCopy(resolvedGameState.settings.language);
+      resolvedGameState.notices.forEach((notice) => {
+        const [title, body] =
+          notice.kind === "companions-migrated"
+            ? [copy.companionsMigratedTitle, copy.companionsMigratedBody]
+            : [copy.journeyMigratedTitle, copy.journeyMigratedBody];
+        Alert.alert(title, body.replace("{coins}", String(notice.coins)));
+      });
+      resolvedGameState = { ...resolvedGameState, notices: [] };
+      await gameStateService.saveGame(createSaveData(resolvedGameState));
+    }
+
     gameStateRef.current = resolvedGameState;
     setGameState(resolvedGameState);
     if (!resolvedGameState.tutorialCompleted) {
@@ -299,7 +241,7 @@ export default function App() {
 
   const persistGameState = async (nextGameState: GameState) => {
     const syncedGameState = applyTutorialReward(
-      resolveExpeditionProgress(syncRecurringTasks(nextGameState)),
+      syncRecurringTasks(nextGameState),
     );
     const resolvedTutorialState = shouldCompleteTutorial(syncedGameState)
       ? { ...syncedGameState, tutorialCompleted: true }
@@ -319,17 +261,22 @@ export default function App() {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState({
-      ...gameState,
-      tasks: [...gameState.tasks, task],
-      customTaskTemplates: customTemplate
-        ? upsertCustomTaskTemplate(
-            gameState.customTaskTemplates,
-            customTemplate,
-          )
-        : gameState.customTaskTemplates,
-      lastPlayedAt: Date.now(),
-    });
+    await persistGameState(
+      applyTaskCreated(
+        {
+          ...gameState,
+          tasks: [...gameState.tasks, task],
+          customTaskTemplates: customTemplate
+            ? upsertCustomTaskTemplate(
+                gameState.customTaskTemplates,
+                customTemplate,
+              )
+            : gameState.customTaskTemplates,
+          lastPlayedAt: Date.now(),
+        },
+        task,
+      ),
+    );
   };
 
   const handleCompleteTask = async (taskId: string) => {
@@ -343,24 +290,32 @@ export default function App() {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState({
+    const previousTask = gameState.tasks.find((task) => task.id === updatedTask.id);
+    const updatedState = {
       ...gameState,
       tasks: gameState.tasks.map((task) =>
         task.id === updatedTask.id ? updatedTask : task,
       ),
       lastPlayedAt: Date.now(),
-    });
+    };
+    await persistGameState(
+      previousTask ? applyTaskUpdated(updatedState, previousTask, updatedTask) : updatedState,
+    );
   };
 
   const handleDeleteTask = async (taskId: string) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState({
+    const deletedTask = gameState.tasks.find((task) => task.id === taskId);
+    const remainingState = {
       ...gameState,
       tasks: gameState.tasks.filter((task) => task.id !== taskId),
       lastPlayedAt: Date.now(),
-    });
+    };
+    await persistGameState(
+      deletedTask ? applyTaskDeleted(remainingState, deletedTask) : remainingState,
+    );
   };
 
   const applyTimerUpdate = async (
@@ -406,114 +361,43 @@ export default function App() {
     await persistGameState(equipPet(gameState, petId));
   };
 
-  const handleSummonPet = async () => {
-    const gameState = gameStateRef.current;
-    if (!gameState) return;
-    if (!gameState.tutorialRewardGranted && !gameState.tutorialCompleted) {
-      return;
-    }
-
-    const nextGameState = summonPet(gameState);
-    const revealedPets = nextGameState.pets.slice(gameState.pets.length);
-
-    await persistGameState(nextGameState);
-    setSummonRevealPets(revealedPets);
-  };
-
-  const handleMultiSummonPet = async () => {
-    const gameState = gameStateRef.current;
-    if (!gameState) return;
-    if (!gameState.tutorialRewardGranted && !gameState.tutorialCompleted) {
-      return;
-    }
-
-    const nextGameState = multiSummonPet(gameState);
-    const revealedPets = nextGameState.pets.slice(gameState.pets.length);
-
-    await persistGameState(nextGameState);
-    setSummonRevealPets(revealedPets);
-  };
-
-  const handleRedeemPityPet = async (templateId: string) => {
+  const handleChooseStarter = async (templateId: string) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState(redeemPityPet(gameState, templateId));
+    await persistGameState(adoptStarter(gameState, templateId));
   };
 
-  const handleFusePet = async (targetPetId: string, sourcePetId: string) => {
+  const handleCloseCompanionReveal = async () => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState(fusePet(gameState, targetPetId, sourcePetId));
+    await persistGameState({ ...gameState, companionEvents: [] });
   };
 
-  const handleSellPet = async (petId: string) => {
+  const handleBuyDecoration = async (typeId: string) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState(sellPet(gameState, petId));
+    await persistGameState(buyDecoration(gameState, typeId));
   };
 
-  const handleFightZone = async (
-    zoneIndex: number,
-    petId: string,
-    battleConsumableIds: string[],
+  const handlePlaceDecoration = async (
+    decorationId: string,
+    camp: number,
+    spot: number,
   ) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    const outcome = previewExpeditionBattleOutcome(
-      gameState,
-      zoneIndex,
-      petId,
-      battleConsumableIds,
-    );
-    const nextGameState = resolveExpeditionBattle(
-      gameState,
-      zoneIndex,
-      petId,
-      battleConsumableIds,
-    );
-
-    const nextGearItems = nextGameState.gearItems.filter(
-      (gearItem) =>
-        gameState.gearItems.filter((currentGear) => currentGear.id === gearItem.id)
-          .length === 0,
-    );
-    const nextBattleConsumables = nextGameState.battleConsumables.filter(
-      (item) =>
-        gameState.battleConsumables.filter((currentItem) => currentItem.id === item.id)
-          .length === 0,
-    );
-
-    await persistGameState(nextGameState);
-    setBattleRewardOutcome(outcome);
-    setBattleRewardPetId(petId);
-    setBattleRewardGearItems(nextGearItems);
-    setBattleRewardConsumables(nextBattleConsumables);
-    setBattleRewardVisible(true);
+    await persistGameState(placeDecoration(gameState, decorationId, camp, spot));
   };
 
-  const handleExploreNode = async (nodeId: string, petId: string) => {
+  const handleRemoveDecoration = async (decorationId: string) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState(exploreExpeditionNode(gameState, nodeId, petId));
-  };
-
-  const handleEquipGear = async (gearItemId: string, petId: string) => {
-    const gameState = gameStateRef.current;
-    if (!gameState) return;
-
-    await persistGameState(equipGearToPet(gameState, gearItemId, petId));
-  };
-
-  const handleSendPetOnExpedition = async (petId: string) => {
-    const gameState = gameStateRef.current;
-    if (!gameState) return;
-
-    await persistGameState(sendPetOnExpedition(gameState, petId));
+    await persistGameState(removeDecoration(gameState, decorationId));
   };
 
   const handleLanguageChange = async (language: AppLanguage) => {
@@ -603,21 +487,6 @@ export default function App() {
     });
   };
 
-  const handleCloseBattleReward = () => {
-    setBattleRewardVisible(false);
-    setBattleRewardOutcome(null);
-    setBattleRewardPetId("");
-    setBattleRewardGearItems([]);
-    setBattleRewardConsumables([]);
-  };
-
-  const battleRewardPet =
-    battleRewardPetId !== ""
-      ? gameState
-        ? gameState.pets.filter((pet) => pet.id === battleRewardPetId)[0]
-        : null
-      : null;
-
   const handleExportData = async (): Promise<string> => {
     if (!gameState) {
       return "";
@@ -629,10 +498,6 @@ export default function App() {
   const handleImportData = async (backupCode: string) => {
     const importedSaveData = gameStateService.importSaveCode(backupCode);
     await persistGameState(importedSaveData.gameState);
-  };
-
-  const handleCloseSummonReveal = () => {
-    setSummonRevealPets([]);
   };
 
   if (loading || !gameState) {
@@ -696,28 +561,24 @@ export default function App() {
             onBack={() => setActiveScreen("tasks")}
           />
         );
-      case "realm":
+      case "journey":
         return (
-          <PetsScreen
+          <JourneyScreen
             gameState={gameState}
             settings={gameState.settings}
-            tutorialMode={
-              tutorialStep === "summon-pet"
-                ? "summon"
-                : tutorialStep === "equip-pet"
-                  ? "equip"
-                  : null
-            }
+            onBuyDecoration={handleBuyDecoration}
+            onPlaceDecoration={handlePlaceDecoration}
+            onRemoveDecoration={handleRemoveDecoration}
+          />
+        );
+      case "companions":
+        return (
+          <CompanionsScreen
+            gameState={gameState}
+            settings={gameState.settings}
+            tutorialMode={tutorialStep === "choose-companion" ? "choose" : null}
+            onChooseStarter={handleChooseStarter}
             onEquipPet={handleEquipPet}
-            onFusePet={handleFusePet}
-            onRedeemPityPet={handleRedeemPityPet}
-            onSellPet={handleSellPet}
-            onFightZone={handleFightZone}
-            onExploreNode={handleExploreNode}
-            onEquipGear={handleEquipGear}
-            onSendPetOnExpedition={handleSendPetOnExpedition}
-            onSummonPet={handleSummonPet}
-            onMultiSummonPet={handleMultiSummonPet}
           />
         );
     }
@@ -745,9 +606,8 @@ export default function App() {
             tutorialStep === "complete-task"
               ? "tasks"
               : tutorialStep === "open-realm" ||
-                  tutorialStep === "summon-pet" ||
-                  tutorialStep === "equip-pet"
-                ? "realm"
+                  tutorialStep === "choose-companion"
+                ? "companions"
                 : null
           }
         />
@@ -768,21 +628,12 @@ export default function App() {
           step={tutorialStep}
           settings={gameState.settings}
         />
-        <BattleRewardModal
-          visible={battleRewardVisible}
+        <CompanionRevealModal
+          visible={gameState.companionEvents.length > 0}
           settings={gameState.settings}
-          outcome={battleRewardOutcome}
-          battlePet={battleRewardPet}
-          gearItems={battleRewardGearItems}
-          battleConsumables={battleRewardConsumables}
-          onClose={handleCloseBattleReward}
-          onEquipGear={handleEquipGear}
-        />
-        <SummonRevealModal
-          visible={summonRevealPets.length > 0}
-          settings={gameState.settings}
-          pets={summonRevealPets}
-          onClose={handleCloseSummonReveal}
+          events={gameState.companionEvents}
+          pets={gameState.pets}
+          onClose={handleCloseCompanionReveal}
         />
       </View>
     </SafeAreaProvider>

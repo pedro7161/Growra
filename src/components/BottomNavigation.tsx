@@ -5,9 +5,9 @@ import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings } from "../types";
 
-type Screen = "dashboard" | "tasks" | "realm";
+type Screen = "dashboard" | "tasks" | "journey" | "companions";
 
-const ACTIVE_CIRCLE_SIZE = 74;
+const ACTIVE_CIRCLE_SIZE = 80;
 const ACTIVE_DOCK_WIDTH = 92;
 const ACTIVE_DOCK_HEIGHT = 34;
 
@@ -65,11 +65,19 @@ export default function BottomNavigation({
           settings={settings}
         />
         <NavSlot
-          label={copy.navRealm}
-          active={activeScreen === "realm"}
-          highlighted={tutorialTarget === "realm"}
-          disabled={tutorialTarget !== null && tutorialTarget !== "realm"}
-          onPress={() => onNavigate("realm")}
+          label={copy.navJourney}
+          active={activeScreen === "journey"}
+          highlighted={tutorialTarget === "journey"}
+          disabled={tutorialTarget !== null && tutorialTarget !== "journey"}
+          onPress={() => onNavigate("journey")}
+          settings={settings}
+        />
+        <NavSlot
+          label={copy.navCompanions}
+          active={activeScreen === "companions"}
+          highlighted={tutorialTarget === "companions"}
+          disabled={tutorialTarget !== null && tutorialTarget !== "companions"}
+          onPress={() => onNavigate("companions")}
           settings={settings}
         />
       </View>
@@ -140,6 +148,8 @@ function NavSlot({
         disabled={disabled}
       >
         <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
           style={[
             styles.label,
             active ? styles.circleLabel : styles.rectangleLabel,
@@ -160,7 +170,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingTop: 6,
     paddingBottom: 14,
     borderTopWidth: 1,
@@ -195,9 +205,10 @@ const styles = StyleSheet.create({
     opacity: 0.42,
   },
   rectangleItem: {
-    minWidth: 96,
+    alignSelf: "stretch",
+    marginHorizontal: 3,
     minHeight: 48,
-    paddingHorizontal: 18,
+    paddingHorizontal: 6,
     paddingVertical: 12,
     borderRadius: 16,
   },
@@ -223,7 +234,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   circleLabel: {
-    fontSize: 12,
+    fontSize: 10,
     textAlign: "center",
+    paddingHorizontal: 2,
   },
 });
