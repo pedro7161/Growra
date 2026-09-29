@@ -182,6 +182,35 @@ export interface Pet {
   equippedGearId: string;
   equipped: boolean;
   createdAt: number;
+  bond: number; // grows from using Growra; drives evolution (see utils/companions.ts)
+}
+
+// Usage signals for companions (Documents/GAME_REDESIGN.md §2)
+export interface UsageStats {
+  activeDays: number;
+  lastActiveDay: number; // start of the last day with a completed task
+  todayDay: number; // start of the day the "today" counters belong to
+  todayDone: number;
+  todayCoinTasks: number;
+  todayBaseBond: number;
+  recurringDone: number;
+  timersFinished: number;
+  customCreated: number;
+  highPriorityDone: number;
+  overdueCleared: number;
+  rescheduled: number;
+  scheduledWeekAhead: number;
+  bigDays: number;
+}
+
+export interface GameNotice {
+  kind: "companions-migrated";
+  coins: number;
+}
+
+export interface CompanionEvent {
+  kind: "joined" | "evolved";
+  templateId: string;
 }
 
 export interface ExpeditionProgress {
@@ -208,7 +237,6 @@ export interface GameState {
   playerId: string;
   level: number;
   coins: number;
-  pityCurrency: number;
   totalExperience: number;
   totalTasksCompleted: number;
   tutorialCompleted: boolean;
@@ -221,6 +249,9 @@ export interface GameState {
   battleConsumables: BattleConsumableItem[];
   expeditionProgress: ExpeditionProgress;
   equippedPetId: string;
+  usage: UsageStats;
+  companionEvents: CompanionEvent[]; // joins/evolutions waiting to be shown
+  notices: GameNotice[]; // one-time messages (e.g. the gacha → companions migration)
   streak: Streak;
   createdAt: number;
   lastPlayedAt: number;

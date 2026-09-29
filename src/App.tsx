@@ -4,8 +4,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import BattleRewardModal from "./components/BattleRewardModal";
 import SettingsModal from "./components/SettingsModal";
-import SummonRevealModal from "./components/SummonRevealModal";
+import CompanionRevealModal from "./components/CompanionRevealModal";
 import TutorialOverlay from "./components/TutorialOverlay";
+import { getAppCopy } from "./constants/appCopy";
 import { getAppTheme } from "./constants/appTheme";
 import DashboardScreen from "./screens/DashboardScreen";
 import PetsScreen from "./screens/PetsScreen";
@@ -27,19 +28,18 @@ import {
 } from "./types";
 import { upsertCustomTaskTemplate } from "./utils/customTaskTemplates";
 import {
+  adoptStarter,
+  applyTaskCreated,
+  applyTaskDeleted,
+  applyTaskUpdated,
   completeTask,
   equipPet,
   equipGearToPet,
-  fusePet,
-  multiSummonPet,
-  redeemPityPet,
-  sellPet,
   exploreExpeditionNode,
   sendPetOnExpedition,
   resolveExpeditionProgress,
   resolveExpeditionBattle,
   previewExpeditionBattleOutcome,
-  summonPet,
 } from "./utils/gameplay";
 import { createInitialGameState, createSaveData } from "./utils/initialState";
 import { syncRecurringTasks } from "./utils/taskSchedule";
@@ -64,8 +64,7 @@ type TutorialStep =
   | "confirm-task-add"
   | "complete-task"
   | "open-realm"
-  | "summon-pet"
-  | "equip-pet"
+  | "choose-companion"
   | "done";
 
 interface TaskTutorialUiState {
@@ -140,12 +139,8 @@ function getTutorialStep(
     return activeScreen === "tasks" ? "complete-task" : "open-tasks";
   }
 
-  if (!hasPet) {
-    return activeScreen === "realm" ? "summon-pet" : "open-realm";
-  }
-
-  if (!hasEquippedPet) {
-    return activeScreen === "realm" ? "equip-pet" : "open-realm";
+  if (!hasPet || !hasEquippedPet) {
+    return activeScreen === "realm" ? "choose-companion" : "open-realm";
   }
 
   return "done";
@@ -177,7 +172,6 @@ export default function App() {
     taskType: TaskType.CUSTOM,
     selectedPredefinedTaskId: "",
   });
-  const [summonRevealPets, setSummonRevealPets] = useState<Pet[]>([]);
   const [battleRewardVisible, setBattleRewardVisible] = useState(false);
   const [battleRewardOutcome, setBattleRewardOutcome] =
     useState<ReturnType<typeof previewExpeditionBattleOutcome> | null>(null);
@@ -288,6 +282,19 @@ export default function App() {
       resolvedGameState = newGameState;
     }
 
+    const migrationNotice = resolvedGameState.notices.find(
+      (notice) => notice.kind === "companions-migrated",
+    );
+    if (migrationNotice) {
+      const copy = getAppCopy(resolvedGameState.settings.language);
+      Alert.alert(
+        copy.companionsMigratedTitle,
+        copy.companionsMigratedBody.replace("{coins}", String(migrationNotice.coins)),
+      );
+      resolvedGameState = { ...resolvedGameState, notices: [] };
+      await gameStateService.saveGame(createSaveData(resolvedGameState));
+    }
+
     gameStateRef.current = resolvedGameState;
     setGameState(resolvedGameState);
     if (!resolvedGameState.tutorialCompleted) {
@@ -319,17 +326,22 @@ export default function App() {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState({
-      ...gameState,
-      tasks: [...gameState.tasks, task],
-      customTaskTemplates: customTemplate
-        ? upsertCustomTaskTemplate(
-            gameState.customTaskTemplates,
-            customTemplate,
-          )
-        : gameState.customTaskTemplates,
-      lastPlayedAt: Date.now(),
-    });
+    await persistGameState(
+      applyTaskCreated(
+        {
+          ...gameState,
+          tasks: [...gameState.tasks, task],
+          customTaskTemplates: customTemplate
+            ? upsertCustomTaskTemplate(
+                gameState.customTaskTemplates,
+                customTemplate,
+              )
+            : gameState.customTaskTemplates,
+          lastPlayedAt: Date.now(),
+        },
+        task,
+      ),
+    );
   };
 
   const handleCompleteTask = async (taskId: string) => {
@@ -343,24 +355,32 @@ export default function App() {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState({
+    const previousTask = gameState.tasks.find((task) => task.id === updatedTask.id);
+    const updatedState = {
       ...gameState,
       tasks: gameState.tasks.map((task) =>
         task.id === updatedTask.id ? updatedTask : task,
       ),
       lastPlayedAt: Date.now(),
-    });
+    };
+    await persistGameState(
+      previousTask ? applyTaskUpdated(updatedState, previousTask, updatedTask) : updatedState,
+    );
   };
 
   const handleDeleteTask = async (taskId: string) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState({
+    const deletedTask = gameState.tasks.find((task) => task.id === taskId);
+    const remainingState = {
       ...gameState,
       tasks: gameState.tasks.filter((task) => task.id !== taskId),
       lastPlayedAt: Date.now(),
-    });
+    };
+    await persistGameState(
+      deletedTask ? applyTaskDeleted(remainingState, deletedTask) : remainingState,
+    );
   };
 
   const applyTimerUpdate = async (
@@ -406,53 +426,18 @@ export default function App() {
     await persistGameState(equipPet(gameState, petId));
   };
 
-  const handleSummonPet = async () => {
+  const handleChooseStarter = async (templateId: string) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
-    if (!gameState.tutorialRewardGranted && !gameState.tutorialCompleted) {
-      return;
-    }
 
-    const nextGameState = summonPet(gameState);
-    const revealedPets = nextGameState.pets.slice(gameState.pets.length);
-
-    await persistGameState(nextGameState);
-    setSummonRevealPets(revealedPets);
+    await persistGameState(adoptStarter(gameState, templateId));
   };
 
-  const handleMultiSummonPet = async () => {
-    const gameState = gameStateRef.current;
-    if (!gameState) return;
-    if (!gameState.tutorialRewardGranted && !gameState.tutorialCompleted) {
-      return;
-    }
-
-    const nextGameState = multiSummonPet(gameState);
-    const revealedPets = nextGameState.pets.slice(gameState.pets.length);
-
-    await persistGameState(nextGameState);
-    setSummonRevealPets(revealedPets);
-  };
-
-  const handleRedeemPityPet = async (templateId: string) => {
+  const handleCloseCompanionReveal = async () => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState(redeemPityPet(gameState, templateId));
-  };
-
-  const handleFusePet = async (targetPetId: string, sourcePetId: string) => {
-    const gameState = gameStateRef.current;
-    if (!gameState) return;
-
-    await persistGameState(fusePet(gameState, targetPetId, sourcePetId));
-  };
-
-  const handleSellPet = async (petId: string) => {
-    const gameState = gameStateRef.current;
-    if (!gameState) return;
-
-    await persistGameState(sellPet(gameState, petId));
+    await persistGameState({ ...gameState, companionEvents: [] });
   };
 
   const handleFightZone = async (
@@ -631,10 +616,6 @@ export default function App() {
     await persistGameState(importedSaveData.gameState);
   };
 
-  const handleCloseSummonReveal = () => {
-    setSummonRevealPets([]);
-  };
-
   if (loading || !gameState) {
     return <View className="flex-1" style={styles.container} />;
   }
@@ -701,23 +682,13 @@ export default function App() {
           <PetsScreen
             gameState={gameState}
             settings={gameState.settings}
-            tutorialMode={
-              tutorialStep === "summon-pet"
-                ? "summon"
-                : tutorialStep === "equip-pet"
-                  ? "equip"
-                  : null
-            }
+            tutorialMode={tutorialStep === "choose-companion" ? "choose" : null}
+            onChooseStarter={handleChooseStarter}
             onEquipPet={handleEquipPet}
-            onFusePet={handleFusePet}
-            onRedeemPityPet={handleRedeemPityPet}
-            onSellPet={handleSellPet}
             onFightZone={handleFightZone}
             onExploreNode={handleExploreNode}
             onEquipGear={handleEquipGear}
             onSendPetOnExpedition={handleSendPetOnExpedition}
-            onSummonPet={handleSummonPet}
-            onMultiSummonPet={handleMultiSummonPet}
           />
         );
     }
@@ -745,8 +716,7 @@ export default function App() {
             tutorialStep === "complete-task"
               ? "tasks"
               : tutorialStep === "open-realm" ||
-                  tutorialStep === "summon-pet" ||
-                  tutorialStep === "equip-pet"
+                  tutorialStep === "choose-companion"
                 ? "realm"
                 : null
           }
@@ -778,11 +748,12 @@ export default function App() {
           onClose={handleCloseBattleReward}
           onEquipGear={handleEquipGear}
         />
-        <SummonRevealModal
-          visible={summonRevealPets.length > 0}
+        <CompanionRevealModal
+          visible={gameState.companionEvents.length > 0}
           settings={gameState.settings}
-          pets={summonRevealPets}
-          onClose={handleCloseSummonReveal}
+          events={gameState.companionEvents}
+          pets={gameState.pets}
+          onClose={handleCloseCompanionReveal}
         />
       </View>
     </SafeAreaProvider>

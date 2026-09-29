@@ -1,5 +1,6 @@
 import {
     BattleConsumableItem,
+    CompanionEvent,
     BattleConsumableKind,
     ExpeditionProgress,
     ExpeditionNodeType,
@@ -16,6 +17,24 @@ import {
 import { getCalendarDayDifference, getNextAvailableDate, getStartOfDay } from "./taskSchedule";
 import { finishTaskTimer } from "./taskTimer";
 import { generateId } from "./idUtils";
+import {
+  COMPANIONS,
+  DAILY_COIN_TASK_CAP,
+  STARTER_TEMPLATE_IDS,
+  getActiveCompanion,
+  getActiveStyle,
+  getBondGain,
+  getCompletionFacts,
+  getGrowthLevel,
+  getPerkCoins,
+  getPerkStreakBonus,
+  isReschedule,
+  recordCompletion,
+  recordOverdueDeleted,
+  recordReschedule,
+  recordTaskCreated,
+  withToday,
+} from "./companions";
 
 const STREAK_BONUS_PER_DAY = 0.05;
 const STREAK_BONUS_CAP = 1.0;
@@ -27,12 +46,6 @@ const EVOLUTION_STAGE_TWO_FUSIONS = 4;
 
 export const BASE_TASK_COIN_REWARD = 10;
 export const BASE_TASK_PLAYER_EXPERIENCE_REWARD = 8;
-export const BASE_TASK_PET_EXPERIENCE_REWARD = 6;
-export const SUMMON_COST = 100;
-export const MULTI_SUMMON_COUNT = 11;
-export const MULTI_SUMMON_COST = 1000;
-export const MULTI_SUMMON_PITY = 10;
-export const PITY_CURRENCY_PER_SUMMON = 1;
 export const EXPEDITION_MAP_REGIONS = 8;
 export const EXPEDITION_POINTS_PER_REGION = 5;
 const EXPEDITION_BASE_DURATION_MS = 30_000;
@@ -41,23 +54,12 @@ const EXPEDITION_POWER_REDUCTION_MS = 250;
 const EXPEDITION_MIN_DURATION_MS = 15_000;
 const EXPEDITION_FIGHT_BASE_XP = 14;
 const EXPEDITION_FIGHT_XP_STEP = 6;
-export const COMMON_PITY_COST = 15;
-export const RARE_PITY_COST = 30;
-export const EPIC_PITY_COST = 60;
-export const LEGENDARY_PITY_COST = 120;
-export const MAX_PET_FUSIONS = 4;
 export const COMMON_SELL_VALUE = 25;
 export const RARE_SELL_VALUE = 60;
 export const EPIC_SELL_VALUE = 120;
 export const LEGENDARY_SELL_VALUE = 240;
 export const LEVEL_THRESHOLDS = [12, 16, 24, 41, 81, 99];
 
-const MAX_DUPE_PITY_VALUE: Record<PetRarity, number> = {
-  [PetRarity.COMMON]: 1,
-  [PetRarity.RARE]: 2,
-  [PetRarity.EPIC]: 3,
-  [PetRarity.LEGENDARY]: 5,
-};
 
 const EXPEDITION_WILD_PET_NAMES = [
   "Driftclaw",
@@ -799,24 +801,6 @@ function getZeroStats(): PetStats {
   };
 }
 
-function getRandomRarity(): PetRarity {
-  const roll = Math.random();
-
-  if (roll < 0.7) {
-    return PetRarity.COMMON;
-  }
-
-  if (roll < 0.95) {
-    return PetRarity.RARE;
-  }
-
-  if (roll < 0.99) {
-    return PetRarity.EPIC;
-  }
-
-  return PetRarity.LEGENDARY;
-}
-
 function createPetFromTemplate(template: PetTemplate): Pet {
   const createdAt = Date.now();
   const progression = getPetProgressionSnapshot(template.id, 0);
@@ -841,6 +825,7 @@ function createPetFromTemplate(template: PetTemplate): Pet {
     equippedGearId: "",
     equipped: false,
     createdAt,
+    bond: 0,
   };
 }
 
@@ -874,22 +859,6 @@ export function getPetElement(templateId: string): string {
 
 export function getPetTemplates(): PetTemplate[] {
   return Object.values(PET_TEMPLATES).flat();
-}
-
-export function getPityCost(rarity: PetRarity): number {
-  if (rarity === PetRarity.LEGENDARY) {
-    return LEGENDARY_PITY_COST;
-  }
-
-  if (rarity === PetRarity.EPIC) {
-    return EPIC_PITY_COST;
-  }
-
-  if (rarity === PetRarity.RARE) {
-    return RARE_PITY_COST;
-  }
-
-  return COMMON_PITY_COST;
 }
 
 export function getSellValue(rarity: PetRarity): number {
@@ -1381,98 +1350,6 @@ function createGearDrop(
   };
 }
 
-export function getNextEvolutionFusionTarget(
-  fusionLevel: number,
-): number | null {
-  if (fusionLevel < EVOLUTION_STAGE_ONE_FUSIONS) {
-    return EVOLUTION_STAGE_ONE_FUSIONS;
-  }
-
-  if (fusionLevel < EVOLUTION_STAGE_TWO_FUSIONS) {
-    return EVOLUTION_STAGE_TWO_FUSIONS;
-  }
-
-  return null;
-}
-
-function getProtectedPetId(pets: Pet[]): string {
-  const sortedPets = [...pets].sort((leftPet, rightPet) => {
-    if (leftPet.fusionLevel !== rightPet.fusionLevel) {
-      return rightPet.fusionLevel - leftPet.fusionLevel;
-    }
-
-    if (leftPet.equipped !== rightPet.equipped) {
-      return leftPet.equipped ? -1 : 1;
-    }
-
-    return leftPet.createdAt - rightPet.createdAt;
-  });
-
-  return sortedPets[0].id;
-}
-
-export function getFuseSourcePets(
-  gameState: GameState,
-  targetPetId: string,
-): Pet[] {
-  const targetPet = gameState.pets.find((pet) => pet.id === targetPetId);
-
-  return gameState.pets.filter(
-    (pet) =>
-      pet.templateId === targetPet?.templateId &&
-      pet.id !== targetPetId &&
-      !pet.equipped,
-  );
-}
-
-export function getSellablePets(gameState: GameState): Pet[] {
-  const templateIds = [...new Set(gameState.pets.map((pet) => pet.templateId))];
-
-  return templateIds.flatMap((templateId) => {
-    const matchingPets = gameState.pets.filter(
-      (pet) => pet.templateId === templateId,
-    );
-
-    if (matchingPets.length <= 1) {
-      return [];
-    }
-
-    const protectedPetId = getProtectedPetId(matchingPets);
-
-    return matchingPets.filter(
-      (pet) => pet.id !== protectedPetId && !pet.equipped,
-    );
-  });
-}
-
-export function createPet(rarity: PetRarity): Pet {
-  const templatePool = PET_TEMPLATES[rarity];
-  const template =
-    templatePool[Math.floor(Math.random() * templatePool.length)];
-
-  return createPetFromTemplate(template);
-}
-
-export function createStarterPet(): Pet {
-  const template = PET_TEMPLATES[PetRarity.COMMON][0];
-
-  return { ...createPetFromTemplate(template), equipped: true };
-}
-
-export function getAllPets(): Pet[] {
-  const allPets: Pet[] = [];
-
-  for (const rarity of Object.values(PetRarity)) {
-    const templates = PET_TEMPLATES[rarity] || [];
-    for (const template of templates) {
-      const pet = createPetFromTemplate(template);
-      allPets.push(pet);
-    }
-  }
-
-  return allPets;
-}
-
 export function calculateUpdatedStreak(
   streak: Streak,
   completedAt: number,
@@ -1543,22 +1420,39 @@ export function completeTask(gameState: GameState, taskId: string): GameState {
   }
 
   const completedAt = Date.now();
+  const usageToday = withToday(gameState.usage, completedAt);
+  const facts = getCompletionFacts(targetTask, usageToday, completedAt);
+  const activeStyle = getActiveStyle(gameState);
   const nextStreak = calculateUpdatedStreak(gameState.streak, completedAt);
   const equippedPet = gameState.pets.find(
     (pet) => pet.id === gameState.equippedPetId,
   );
   const petMultiplier = equippedPet ? equippedPet.taskMultiplier : 0;
-  const rewardMultiplier = getRewardMultiplier(nextStreak.bonus, petMultiplier);
-  const gainedCoins = Math.round(BASE_TASK_COIN_REWARD * rewardMultiplier);
+  const rewardMultiplier = getRewardMultiplier(
+    nextStreak.bonus + getPerkStreakBonus(activeStyle),
+    petMultiplier,
+  );
+  // Light anti-farming only (§6): coins stop after the daily cap; XP and Bond keep counting.
+  const paysCoins = usageToday.todayCoinTasks < DAILY_COIN_TASK_CAP;
+  const gainedCoins = paysCoins
+    ? Math.round(BASE_TASK_COIN_REWARD * rewardMultiplier) + getPerkCoins(activeStyle, facts)
+    : 0;
   const gainedPlayerExperience = Math.round(
     BASE_TASK_PLAYER_EXPERIENCE_REWARD * rewardMultiplier,
   );
-  const gainedPetExperience = Math.round(
-    BASE_TASK_PET_EXPERIENCE_REWARD * rewardMultiplier,
-  );
   const totalExperience = gameState.totalExperience + gainedPlayerExperience;
+  const bondGain = getBondGain(activeStyle, facts, usageToday);
+  const usage = recordCompletion(
+    {
+      ...usageToday,
+      todayCoinTasks: usageToday.todayCoinTasks + (paysCoins ? 1 : 0),
+      todayBaseBond: usageToday.todayBaseBond + (bondGain.countsTowardBaseCap ? 1 : 0),
+    },
+    facts,
+    completedAt,
+  );
 
-  return {
+  const afterCompletion: GameState = {
     ...gameState,
     level: getLevel(totalExperience, PLAYER_LEVEL_BASE_COST),
     coins: gameState.coins + gainedCoins,
@@ -1578,22 +1472,133 @@ export function completeTask(gameState: GameState, taskId: string): GameState {
 
       return finishTaskTimer(completedTask);
     }),
-    pets: gameState.pets.map((pet) => {
-      if (pet.id !== gameState.equippedPetId) {
-        return pet;
-      }
-
-      const experience = pet.experience + gainedPetExperience;
-
-      return {
-        ...pet,
-        experience,
-        level: getLevel(experience, PET_LEVEL_BASE_COST),
-      };
-    }),
+    usage,
     streak: nextStreak,
     lastPlayedAt: completedAt,
   };
+
+  const withBond = equippedPet
+    ? addCompanionBond(afterCompletion, equippedPet.id, bondGain.bond)
+    : afterCompletion;
+  return applyCompanionJoins(withBond);
+}
+
+/** Creates a companion from a template (every companion exists once; see utils/companions.ts). */
+export function createCompanion(templateId: string, bond: number = 0): Pet {
+  return withCompanionBond(createPetFromTemplate(getPetTemplate(templateId)), bond);
+}
+
+/** Sets a companion's Bond and recomputes its growth, evolution stage and stats. */
+export function withCompanionBond(pet: Pet, bond: number): Pet {
+  const progression = getPetProgressionSnapshot(pet.templateId, getGrowthLevel(bond));
+  return {
+    ...pet,
+    bond,
+    fusionLevel: getGrowthLevel(bond),
+    baseStats: progression.stats,
+    evolutionStage: progression.evolutionStage,
+    stats: progression.stats,
+    combatPower: progression.combatPower,
+    explorationPower: progression.explorationPower,
+    taskMultiplier: progression.taskMultiplier,
+  };
+}
+
+export function addCompanionBond(gameState: GameState, petId: string, amount: number): GameState {
+  if (amount <= 0) {
+    return gameState;
+  }
+
+  const events: CompanionEvent[] = [];
+  const pets = gameState.pets.map((pet) => {
+    if (pet.id !== petId) {
+      return pet;
+    }
+    const grown = withCompanionBond(pet, pet.bond + amount);
+    if (grown.evolutionStage > pet.evolutionStage) {
+      events.push({ kind: "evolved", templateId: pet.templateId });
+    }
+    return grown;
+  });
+
+  return refreshPetGearState({
+    ...gameState,
+    pets,
+    companionEvents: [...gameState.companionEvents, ...events],
+  });
+}
+
+/** Adds every companion whose "joins when…" rule is now met (§4.1). */
+export function applyCompanionJoins(gameState: GameState): GameState {
+  // Nobody joins before the player has picked a starter in the tutorial.
+  if (gameState.pets.length === 0) {
+    return gameState;
+  }
+
+  const owned = new Set(gameState.pets.map((pet) => pet.templateId));
+  const joining = COMPANIONS.filter(
+    (companion) => !owned.has(companion.templateId) && companion.joinsWhen(gameState.usage),
+  );
+  if (joining.length === 0) {
+    return gameState;
+  }
+
+  return {
+    ...gameState,
+    pets: [...gameState.pets, ...joining.map((companion) => createCompanion(companion.templateId))],
+    companionEvents: [
+      ...gameState.companionEvents,
+      ...joining.map((companion) => ({ kind: "joined" as const, templateId: companion.templateId })),
+    ],
+  };
+}
+
+/** Tutorial / first launch: the player picks one of the starters, who becomes active. */
+export function adoptStarter(gameState: GameState, templateId: string): GameState {
+  if (gameState.pets.length > 0 || !STARTER_TEMPLATE_IDS.includes(templateId)) {
+    return gameState;
+  }
+
+  const starter = { ...createCompanion(templateId), equipped: true };
+  return {
+    ...gameState,
+    pets: [starter],
+    equippedPetId: starter.id,
+    lastPlayedAt: Date.now(),
+  };
+}
+
+export function applyTaskCreated(gameState: GameState, task: Task): GameState {
+  return applyCompanionJoins({
+    ...gameState,
+    usage: recordTaskCreated(gameState.usage, task, Date.now()),
+  });
+}
+
+export function applyTaskUpdated(gameState: GameState, before: Task, after: Task): GameState {
+  if (!isReschedule(before, after)) {
+    return gameState;
+  }
+
+  const now = Date.now();
+  const rescheduled = {
+    ...gameState,
+    usage: recordReschedule(gameState.usage, before, after, now),
+  };
+  // Ripple ("go with the flow") gets +1 Bond when a task is moved.
+  const active = getActiveCompanion(rescheduled);
+  const withRippleBond =
+    active && getActiveStyle(rescheduled) === "flow"
+      ? addCompanionBond(rescheduled, active.id, 1)
+      : rescheduled;
+  return applyCompanionJoins(withRippleBond);
+}
+
+export function applyTaskDeleted(gameState: GameState, task: Task): GameState {
+  return applyCompanionJoins({
+    ...gameState,
+    usage: recordOverdueDeleted(gameState.usage, task, Date.now()),
+  });
 }
 
 export function equipPet(gameState: GameState, petId: string): GameState {
@@ -1606,139 +1611,6 @@ export function equipPet(gameState: GameState, petId: string): GameState {
     })),
     lastPlayedAt: Date.now(),
   };
-}
-
-export function summonPet(gameState: GameState): GameState {
-  if (gameState.coins < SUMMON_COST) {
-    return gameState;
-  }
-
-  const summonedPet = createPet(getRandomRarity());
-
-  return {
-    ...gameState,
-    coins: gameState.coins - SUMMON_COST,
-    pityCurrency: gameState.pityCurrency + PITY_CURRENCY_PER_SUMMON,
-    pets: [...gameState.pets, summonedPet],
-    lastPlayedAt: Date.now(),
-  };
-}
-
-export function multiSummonPet(gameState: GameState): GameState {
-  if (gameState.coins < MULTI_SUMMON_COST) {
-    return gameState;
-  }
-
-  const summonedPets = Array.from({ length: MULTI_SUMMON_COUNT }, () =>
-    createPet(getRandomRarity()),
-  );
-
-  return {
-    ...gameState,
-    coins: gameState.coins - MULTI_SUMMON_COST,
-    pityCurrency: gameState.pityCurrency + MULTI_SUMMON_PITY,
-    pets: [...gameState.pets, ...summonedPets],
-    lastPlayedAt: Date.now(),
-  };
-}
-
-export function redeemPityPet(
-  gameState: GameState,
-  templateId: string,
-): GameState {
-  const selectedTemplate = getPetTemplate(templateId);
-  const pityCost = getPityCost(selectedTemplate.rarity);
-  if (gameState.pityCurrency < pityCost) {
-    return gameState;
-  }
-
-  const redeemedPet = createPetFromTemplate(selectedTemplate);
-
-  return {
-    ...gameState,
-    pityCurrency: gameState.pityCurrency - pityCost,
-    pets: [...gameState.pets, redeemedPet],
-    lastPlayedAt: Date.now(),
-  };
-}
-
-export function fusePet(
-  gameState: GameState,
-  targetPetId: string,
-  sourcePetId: string,
-): GameState {
-  const targetPet = gameState.pets.find((pet) => pet.id === targetPetId);
-  if (!targetPet) return gameState;
-  const nextFusionLevel = targetPet.fusionLevel + 1;
-  const progression = getPetProgressionSnapshot(
-    targetPet.templateId,
-    nextFusionLevel,
-  );
-
-  const nextGameState = {
-    ...gameState,
-    gearItems: gameState.gearItems.map((gearItem) =>
-      gearItem.equippedPetId === sourcePetId
-        ? {
-            ...gearItem,
-            equippedPetId: "",
-          }
-        : gearItem,
-    ),
-    pets: gameState.pets
-      .filter((pet) => pet.id !== sourcePetId)
-      .map((pet) =>
-        pet.id === targetPetId
-          ? {
-              ...pet,
-              baseStats: progression.stats,
-              fusionLevel: nextFusionLevel,
-              evolutionStage: progression.evolutionStage,
-              stats: progression.stats,
-              combatPower: progression.combatPower,
-              explorationPower: progression.explorationPower,
-              taskMultiplier: progression.taskMultiplier,
-            }
-          : pet,
-      ),
-    lastPlayedAt: Date.now(),
-  };
-
-  return refreshPetGearState(nextGameState);
-}
-
-export function sellPet(gameState: GameState, petId: string): GameState {
-  const soldPet = gameState.pets.find((pet) => pet.id === petId);
-  if (!soldPet) return gameState;
-  const nextGameState = {
-    ...gameState,
-    gearItems: gameState.gearItems.map((gearItem) =>
-      gearItem.equippedPetId === petId
-        ? {
-            ...gearItem,
-            equippedPetId: "",
-          }
-        : gearItem,
-    ),
-  };
-  const isMaxDupe = soldPet.fusionLevel >= MAX_PET_FUSIONS;
-
-  if (isMaxDupe) {
-    return refreshPetGearState({
-      ...nextGameState,
-      pityCurrency:
-        gameState.pityCurrency + MAX_DUPE_PITY_VALUE[soldPet.rarity],
-      pets: gameState.pets.filter((pet) => pet.id !== petId),
-      lastPlayedAt: Date.now(),
-    });
-  }
-
-  return refreshPetGearState({
-    ...nextGameState,
-    coins: gameState.coins + getSellValue(soldPet.rarity),
-    pets: gameState.pets.filter((pet) => pet.id !== petId),
-    lastPlayedAt: Date.now(),
-  });
 }
 
 export function completePetExpedition(

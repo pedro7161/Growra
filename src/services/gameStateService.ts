@@ -11,6 +11,9 @@ import {
   TaskPriority,
   TaskTimer,
   CustomTaskTemplate,
+  CompanionEvent,
+  GameNotice,
+  UsageStats,
 } from "../types";
 import { DEFAULT_TASK_CALENDAR_COLOR } from "../constants/taskConfig";
 import { getPredefinedTask } from "../constants/predefinedTasks";
@@ -18,20 +21,20 @@ import {
   completeTask as applyTaskCompletion,
   equipPet as applyPetEquip,
   equipGearToPet as applyGearEquip,
-  fusePet as applyPetFusion,
   getPetTemplateId,
-  getPetProgressionSnapshot,
+  getSellValue,
+  withCompanionBond,
   exploreExpeditionNode as applyExpeditionNode,
-  redeemPityPet as applyPityRedemption,
   refreshPetGearState,
-  sellPet as applyPetSale,
   resolveExpeditionBattle as applyExpeditionBattle,
-  summonPet as applyPetSummon,
-  multiSummonPet as applyMultiPetSummon,
 } from "../utils/gameplay";
 import { getNextAvailableDate, getStartOfDay } from "../utils/taskSchedule";
 import { defaultSettings, defaultTimerAlertSettings } from "../utils/settings";
 import { createTaskTimer } from "../utils/taskTimer";
+import { BOND_GROWTH_THRESHOLDS, createEmptyUsage } from "../utils/companions";
+
+/** Old saves stored pity currency; it converts to coins at this rate when companions replace gacha. */
+const PITY_TO_COINS = 5;
 
 const SAVE_KEY = "growra_save_data";
 const CORRUPT_SAVE_KEY_PREFIX = "growra_save_data_corrupt_";
@@ -53,7 +56,13 @@ type PersistedGameState = Omit<
   | "gearItems"
   | "battleConsumables"
   | "expeditionProgress"
+  | "usage"
+  | "companionEvents"
+  | "notices"
 > & {
+  usage?: UsageStats;
+  companionEvents?: CompanionEvent[];
+  notices?: GameNotice[];
   pityCurrency?: number;
   totalTasksCompleted?: number;
   equippedPetId?: string;
@@ -121,6 +130,7 @@ type PersistedGameState = Omit<
       xpMultiplier?: number;
       activeImageVariantId?: string;
       equippedGearId?: string;
+      bond?: number;
     }
   )[];
 };
@@ -181,34 +191,84 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       }))
     : [];
 
-  const pets = saveData.gameState.pets.map((pet) => {
+  // Companions (GAME_REDESIGN §4): each template exists once. Keep the most-grown copy of each
+  // (then the equipped one), turn the other copies into coins at their old sell value.
+  const normalizedPets = saveData.gameState.pets.map((pet) => {
     const templateId =
       pet.templateId !== undefined ? pet.templateId : getPetTemplateId(pet.name, pet.rarity);
     const fusionLevel = pet.fusionLevel !== undefined ? pet.fusionLevel : 0;
-    const progression = getPetProgressionSnapshot(templateId, fusionLevel);
-    const baseStats = pet.baseStats !== undefined ? pet.baseStats : progression.stats;
-
-    return {
-      ...pet,
-      templateId,
-      baseStats,
-      fusionLevel,
-      evolutionStage: progression.evolutionStage,
-      stats: baseStats,
-      combatPower: progression.combatPower,
-      explorationPower: progression.explorationPower,
-      taskMultiplier: progression.taskMultiplier,
-      xpMultiplier: progression.xpMultiplier,
-      activeImageVariantId: pet.activeImageVariantId !== undefined ? pet.activeImageVariantId : "default",
-      equippedGearId: pet.equippedGearId !== undefined ? pet.equippedGearId : "",
-      equipped: pet.id === equippedPetId,
-    };
+    const bond =
+      pet.bond !== undefined ? pet.bond : BOND_GROWTH_THRESHOLDS[Math.min(fusionLevel, BOND_GROWTH_THRESHOLDS.length - 1)];
+    return { ...pet, templateId, fusionLevel, bond };
   });
+  const keptPetIds = new Set<string>();
+  const keptByTemplate = new Map<string, string>();
+  [...normalizedPets]
+    .sort((left, right) =>
+      right.bond !== left.bond
+        ? right.bond - left.bond
+        : left.id === equippedPetId
+          ? -1
+          : right.id === equippedPetId
+            ? 1
+            : left.createdAt - right.createdAt,
+    )
+    .forEach((pet) => {
+      if (!keptByTemplate.has(pet.templateId)) {
+        keptByTemplate.set(pet.templateId, pet.id);
+        keptPetIds.add(pet.id);
+      }
+    });
+  const duplicateCoins = normalizedPets
+    .filter((pet) => !keptPetIds.has(pet.id))
+    .reduce((total, pet) => total + getSellValue(pet.rarity), 0);
+  const pityCoins = (saveData.gameState.pityCurrency ?? 0) * PITY_TO_COINS;
+  const equippedTemplate = normalizedPets.find((pet) => pet.id === equippedPetId)?.templateId;
+  const activePetId = equippedTemplate ? keptByTemplate.get(equippedTemplate) ?? "" : equippedPetId;
 
+  const pets = normalizedPets
+    .filter((pet) => keptPetIds.has(pet.id))
+    .map((pet) =>
+      withCompanionBond(
+        {
+          ...pet,
+          level: pet.level ?? 1,
+          experience: pet.experience ?? 0,
+          evolutionStage: 0,
+          baseStats: pet.baseStats ?? pet.stats,
+          combatPower: 0,
+          explorationPower: 0,
+          xpMultiplier: pet.xpMultiplier ?? 1,
+          activeImageVariantId: pet.activeImageVariantId !== undefined ? pet.activeImageVariantId : "default",
+          equippedGearId: pet.equippedGearId !== undefined ? pet.equippedGearId : "",
+          equipped: pet.id === activePetId,
+        },
+        pet.bond,
+      ),
+    );
+  const convertedCoins = duplicateCoins + pityCoins;
+  const completionDays = [
+    ...new Set(
+      saveData.gameState.tasks
+        .filter((task) => task.completedAt)
+        .map((task) => getStartOfDay(task.completedAt as number)),
+    ),
+  ];
+
+  const { pityCurrency: _legacyPity, ...persistedWithoutPity } = saveData.gameState;
   const migratedGameState = refreshPetGearState({
-    ...saveData.gameState,
-    pityCurrency:
-      saveData.gameState.pityCurrency !== undefined ? saveData.gameState.pityCurrency : 0,
+    ...persistedWithoutPity,
+    coins: saveData.gameState.coins + convertedCoins,
+    usage: saveData.gameState.usage ?? {
+      ...createEmptyUsage(),
+      activeDays: completionDays.length,
+      lastActiveDay: completionDays.length > 0 ? Math.max(...completionDays) : 0,
+    },
+    companionEvents: saveData.gameState.companionEvents ?? [],
+    notices: [
+      ...(saveData.gameState.notices ?? []),
+      ...(convertedCoins > 0 ? [{ kind: "companions-migrated" as const, coins: convertedCoins }] : []),
+    ],
     totalTasksCompleted:
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted
@@ -288,7 +348,12 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
           ...template,
         }))
       : [],
-    gearItems,
+    // Gear worn by a removed duplicate goes back to the vault.
+    gearItems: gearItems.map((gearItem) =>
+      gearItem.equippedPetId === "" || keptPetIds.has(gearItem.equippedPetId)
+        ? gearItem
+        : { ...gearItem, equippedPetId: "" },
+    ),
     tasks: saveData.gameState.tasks.map((task) => ({
       ...task,
       predefinedTaskId: task.predefinedTaskId !== undefined ? task.predefinedTaskId : "",
@@ -327,7 +392,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       })(),
     })),
     pets,
-    equippedPetId,
+    equippedPetId: activePetId,
   });
 
   return {
@@ -440,25 +505,10 @@ export const gameStateService = {
     };
   },
 
-  async summonPet(gameState: GameState): Promise<GameState> {
-    return applyPetSummon(gameState);
-  },
 
-  async multiSummonPet(gameState: GameState): Promise<GameState> {
-    return applyMultiPetSummon(gameState);
-  },
 
-  async redeemPityPet(gameState: GameState, templateId: string): Promise<GameState> {
-    return applyPityRedemption(gameState, templateId);
-  },
 
-  async fusePet(gameState: GameState, targetPetId: string, sourcePetId: string): Promise<GameState> {
-    return applyPetFusion(gameState, targetPetId, sourcePetId);
-  },
 
-  async sellPet(gameState: GameState, petId: string): Promise<GameState> {
-    return applyPetSale(gameState, petId);
-  },
 
   async equipGearToPet(
     gameState: GameState,
