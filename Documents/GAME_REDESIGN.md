@@ -210,3 +210,30 @@ The road (tiles, camps, region) is **derived** from `days`, so there's no separa
 2. **The optional planning tools** (§3): build them, or leave planning to the existing due dates and calendar?
 3. **Journey pace:** a camp every 7 active days and a new region every 28, or faster (every 5 / 20) so new users see more change early?
 4. **Daily coin cap:** 15 completions a day, or none at all?
+
+---
+
+## 12. Making some money (without breaking the design)
+
+Rule: **money buys looks, comfort and convenience, never progress.** Companions, Bond, road tiles and the usage signals stay free and earned (spec §5.5: "no systems that bypass effort"). The core app (unlimited tasks, custom tasks, companions, the road) stays free.
+
+Ranked by fit and effort:
+
+| # | Option | What | Price (starting point) | Why |
+|---|---|---|---|---|
+| 1 | **Growra Plus**, a one-time unlock | Convenience for regular users: **cloud backup/restore** (Google Drive app-data folder, no server needed), extra app themes and alternate app icons, full history on the Journey (free: last 4 weeks of look-back cards), **CSV export**, custom reminder/timer sounds, and later a home-screen widget. | €3.99 lifetime (€1.99 at launch) | Task-app users dislike subscriptions for simple tools; a one-time unlock converts better at this size, and it keeps working offline. |
+| 2 | **Cosmetic packs** | Companion outfits, road themes (e.g. "cherry blossom road"), camp decoration sets. Some are coin-buyable, some are packs only. | €0.99–1.99 each | Fits §6 directly; people who love their companion will pay for looks. |
+| 3 | **Tip jar** | "Support Growra" at €0.99 / €2.99 / €4.99, each giving a small thank-you cosmetic (e.g. a supporter scarf). | as listed | No design cost; indie users tip more than expected when asked kindly. |
+| 4 | **Optional rewarded ads** *(later, maybe)* | "Watch an ad → your companion brings back a find." Max 2 a day, never forced, no banners. | ad revenue | Lowest fit for a calm productivity app. AdMob also needs a public Play listing first (same blocker as SHARDMARCH). |
+
+**Avoid:** subscriptions, selling companions/Bond/progress, forced or banner ads, and real-money random boxes (EU loot-box scrutiny).
+
+**Realistic expectation:** a one-time unlock converts roughly 1–3% of active users. At 1,000 monthly actives that's about 10–30 purchases a month, so tens of euros, not a salary. Downloads come first: listing, screenshots, and getting past closed testing.
+
+### Steps to actually get paid
+1. Make it presentable: redesign phases 1–2 plus the art pass (§10), then a full Play listing and a privacy policy page (required once billing or ads are added; it can live on the existing GitHub Pages setup, like the other apps).
+2. Get to production: new personal accounts need 12 closed testers for 14 days (the same requirement as Portal Siege).
+3. Play Console: set up a **payments profile / merchant account**, then create the in-app products.
+4. Code: **RevenueCat** (`react-native-purchases`, free up to $2.5k/month revenue) or `react-native-iap` on Google Play Billing. Needs an **EAS development build** (not Expo Go). Test with license testers on the closed track.
+5. Data safety: declare purchase history (and advertising ID, if ads are ever added).
+6. Money side: Google takes **15%** (small-developer rate) and handles EU VAT for app sales. The income is self-employment income in Portugal (open activity / *recibos verdes* around the first real payout, as noted in the ai-books research).
