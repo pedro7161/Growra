@@ -5,7 +5,7 @@ import BottomNavigation from "./components/BottomNavigation";
 import BattleRewardModal from "./components/BattleRewardModal";
 import SettingsModal from "./components/SettingsModal";
 import CompanionRevealModal from "./components/CompanionRevealModal";
-import TutorialOverlay from "./components/TutorialOverlay";
+import TutorialOverlay, { TutorialStep } from "./components/TutorialOverlay";
 import { getAppCopy } from "./constants/appCopy";
 import { getAppTheme } from "./constants/appTheme";
 import DashboardScreen from "./screens/DashboardScreen";
@@ -20,7 +20,6 @@ import {
   BattleConsumableItem,
   GearItem,
   GameState,
-  Pet,
   Task,
   TaskType,
   TaskStatus,
@@ -56,16 +55,6 @@ import {
 } from "./utils/timerAlert";
 
 type Screen = "dashboard" | "tasks" | "task-calendar" | "realm";
-type TutorialStep =
-  | "open-tasks"
-  | "tap-add-task"
-  | "choose-predefined-task"
-  | "choose-water-task"
-  | "confirm-task-add"
-  | "complete-task"
-  | "open-realm"
-  | "choose-companion"
-  | "done";
 
 interface TaskTutorialUiState {
   modalVisible: boolean;

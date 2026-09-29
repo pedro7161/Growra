@@ -1,4 +1,12 @@
 import { AppLanguage } from "../types";
+import type { CompanionMood, CompanionStyle } from "../utils/companions";
+
+interface CompanionStyleCopy {
+  loves: string;
+  perk: string;
+  /** How it joins; {target} is the goal from utils/companions.ts. */
+  joins: string;
+}
 
 interface AppCopy {
   navDashboard: string;
@@ -11,7 +19,6 @@ interface AppCopy {
   dashboardCoins: string;
   dashboardPlayerLevel: string;
   dashboardTotalXp: string;
-  dashboardPityCurrency: string;
   dashboardEquippedPet: string;
   dashboardNoPetEquipped: string;
   dashboardRarity: string;
@@ -81,11 +88,8 @@ interface AppCopy {
   addTaskDescriptionPlaceholder: string;
   petsTitle: string;
   petsCoinsPity: string;
-  petsSummonTab: string;
   petsExplorationTab: string;
-  petsPityShopTab: string;
   petsMyPetsTab: string;
-  petsSellShopTab: string;
   petsExplorationTitle: string;
   petsExplorationSubtitle: string;
   petsExplorationMapTitle: string;
@@ -125,28 +129,9 @@ interface AppCopy {
   petsDetailCurrentGear: string;
   petsDetailAvailableGear: string;
   petsDetailActions: string;
-  petsSummonRevealTitle: string;
-  petsSummonRevealSubtitle: string;
   petsSummonRevealClose: string;
   petsSummonRevealPrevious: string;
   petsSummonRevealNext: string;
-  petsGachaTitle: string;
-  petsGachaOdds: string;
-  petsGachaSecret: string;
-  petsGachaCost: string;
-  petsGachaMultiCost: string;
-  petsSummonButton: string;
-  petsMultiSummonButton: string;
-  petsPityShopTitle: string;
-  petsPityShopSubtitle: string;
-  petsClaim: string;
-  petsCost: string;
-  petsSellShopTitle: string;
-  petsSellShopSubtitle: string;
-  petsNoExtraCopies: string;
-  petsSell: string;
-  petsSellsFor: string;
-  petsFusion: string;
   petsEvolution: string;
   petsTaskBonus: string;
   petsCombatPower: string;
@@ -158,8 +143,6 @@ interface AppCopy {
   petsEvolutionBase: string;
   petsEvolutionEvolved: string;
   petsEvolutionAscended: string;
-  petsAvailableCopies: string;
-  petsFuseCopy: string;
   petsActive: string;
   petsEquip: string;
   settingsTitle: string;
@@ -171,10 +154,7 @@ interface AppCopy {
   settingsUncompletedTasks: string;
   settingsTodayActiveTasks: string;
   settingsTotalPets: string;
-  settingsCommonPets: string;
-  settingsRarePets: string;
-  settingsEpicPets: string;
-  settingsFusedPets: string;
+  settingsEvolvedPets: string;
   settingsEquippedPet: string;
   settingsLanguageEnglish: string;
   settingsLanguagePortuguese: string;
@@ -208,22 +188,32 @@ interface AppCopy {
   tutorialConfirmTaskAddHint: string;
   tutorialCompleteTaskTitle: string;
   tutorialCompleteTaskHint: string;
-  tutorialSummonPetTitle: string;
-  tutorialSummonPetHint: string;
-  tutorialEquipPetTitle: string;
-  tutorialEquipPetHint: string;
   tutorialOpenTasks: string;
   tutorialOpenRealm: string;
   tutorialRewardTitle: string;
-  tutorialRewardBody: string;
   tutorialStep1Title: string;
   tutorialStep1Body: string;
   tutorialStep2Title: string;
   tutorialStep2Body: string;
-  tutorialStep3Title: string;
-  tutorialStep3Body: string;
-  tutorialStep4Title: string;
-  tutorialStep4Body: string;
+  companionsMigratedTitle: string;
+  companionsMigratedBody: string;
+  companionChooseTitle: string;
+  companionChooseSubtitle: string;
+  companionChoose: string;
+  companionBond: string;
+  companionNextEvolution: string;
+  companionLoves: string;
+  companionPerk: string;
+  companionTakeAlong: string;
+  companionNotMet: string;
+  companionDaysTogether: string;
+  companionJoinedTitle: string;
+  companionEvolvedTitle: string;
+  companionRevealSubtitle: string;
+  companionMood: Record<CompanionMood, string>;
+  companionStyles: Record<CompanionStyle, CompanionStyleCopy>;
+  dashboardActiveDays: string;
+  tutorialChooseCompanionHint: string;
   timerStart: string;
   timerPause: string;
   timerResume: string;
@@ -246,7 +236,6 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     dashboardCoins: "Coins",
     dashboardPlayerLevel: "Player Level",
     dashboardTotalXp: "Total XP",
-    dashboardPityCurrency: "Pity Currency",
     dashboardEquippedPet: "Equipped Pet",
     dashboardNoPetEquipped: "No pet equipped",
     dashboardRarity: "Rarity",
@@ -314,13 +303,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     addTaskSavedCustomTasks: "Saved custom tasks",
     addTaskNamePlaceholder: "Enter task name",
     addTaskDescriptionPlaceholder: "Enter task description (optional)",
-    petsTitle: "Pets",
+    petsTitle: "Companions",
     petsCoinsPity: "coins",
-    petsSummonTab: "Summon",
     petsExplorationTab: "Explore",
-    petsPityShopTab: "Pity Shop",
-    petsMyPetsTab: "My Pets",
-    petsSellShopTab: "Sell Shop",
+    petsMyPetsTab: "Companions",
     petsExplorationTitle: "Realm Map",
     petsExplorationSubtitle: "Send pets into the wild to uncover the world one route at a time.",
     petsExplorationMapTitle: "Uncharted regions",
@@ -350,7 +336,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     petsGearEquipped: "Equipped",
     petsGearBonus: "Bonus",
     petsGearNoItems: "No gear yet. Win a fight to start collecting gear.",
-    petsDetailTitle: "Pet Details",
+    petsDetailTitle: "Companion",
     petsDetailClose: "Close",
     petsDetailOverview: "Overview",
     petsDetailElement: "Element",
@@ -360,28 +346,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     petsDetailCurrentGear: "Current gear",
     petsDetailAvailableGear: "Available gear",
     petsDetailActions: "Actions",
-    petsSummonRevealTitle: "Summon Reveal",
-    petsSummonRevealSubtitle: "The confetti settles and the new pet appears.",
     petsSummonRevealClose: "Close",
     petsSummonRevealPrevious: "Previous",
     petsSummonRevealNext: "Next",
-    petsGachaTitle: "Gacha",
-    petsGachaOdds: "Summon odds: 70% common • 25% rare • 4% epic • 1% legendary",
-    petsGachaSecret: "Secret unit on banner: Nova (legendary).",
-    petsGachaCost: "Each summon costs {cost} coins and gives 1 pity.",
-    petsGachaMultiCost: "Multi summon: 11 pets for {cost} coins and gives 10 pity.",
-    petsSummonButton: "Summon Pet ({cost} coins)",
-    petsMultiSummonButton: "Multi (11) ({cost} coins)",
-    petsPityShopTitle: "Pity Shop",
-    petsPityShopSubtitle: "Spend pity to claim a specific pet.",
-    petsClaim: "Claim",
-    petsCost: "Cost",
-    petsSellShopTitle: "Sell Shop",
-    petsSellShopSubtitle: "Sell extra copies for coins when you do not want to fuse them.",
-    petsNoExtraCopies: "No extra copies available for sale.",
-    petsSell: "Sell",
-    petsSellsFor: "sells for",
-    petsFusion: "Fusion",
     petsEvolution: "Evolution",
     petsTaskBonus: "Task bonus",
     petsCombatPower: "Combat power",
@@ -393,8 +360,6 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     petsEvolutionBase: "Base",
     petsEvolutionEvolved: "Evolved",
     petsEvolutionAscended: "Ascended",
-    petsAvailableCopies: "Available copies",
-    petsFuseCopy: "Fuse Copy",
     petsActive: "Active",
     petsEquip: "Equip",
     settingsTitle: "Settings",
@@ -405,12 +370,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsTotalTasks: "Total tasks completed",
     settingsUncompletedTasks: "Uncompleted tasks",
     settingsTodayActiveTasks: "Today active tasks",
-    settingsTotalPets: "Total pets",
-    settingsCommonPets: "Common pets",
-    settingsRarePets: "Rare pets",
-    settingsEpicPets: "Epic pets",
-    settingsFusedPets: "Pets with fusion",
-    settingsEquippedPet: "Equipped pet",
+    settingsTotalPets: "Companions met",
+    settingsEvolvedPets: "Evolved companions",
+    settingsEquippedPet: "Active companion",
     settingsLanguageEnglish: "English",
     settingsLanguagePortuguese: "Portuguese",
     settingsTimerAlert: "Timer Alert",
@@ -442,23 +404,51 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tutorialChooseWaterTaskHint: "Select the Drink Water task.",
     tutorialConfirmTaskAddHint: "Tap Add to create your first task.",
     tutorialCompleteTaskTitle: "Complete that task",
-    tutorialCompleteTaskHint: "Mark the task as done to earn your summon coins.",
-    tutorialSummonPetTitle: "Summon your first pet",
-    tutorialSummonPetHint: "Go to the Realm and summon once the reward is ready.",
-    tutorialEquipPetTitle: "Activate your pet",
-    tutorialEquipPetHint: "Open your pet box and equip the pet you just got.",
+    tutorialCompleteTaskHint: "Mark the task as done to earn your first coins.",
     tutorialOpenTasks: "Open Tasks",
     tutorialOpenRealm: "Open Realm",
     tutorialRewardTitle: "You're ready!",
-    tutorialRewardBody: "Here are 100 coins to summon your first pet. Good luck!",
     tutorialStep1Title: "Welcome to Growra!",
     tutorialStep1Body: "Your dashboard shows today's tasks, your streak bonus, and your equipped pet. Complete tasks to earn coins and XP.",
     tutorialStep2Title: "Tasks",
     tutorialStep2Body: "Add daily, weekly, or one-time tasks. Complete them to earn rewards. System tasks give extra bonuses!",
-    tutorialStep3Title: "Pets",
-    tutorialStep3Body: "Equip a pet to boost your task rewards. Fuse duplicate pets to evolve them and unlock stronger bonuses.",
-    tutorialStep4Title: "Summon",
-    tutorialStep4Body: "Spend coins to summon new pets. Save up for a multi-summon (11 pets) for better value.",
+    companionsMigratedTitle: "Pets are now companions",
+    companionsMigratedBody: "Summons are gone. Every companion now exists once and grows through Bond as you use Growra. Your extra copies and pity were turned into {coins} coins.",
+    companionChooseTitle: "Choose your first companion",
+    companionChooseSubtitle: "The others join on their own when you use Growra in their style.",
+    companionChoose: "Choose",
+    companionBond: "Bond",
+    companionNextEvolution: "Evolves at {bond} Bond",
+    companionLoves: "Loves",
+    companionPerk: "Perk",
+    companionTakeAlong: "Take along",
+    companionNotMet: "Not met yet",
+    companionDaysTogether: "Days together",
+    companionJoinedTitle: "{name} joined you!",
+    companionEvolvedTitle: "{name} evolved!",
+    companionRevealSubtitle: "It noticed how you use Growra.",
+    companionMood: {
+      hello: "{name} says hi. Ready when you are.",
+      happy: "{name} is happy with today.",
+      glowing: "{name} is glowing. What a day!",
+      sleepy: "{name} dozed off while you were away. Any task wakes it up.",
+    },
+    companionStyles: {
+      "getting-started": { loves: "getting started", perk: "+2 coins on your first task each day", joins: "Joins after {target} active days" },
+      flow: { loves: "going with the flow", perk: "+1 Bond when you move a task to later", joins: "Joins when you move a task to a later day" },
+      focus: { loves: "focus", perk: "+2 coins for tasks with a timer", joins: "Joins when you finish a task with a timer" },
+      routines: { loves: "routines", perk: "+2 coins for daily and weekly tasks", joins: "Joins after {target} daily or weekly tasks" },
+      timekeeping: { loves: "timekeeping", perk: "+3 coins when a task is done on its due day", joins: "Joins after {target} timer tasks" },
+      "showing-up": { loves: "showing up", perk: "+1 extra Bond on each active day", joins: "Joins after {target} active days" },
+      "looking-ahead": { loves: "looking ahead", perk: "+2 coins for tasks planned 3+ days ahead", joins: "Joins when you plan a task a week or more ahead" },
+      priorities: { loves: "priorities", perk: "+3 coins for High-priority tasks", joins: "Joins after {target} High-priority tasks" },
+      "own-tasks": { loves: "making it your own", perk: "+2 coins for custom tasks", joins: "Joins after you create {target} custom tasks" },
+      tidying: { loves: "tidying up", perk: "+2 coins for finishing an overdue task", joins: "Joins after you clear {target} overdue tasks (done, moved or deleted)" },
+      "long-run": { loves: "the long run", perk: "+10% streak bonus", joins: "Joins after {target} active days" },
+      "big-days": { loves: "big days", perk: "+10 coins on your 5th task of a day", joins: "Joins on your first day with 5 tasks done" },
+    },
+    dashboardActiveDays: "Active days",
+    tutorialChooseCompanionHint: "Pick your first companion.",
     timerStart: "Start",
     timerPause: "Pause",
     timerResume: "Resume",
@@ -479,7 +469,6 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     dashboardCoins: "Moedas",
     dashboardPlayerLevel: "Nível do jogador",
     dashboardTotalXp: "XP total",
-    dashboardPityCurrency: "Moeda de pity",
     dashboardEquippedPet: "Pet equipado",
     dashboardNoPetEquipped: "Nenhum pet equipado",
     dashboardRarity: "Raridade",
@@ -547,13 +536,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     addTaskSavedCustomTasks: "Tarefas personalizadas guardadas",
     addTaskNamePlaceholder: "Escreve o nome da tarefa",
     addTaskDescriptionPlaceholder: "Escreve a descrição da tarefa (opcional)",
-    petsTitle: "Pets",
+    petsTitle: "Companheiros",
     petsCoinsPity: "moedas",
-    petsSummonTab: "Summon",
     petsExplorationTab: "Explorar",
-    petsPityShopTab: "Loja Pity",
-    petsMyPetsTab: "Os Meus Pets",
-    petsSellShopTab: "Loja de Venda",
+    petsMyPetsTab: "Companheiros",
     petsExplorationTitle: "Mapa do Reino",
     petsExplorationSubtitle: "Envia pets para o terreno e revela o mundo caminho a caminho.",
     petsExplorationMapTitle: "Regiões por chartar",
@@ -583,7 +569,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     petsGearEquipped: "Equipado",
     petsGearBonus: "Bónus",
     petsGearNoItems: "Ainda sem gear. Vence uma batalha para começar a colecionar gear.",
-    petsDetailTitle: "Detalhes do pet",
+    petsDetailTitle: "Companheiro",
     petsDetailClose: "Fechar",
     petsDetailOverview: "Visão geral",
     petsDetailElement: "Elemento",
@@ -593,28 +579,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     petsDetailCurrentGear: "Equipamento atual",
     petsDetailAvailableGear: "Equipamentos disponíveis",
     petsDetailActions: "Ações",
-    petsSummonRevealTitle: "Resultado da invocação",
-    petsSummonRevealSubtitle: "Os confetis caem e o novo pet aparece.",
     petsSummonRevealClose: "Fechar",
     petsSummonRevealPrevious: "Anterior",
     petsSummonRevealNext: "Seguinte",
-    petsGachaTitle: "Gacha",
-    petsGachaOdds: "Probabilidades: 70% comum • 25% raro • 4% épico • 1% lendário",
-    petsGachaSecret: "Unidade secreta no banner: Nova (lendário).",
-    petsGachaCost: "Cada summon custa {cost} moedas e dá 1 pity.",
-    petsGachaMultiCost: "Multi invocação: 11 pets por {cost} moedas e dá 10 pity.",
-    petsSummonButton: "Invocar pet ({cost} moedas)",
-    petsMultiSummonButton: "Multi (11) ({cost} moedas)",
-    petsPityShopTitle: "Loja Pity",
-    petsPityShopSubtitle: "Gasta pity para escolher um pet específico.",
-    petsClaim: "Resgatar",
-    petsCost: "Custo",
-    petsSellShopTitle: "Loja de Venda",
-    petsSellShopSubtitle: "Vende cópias extra por moedas quando não quiseres fundi-las.",
-    petsNoExtraCopies: "Não há cópias extra para vender.",
-    petsSell: "Vender",
-    petsSellsFor: "vende por",
-    petsFusion: "Fusão",
     petsEvolution: "Evolução",
     petsTaskBonus: "Bónus de tarefa",
     petsCombatPower: "Poder de combate",
@@ -626,8 +593,6 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     petsEvolutionBase: "Base",
     petsEvolutionEvolved: "Evoluído",
     petsEvolutionAscended: "Ascendido",
-    petsAvailableCopies: "Cópias disponíveis",
-    petsFuseCopy: "Fundir cópia",
     petsActive: "Ativo",
     petsEquip: "Equipar",
     settingsTitle: "Definições",
@@ -638,12 +603,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsTotalTasks: "Total de tarefas concluídas",
     settingsUncompletedTasks: "Tarefas por concluir",
     settingsTodayActiveTasks: "Tarefas ativas hoje",
-    settingsTotalPets: "Total de pets",
-    settingsCommonPets: "Pets comuns",
-    settingsRarePets: "Pets raros",
-    settingsEpicPets: "Pets épicos",
-    settingsFusedPets: "Pets com fusão",
-    settingsEquippedPet: "Pet equipado",
+    settingsTotalPets: "Companheiros conhecidos",
+    settingsEvolvedPets: "Companheiros evoluídos",
+    settingsEquippedPet: "Companheiro ativo",
     settingsLanguageEnglish: "Inglês",
     settingsLanguagePortuguese: "Português",
     settingsTimerAlert: "Alerta do temporizador",
@@ -675,23 +637,51 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tutorialChooseWaterTaskHint: "Seleciona a tarefa Beber água.",
     tutorialConfirmTaskAddHint: "Carrega em Adicionar para criar a tua primeira tarefa.",
     tutorialCompleteTaskTitle: "Conclui essa tarefa",
-    tutorialCompleteTaskHint: "Marca a tarefa como feita para ganhares moedas para invocar.",
-    tutorialSummonPetTitle: "Invoca o teu primeiro pet",
-    tutorialSummonPetHint: "Vai ao Reino e invoca quando a recompensa estiver pronta.",
-    tutorialEquipPetTitle: "Ativa o teu pet",
-    tutorialEquipPetHint: "Abre a caixa de pets e equipa o pet que acabaste de obter.",
+    tutorialCompleteTaskHint: "Marca a tarefa como feita para ganhares as primeiras moedas.",
     tutorialOpenTasks: "Abrir tarefas",
     tutorialOpenRealm: "Abrir reino",
     tutorialRewardTitle: "Estás pronto!",
-    tutorialRewardBody: "Aqui estão 100 moedas para invocares o teu primeiro pet. Boa sorte!",
     tutorialStep1Title: "Bem-vindo ao Growra!",
     tutorialStep1Body: "O teu painel mostra as tarefas de hoje, o bónus de sequência e o teu pet equipado. Completa tarefas para ganhar moedas e XP.",
     tutorialStep2Title: "Tarefas",
     tutorialStep2Body: "Adiciona tarefas diárias, semanais ou únicas. Completa-as para ganhar recompensas. As tarefas do sistema dão bónus extra!",
-    tutorialStep3Title: "Pets",
-    tutorialStep3Body: "Equipa um pet para aumentar as recompensas das tarefas. Funde pets duplicados para evoluir e desbloqueá bónus mais fortes.",
-    tutorialStep4Title: "Invocar",
-    tutorialStep4Body: "Gasta moedas para invocar novos pets. Poupa para uma multi-invocação (11 pets) para melhor valor.",
+    companionsMigratedTitle: "Os pets agora são companheiros",
+    companionsMigratedBody: "As invocações acabaram. Cada companheiro existe uma só vez e cresce com Laço à medida que usas o Growra. As tuas cópias extra e o pity foram convertidos em {coins} moedas.",
+    companionChooseTitle: "Escolhe o teu primeiro companheiro",
+    companionChooseSubtitle: "Os outros juntam-se sozinhos quando usas o Growra ao estilo deles.",
+    companionChoose: "Escolher",
+    companionBond: "Laço",
+    companionNextEvolution: "Evolui com {bond} de Laço",
+    companionLoves: "Adora",
+    companionPerk: "Vantagem",
+    companionTakeAlong: "Levar contigo",
+    companionNotMet: "Ainda não conhecido",
+    companionDaysTogether: "Dias juntos",
+    companionJoinedTitle: "{name} juntou-se a ti!",
+    companionEvolvedTitle: "{name} evoluiu!",
+    companionRevealSubtitle: "Reparou na forma como usas o Growra.",
+    companionMood: {
+      hello: "{name} diz olá. Pronto quando tu estiveres.",
+      happy: "{name} está contente com o dia de hoje.",
+      glowing: "{name} está a brilhar. Que dia!",
+      sleepy: "{name} adormeceu enquanto estavas fora. Qualquer tarefa o acorda.",
+    },
+    companionStyles: {
+      "getting-started": { loves: "começar", perk: "+2 moedas na primeira tarefa de cada dia", joins: "Junta-se após {target} dias ativos" },
+      flow: { loves: "ir com a corrente", perk: "+1 de Laço quando adias uma tarefa", joins: "Junta-se quando adias uma tarefa para outro dia" },
+      focus: { loves: "foco", perk: "+2 moedas em tarefas com temporizador", joins: "Junta-se quando terminas uma tarefa com temporizador" },
+      routines: { loves: "rotinas", perk: "+2 moedas em tarefas diárias e semanais", joins: "Junta-se após {target} tarefas diárias ou semanais" },
+      timekeeping: { loves: "pontualidade", perk: "+3 moedas quando uma tarefa é feita no próprio dia", joins: "Junta-se após {target} tarefas com temporizador" },
+      "showing-up": { loves: "aparecer", perk: "+1 de Laço extra em cada dia ativo", joins: "Junta-se após {target} dias ativos" },
+      "looking-ahead": { loves: "planear com antecedência", perk: "+2 moedas em tarefas planeadas com 3+ dias", joins: "Junta-se quando planeias uma tarefa com uma semana ou mais" },
+      priorities: { loves: "prioridades", perk: "+3 moedas em tarefas de prioridade Alta", joins: "Junta-se após {target} tarefas de prioridade Alta" },
+      "own-tasks": { loves: "fazer à sua maneira", perk: "+2 moedas em tarefas personalizadas", joins: "Junta-se depois de criares {target} tarefas personalizadas" },
+      tidying: { loves: "arrumar", perk: "+2 moedas ao concluir uma tarefa atrasada", joins: "Junta-se depois de resolveres {target} tarefas atrasadas (feitas, adiadas ou apagadas)" },
+      "long-run": { loves: "o longo prazo", perk: "+10% de bónus de sequência", joins: "Junta-se após {target} dias ativos" },
+      "big-days": { loves: "dias em grande", perk: "+10 moedas na 5.ª tarefa do dia", joins: "Junta-se no primeiro dia com 5 tarefas feitas" },
+    },
+    dashboardActiveDays: "Dias ativos",
+    tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro.",
     timerStart: "Começar",
     timerPause: "Pausa",
     timerResume: "Retomar",

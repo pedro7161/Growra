@@ -83,6 +83,14 @@ export function getNextEvolutionBond(bond: number): number | null {
   return null;
 }
 
+/** 0-1 progress from the current evolution stage towards the next one (1 at the final stage). */
+export function getBondProgress(bond: number): number {
+  const next = getNextEvolutionBond(bond);
+  if (next === null) return 1;
+  const start = next === BOND_GROWTH_THRESHOLDS[4] ? BOND_GROWTH_THRESHOLDS[2] : 0;
+  return (bond - start) / (next - start);
+}
+
 export function createEmptyUsage(): UsageStats {
   return {
     activeDays: 0,

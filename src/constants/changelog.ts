@@ -8,6 +8,16 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "Next update",
+      items: [
+        "Pets are now companions: no more summons, fusion or selling. Each companion exists once.",
+        "Pick your first companion. The others join when you use Growra in their style (routines, timers, planning ahead and more).",
+        "Companions grow through Bond from using the app and evolve at 30 and 100 Bond. Each one has a small perk.",
+        "Your companion's mood shows on the dashboard.",
+        "Existing pets are kept; extra copies and pity were turned into coins.",
+      ],
+    },
+    {
       dateLabel: "September 29, 2026",
       items: [
         "Daily and weekly tasks now reset at the right time around daylight-saving changes.",
@@ -42,6 +52,16 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "Próxima atualização",
+      items: [
+        "Os pets são agora companheiros: acabaram as invocações, fusões e vendas. Cada companheiro existe uma só vez.",
+        "Escolhe o teu primeiro companheiro. Os outros juntam-se quando usas o Growra ao estilo deles (rotinas, temporizadores, planear com antecedência e mais).",
+        "Os companheiros crescem com Laço ao usares a app e evoluem com 30 e 100 de Laço. Cada um tem uma pequena vantagem.",
+        "O humor do teu companheiro aparece no painel.",
+        "Os pets que já tinhas ficam; cópias extra e pity foram convertidos em moedas.",
+      ],
+    },
     {
       dateLabel: "29 de setembro de 2026",
       items: [

@@ -24,6 +24,14 @@ import { getAppTheme } from "../constants/appTheme";
 import { getPetImage } from "../constants/petImages";
 import { AppSettings, GameState, PetRarity } from "../types";
 import {
+    COMPANIONS,
+    getBondProgress,
+    getCompanionDefinition,
+    getNextEvolutionBond,
+    STARTER_TEMPLATE_IDS,
+} from "../utils/companions";
+import { getCalendarDayDifference } from "../utils/taskSchedule";
+import {
     EXPEDITION_MAP_REGIONS,
     getBattleConsumableKindLabel,
     getExpeditionBattlePreview,
@@ -32,31 +40,19 @@ import {
     getExpeditionNodeDurationMs,
     getExpeditionSideNodeById,
     getExpeditionZoneBlueprints,
-    getFuseSourcePets,
-    getLevelProgress,
-    getNextEvolutionFusionTarget,
     getPetElement,
     getPetTemplates,
-    getPityCost,
-    getSellablePets,
-    getSellValue,
     isExpeditionNodeCompleted,
-    MAX_PET_FUSIONS,
-    MULTI_SUMMON_COST,
-    PET_LEVEL_BASE_COST,
     previewExpeditionBattleOutcome,
-    SUMMON_COST,
 } from "../utils/gameplay";
 import { formatDuration } from "../utils/taskTimer";
 
 interface PetsScreenProps {
   gameState: GameState;
   settings: AppSettings;
-  tutorialMode: "summon" | "equip" | null;
+  tutorialMode: "choose" | null;
+  onChooseStarter: (templateId: string) => void;
   onEquipPet: (petId: string) => void;
-  onFusePet: (targetPetId: string, sourcePetId: string) => void;
-  onRedeemPityPet: (templateId: string) => void;
-  onSellPet: (petId: string) => void;
   onFightZone: (
     zoneIndex: number,
     petId: string,
@@ -65,8 +61,6 @@ interface PetsScreenProps {
   onExploreNode: (nodeId: string, petId: string) => void;
   onEquipGear: (gearItemId: string, petId: string) => void;
   onSendPetOnExpedition: (petId: string) => void;
-  onSummonPet: () => void;
-  onMultiSummonPet: () => void;
 }
 
 const EXPEDITION_REGIONS = getExpeditionZoneBlueprints();
@@ -77,47 +71,33 @@ export default function PetsScreen({
   gameState,
   settings,
   tutorialMode,
+  onChooseStarter,
   onEquipPet,
-  onFusePet,
-  onRedeemPityPet,
-  onSellPet,
   onFightZone,
   onExploreNode,
   onEquipGear,
   onSendPetOnExpedition,
-  onSummonPet,
-  onMultiSummonPet,
 }: PetsScreenProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const [now, setNow] = useState(Date.now());
   const [selectedPetId, setSelectedPetId] = useState("");
   const [mapExpandedVisible, setMapExpandedVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "my-pets" | "exploration" | "summon"
-  >("my-pets");
-  const [myPetsSubTab, setMyPetsSubTab] = useState<"box" | "fuse" | "gear">(
-    "box",
+  const [activeTab, setActiveTab] = useState<"my-pets" | "exploration">(
+    "my-pets",
   );
-  const [summonSubTab, setSummonSubTab] = useState<
-    "banner" | "pityshop" | "sell"
-  >("banner");
-  const petTemplates = getPetTemplates();
-  const sellablePets = getSellablePets(gameState);
+  const [myPetsSubTab, setMyPetsSubTab] = useState<"box" | "gear">("box");
+  const ownedTemplateIds = new Set(gameState.pets.map((pet) => pet.templateId));
+  const notMetCompanions = COMPANIONS.filter(
+    (companion) => !ownedTemplateIds.has(companion.templateId),
+  );
   const expeditionProgress = gameState.expeditionProgress;
   const activeExpedition = expeditionProgress.activeZoneIndex >= 0;
   const revealedRegions = getExpeditionMapRegionCount(expeditionProgress);
   const battleZoneIndex = revealedRegions > 0 ? revealedRegions - 1 : 0;
   const canBattle = revealedRegions > 0;
   const tutorialOn = tutorialMode !== null;
-  const summonBannerTarget =
-    tutorialMode === "summon" &&
-    activeTab === "summon" &&
-    summonSubTab !== "banner";
-  const summonButtonTarget =
-    tutorialMode === "summon" &&
-    activeTab === "summon" &&
-    summonSubTab === "banner";
+  const needsStarter = gameState.pets.length === 0;
   useEffect(() => {
     if (selectedPetId === "") {
       return;
@@ -158,7 +138,7 @@ export default function PetsScreen({
           {copy.petsTitle}
         </Text>
         <Text style={[styles.subtitle, { color: theme.mutedText }]}>
-          {gameState.coins} {copy.petsCoinsPity} • {gameState.pityCurrency} pity
+          {gameState.coins} {copy.petsCoinsPity}
         </Text>
       </View>
 
@@ -173,10 +153,8 @@ export default function PetsScreen({
           active={activeTab === "my-pets"}
           onPress={() => setActiveTab("my-pets")}
           settings={settings}
-          highlighted={tutorialMode === "equip" && activeTab !== "my-pets"}
-          disabled={
-            tutorialOn && !(tutorialMode === "equip" && activeTab !== "my-pets")
-          }
+          highlighted={tutorialOn && activeTab !== "my-pets"}
+          disabled={tutorialOn && activeTab === "my-pets"}
         />
         <TabButton
           label={copy.petsExplorationTab}
@@ -185,16 +163,6 @@ export default function PetsScreen({
           settings={settings}
           highlighted={false}
           disabled={tutorialOn}
-        />
-        <TabButton
-          label={copy.petsSummonTab}
-          active={activeTab === "summon"}
-          onPress={() => setActiveTab("summon")}
-          settings={settings}
-          highlighted={tutorialMode === "summon" && activeTab !== "summon"}
-          disabled={
-            tutorialOn && !(tutorialMode === "summon" && activeTab !== "summon")
-          }
         />
       </View>
 
@@ -211,34 +179,15 @@ export default function PetsScreen({
               ]}
             >
               <TabButton
-                label="Box"
+                label={copy.petsMyPetsTab}
                 active={myPetsSubTab === "box"}
                 onPress={() => setMyPetsSubTab("box")}
                 settings={settings}
-                highlighted={
-                  tutorialMode === "equip" &&
-                  activeTab === "my-pets" &&
-                  myPetsSubTab !== "box"
-                }
-                disabled={
-                  tutorialOn &&
-                  !(
-                    tutorialMode === "equip" &&
-                    activeTab === "my-pets" &&
-                    myPetsSubTab !== "box"
-                  )
-                }
+                highlighted={tutorialOn && myPetsSubTab !== "box"}
+                disabled={tutorialOn && myPetsSubTab === "box"}
               />
               <TabButton
-                label="Fuse"
-                active={myPetsSubTab === "fuse"}
-                onPress={() => setMyPetsSubTab("fuse")}
-                settings={settings}
-                highlighted={false}
-                disabled={tutorialOn}
-              />
-              <TabButton
-                label="Gear"
+                label={copy.petsGearLabel}
                 active={myPetsSubTab === "gear"}
                 onPress={() => setMyPetsSubTab("gear")}
                 settings={settings}
@@ -247,31 +196,15 @@ export default function PetsScreen({
               />
             </View>
 
-            {myPetsSubTab === "box" && (
-              <View style={styles.grid}>
-                {gameState.pets.map((pet) => (
-                  <PetCard
-                    key={pet.id}
-                    gameState={gameState}
-                    petId={pet.id}
-                    settings={settings}
-                    onPress={() => setSelectedPetId(pet.id)}
-                    onEquipPet={onEquipPet}
-                    onFusePet={() => {}}
-                    hideFuseButton={true}
-                    tutorialMode={tutorialMode}
-                    tutorialTarget={
-                      tutorialMode === "equip" &&
-                      activeTab === "my-pets" &&
-                      myPetsSubTab === "box" &&
-                      pet.id === gameState.pets[0].id
-                    }
-                  />
-                ))}
-              </View>
+            {myPetsSubTab === "box" && needsStarter && (
+              <StarterPicker
+                settings={settings}
+                highlighted={tutorialOn}
+                onChooseStarter={onChooseStarter}
+              />
             )}
 
-            {myPetsSubTab === "fuse" && (
+            {myPetsSubTab === "box" && !needsStarter && (
               <View style={styles.grid}>
                 {gameState.pets.map((pet) => (
                   <PetCard
@@ -279,12 +212,17 @@ export default function PetsScreen({
                     gameState={gameState}
                     petId={pet.id}
                     settings={settings}
+                    now={now}
                     onPress={() => setSelectedPetId(pet.id)}
                     onEquipPet={onEquipPet}
-                    onFusePet={onFusePet}
-                    hideEquipButton={true}
-                    tutorialMode={null}
-                    tutorialTarget={false}
+                  />
+                ))}
+                {notMetCompanions.map((companion) => (
+                  <NotMetCard
+                    key={companion.templateId}
+                    gameState={gameState}
+                    templateId={companion.templateId}
+                    settings={settings}
                   />
                 ))}
               </View>
@@ -453,207 +391,6 @@ export default function PetsScreen({
           </View>
         )}
 
-        {activeTab === "summon" && (
-          <>
-            <View
-              style={[
-                styles.tabBar,
-                {
-                  backgroundColor: theme.surface,
-                  borderBottomColor: theme.border,
-                },
-              ]}
-            >
-              <TabButton
-                label="Banner"
-                active={summonSubTab === "banner"}
-                onPress={() => setSummonSubTab("banner")}
-                settings={settings}
-                highlighted={summonBannerTarget}
-                disabled={tutorialOn && !summonBannerTarget}
-              />
-              <TabButton
-                label="Pity Shop"
-                active={summonSubTab === "pityshop"}
-                onPress={() => setSummonSubTab("pityshop")}
-                settings={settings}
-                highlighted={false}
-                disabled={tutorialOn}
-              />
-              <TabButton
-                label="Sell"
-                active={summonSubTab === "sell"}
-                onPress={() => setSummonSubTab("sell")}
-                settings={settings}
-                highlighted={false}
-                disabled={tutorialOn}
-              />
-            </View>
-
-            {summonSubTab === "banner" && (
-              <View
-                style={[styles.shopCard, { backgroundColor: theme.surface }]}
-              >
-                <Text style={[styles.shopTitle, { color: theme.text }]}>
-                  {copy.petsGachaTitle}
-                </Text>
-                <Text style={[styles.shopText, { color: theme.mutedText }]}>
-                  {copy.petsGachaOdds}
-                </Text>
-                <Text style={[styles.shopText, { color: theme.mutedText }]}>
-                  {copy.petsGachaSecret}
-                </Text>
-                <Text style={[styles.shopText, { color: theme.mutedText }]}>
-                  {copy.petsGachaCost.replace("{cost}", String(SUMMON_COST))}
-                </Text>
-                <Text style={[styles.shopText, { color: theme.mutedText }]}>
-                  {copy.petsGachaMultiCost.replace(
-                    "{cost}",
-                    String(MULTI_SUMMON_COST),
-                  )}
-                </Text>
-              </View>
-            )}
-
-            {summonSubTab === "pityshop" && (
-              <View
-                style={[styles.shopCard, { backgroundColor: theme.surface }]}
-              >
-                <Text style={[styles.shopTitle, { color: theme.text }]}>
-                  {copy.petsPityShopTitle}
-                </Text>
-                <Text style={[styles.shopText, { color: theme.mutedText }]}>
-                  {copy.petsPityShopSubtitle}
-                </Text>
-                <View style={styles.pityGrid}>
-                  {petTemplates.map((template) => (
-                    <View
-                      key={template.id}
-                      style={[
-                        styles.pityCard,
-                        {
-                          backgroundColor: theme.surfaceMuted,
-                          borderColor: theme.border,
-                        },
-                      ]}
-                    >
-                      <Image
-                        source={getPetImage(template.id, 0, "default")}
-                        style={styles.pityPetImage}
-                        resizeMode="contain"
-                      />
-                      <View style={styles.pityCardHeader}>
-                        <Text style={[styles.pityName, { color: theme.text }]}>
-                          {template.name}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.pityRarity,
-                            { color: theme.mutedText },
-                          ]}
-                        >
-                          {template.rarity}
-                        </Text>
-                      </View>
-                      <Text
-                        style={[styles.pityMeta, { color: theme.mutedText }]}
-                      >
-                        +{(template.taskMultiplier * 100).toFixed(0)}%{" "}
-                        {copy.petsTaskBonus.toLowerCase()}
-                      </Text>
-                      <Text
-                        style={[styles.pityMeta, { color: theme.mutedText }]}
-                      >
-                        {copy.petsCost}: {getPityCost(template.rarity)} pity
-                      </Text>
-                      <TouchableOpacity
-                        style={[
-                          styles.redeemButton,
-                          { backgroundColor: theme.warning },
-                          gameState.pityCurrency <
-                            getPityCost(template.rarity) && {
-                            backgroundColor: theme.warningSoft,
-                          },
-                        ]}
-                        onPress={() => onRedeemPityPet(template.id)}
-                        disabled={
-                          gameState.pityCurrency < getPityCost(template.rarity)
-                        }
-                      >
-                        <Text style={styles.redeemButtonText}>
-                          {copy.petsClaim}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {summonSubTab === "sell" && (
-              <View
-                style={[styles.shopCard, { backgroundColor: theme.surface }]}
-              >
-                <Text style={[styles.shopTitle, { color: theme.text }]}>
-                  {copy.petsSellShopTitle}
-                </Text>
-                <Text style={[styles.shopText, { color: theme.mutedText }]}>
-                  {copy.petsSellShopSubtitle}
-                </Text>
-                <View style={styles.sellList}>
-                  {sellablePets.length === 0 ? (
-                    <Text
-                      style={[styles.emptyText, { color: theme.mutedText }]}
-                    >
-                      {copy.petsNoExtraCopies}
-                    </Text>
-                  ) : (
-                    sellablePets.map((pet) => (
-                      <View
-                        key={pet.id}
-                        style={[
-                          styles.sellCard,
-                          {
-                            backgroundColor: theme.surfaceMuted,
-                            borderColor: theme.border,
-                          },
-                        ]}
-                      >
-                        <View>
-                          <Text
-                            style={[styles.sellName, { color: theme.text }]}
-                          >
-                            {pet.name}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.sellMeta,
-                              { color: theme.mutedText },
-                            ]}
-                          >
-                            {pet.rarity} • {copy.petsSellsFor}{" "}
-                            {getSellValue(pet.rarity)} {copy.petsCoinsPity}
-                          </Text>
-                        </View>
-                        <TouchableOpacity
-                          style={[
-                            styles.sellButton,
-                            { backgroundColor: theme.danger },
-                          ]}
-                          onPress={() => onSellPet(pet.id)}
-                        >
-                          <Text style={styles.sellButtonText}>
-                            {copy.petsSell}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))
-                  )}
-                </View>
-              </View>
-            )}
-          </>
-        )}
       </ScrollView>
 
       <PetDetailModal
@@ -668,8 +405,6 @@ export default function PetsScreen({
         onEquipPet={onEquipPet}
         onEquipGear={onEquipGear}
         onFightZone={onFightZone}
-        onFusePet={onFusePet}
-        onSellPet={onSellPet}
         onSendPetOnExpedition={onSendPetOnExpedition}
       />
 
@@ -683,52 +418,57 @@ export default function PetsScreen({
         onSendPetOnExpedition={onSendPetOnExpedition}
       />
 
-      {activeTab === "summon" && summonSubTab === "banner" && (
-        <View style={styles.footer}>
-          <View style={styles.gachaRow}>
-            <TouchableOpacity
-              style={[
-                styles.gachaButton,
-                { backgroundColor: theme.accent },
-                gameState.coins < SUMMON_COST && {
-                  backgroundColor: theme.border,
-                },
-                summonButtonTarget && styles.tutorialHighlight,
-                tutorialOn && !summonButtonTarget && styles.tutorialDisabled,
-              ]}
-              onPress={onSummonPet}
-              disabled={
-                gameState.coins < SUMMON_COST ||
-                (tutorialOn && !summonButtonTarget)
-              }
-            >
-              <Text style={styles.gachaButtonText}>
-                {copy.petsSummonButton.replace("{cost}", String(SUMMON_COST))}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.gachaButton,
-                { backgroundColor: theme.hero },
-                gameState.coins < MULTI_SUMMON_COST && {
-                  backgroundColor: theme.border,
-                },
-                tutorialOn && styles.tutorialDisabled,
-              ]}
-              onPress={onMultiSummonPet}
-              disabled={gameState.coins < MULTI_SUMMON_COST || tutorialOn}
-            >
-              <Text style={styles.gachaButtonText}>
-                {copy.petsMultiSummonButton.replace(
-                  "{cost}",
-                  String(MULTI_SUMMON_COST),
-                )}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
     </SafeAreaView>
+  );
+}
+
+function getEvolutionLabel(
+  evolutionStage: number,
+  copy: ReturnType<typeof getAppCopy>,
+): string {
+  return evolutionStage === 2
+    ? copy.petsEvolutionAscended
+    : evolutionStage === 1
+      ? copy.petsEvolutionEvolved
+      : copy.petsEvolutionBase;
+}
+
+function BondBar({
+  bond,
+  settings,
+}: {
+  bond: number;
+  settings: AppSettings;
+}) {
+  const copy = getAppCopy(settings.language);
+  const theme = getAppTheme(settings.theme);
+  const nextEvolutionBond = getNextEvolutionBond(bond);
+
+  return (
+    <>
+      <Text style={[styles.petStat, { color: theme.mutedText }]}>
+        {copy.companionBond}: {bond}
+        {nextEvolutionBond === null
+          ? ` • ${copy.petsMaxEvolution}`
+          : ` • ${copy.companionNextEvolution.replace("{bond}", String(nextEvolutionBond))}`}
+      </Text>
+      <View
+        style={[
+          styles.xpProgressTrack,
+          { backgroundColor: theme.surfaceMuted },
+        ]}
+      >
+        <View
+          style={[
+            styles.xpProgressFill,
+            {
+              width: `${Math.round(getBondProgress(bond) * 100)}%`,
+              backgroundColor: theme.accent,
+            },
+          ]}
+        />
+      </View>
+    </>
   );
 }
 
@@ -736,55 +476,27 @@ function PetCard({
   gameState,
   petId,
   settings,
+  now,
   onPress,
   onEquipPet,
-  onFusePet,
-  hideEquipButton = false,
-  hideFuseButton = false,
-  tutorialMode,
-  tutorialTarget,
 }: {
   gameState: GameState;
   petId: string;
   settings: AppSettings;
+  now: number;
   onPress: () => void;
   onEquipPet: (petId: string) => void;
-  onFusePet: (targetPetId: string, sourcePetId: string) => void;
-  hideEquipButton?: boolean;
-  hideFuseButton?: boolean;
-  tutorialMode: "summon" | "equip" | null;
-  tutorialTarget: boolean;
 }) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const pet = gameState.pets.filter((currentPet) => currentPet.id === petId)[0];
-  const fuseSourcePets = getFuseSourcePets(gameState, petId);
-  const availableFuseCopies =
-    pet.fusionLevel < MAX_PET_FUSIONS ? fuseSourcePets : [];
-  const firstFuseCopy = availableFuseCopies[0];
-  const nextEvolutionFusionTarget = getNextEvolutionFusionTarget(
-    pet.fusionLevel,
-  );
-  const evolutionLabel =
-    pet.evolutionStage === 2
-      ? copy.petsEvolutionAscended
-      : pet.evolutionStage === 1
-        ? copy.petsEvolutionEvolved
-        : copy.petsEvolutionBase;
-  const petXpProgress = getLevelProgress(pet.experience, PET_LEVEL_BASE_COST);
-  const equippedGear = gameState.gearItems.filter(
-    (gearItem) => gearItem.id === pet.equippedGearId,
-  )[0];
+  const style = getCompanionDefinition(pet.templateId)?.style;
+  const daysTogether = getCalendarDayDifference(pet.createdAt, now) + 1;
 
   return (
     <TouchableOpacity
-      style={[
-        styles.petCard,
-        { backgroundColor: theme.surface },
-        tutorialTarget && styles.tutorialHighlight,
-        tutorialMode !== null && !tutorialTarget && styles.tutorialDisabled,
-      ]}
-      onPress={tutorialMode === null ? onPress : undefined}
+      style={[styles.petCard, { backgroundColor: theme.surface }]}
+      onPress={onPress}
       activeOpacity={0.9}
     >
       <Image
@@ -802,7 +514,10 @@ function PetCard({
             {pet.name}
           </Text>
           <Text style={[styles.petMeta, { color: theme.mutedText }]}>
-            {pet.rarity} • {copy.petsLevel.toLowerCase()} {pet.level}
+            {getEvolutionLabel(pet.evolutionStage, copy)}
+            {style
+              ? ` • ${copy.companionLoves} ${copy.companionStyles[style].loves}`
+              : ""}
           </Text>
         </View>
         {pet.equipped && (
@@ -816,111 +531,157 @@ function PetCard({
           </Text>
         )}
       </View>
+      <BondBar bond={pet.bond} settings={settings} />
+      {style && (
+        <Text style={[styles.petStat, { color: theme.mutedText }]}>
+          {copy.companionPerk}: {copy.companionStyles[style].perk}
+        </Text>
+      )}
       <Text style={[styles.petStat, { color: theme.mutedText }]}>
-        {copy.petsExperience}: {pet.experience}
-      </Text>
-      <View
-        style={[
-          styles.xpProgressTrack,
-          { backgroundColor: theme.surfaceMuted },
-        ]}
-      >
-        <View
-          style={[
-            styles.xpProgressFill,
-            {
-              width: `${Math.round(petXpProgress * 100)}%`,
-              backgroundColor: theme.accent,
-            },
-          ]}
-        />
-      </View>
-      <Text style={[styles.petStat, { color: theme.mutedText }]}>
-        {copy.petsFusion}: {pet.fusionLevel}/{MAX_PET_FUSIONS}
-      </Text>
-      <Text style={[styles.petStat, { color: theme.mutedText }]}>
-        {copy.petsEvolution}: {evolutionLabel}
-      </Text>
-      <Text style={[styles.petStat, { color: theme.mutedText }]}>
-        {copy.petsTaskBonus}: +{(pet.taskMultiplier * 100).toFixed(0)}%
-      </Text>
-      <Text style={[styles.petStat, { color: theme.mutedText }]}>
-        {copy.petsGearLabel}:{" "}
-        {equippedGear ? equippedGear.name : copy.petsExplorationUnknown}
-      </Text>
-      <Text style={[styles.petStat, { color: theme.mutedText }]}>
-        ATK {pet.stats.attack} • DEF {pet.stats.defense} • SPD {pet.stats.speed}{" "}
-        • LCK {pet.stats.luck}
-      </Text>
-      <View style={styles.powerRow}>
-        <View
-          style={[styles.powerCard, { backgroundColor: theme.surfaceMuted }]}
-        >
-          <Text style={[styles.powerLabel, { color: theme.mutedText }]}>
-            {copy.petsCombatPower}
-          </Text>
-          <Text style={[styles.powerValue, { color: theme.text }]}>
-            {pet.combatPower}
-          </Text>
-        </View>
-        <View
-          style={[styles.powerCard, { backgroundColor: theme.surfaceMuted }]}
-        >
-          <Text style={[styles.powerLabel, { color: theme.mutedText }]}>
-            {copy.petsExplorationPower}
-          </Text>
-          <Text style={[styles.powerValue, { color: theme.text }]}>
-            {pet.explorationPower}
-          </Text>
-        </View>
-      </View>
-      <Text style={[styles.petStat, { color: theme.mutedText }]}>
-        {copy.petsAvailableCopies}: {availableFuseCopies.length}
-      </Text>
-      <Text style={[styles.petStat, { color: theme.mutedText }]}>
-        {nextEvolutionFusionTarget
-          ? `${copy.petsNextEvolution}: ${pet.fusionLevel}/${nextEvolutionFusionTarget}`
-          : copy.petsMaxEvolution}
+        {copy.companionDaysTogether}: {daysTogether}
       </Text>
       <View style={styles.petActions}>
-        {!hideEquipButton && (
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              { backgroundColor: theme.accent },
-              pet.equipped && { backgroundColor: theme.border },
-              tutorialTarget && styles.tutorialTargetButton,
-            ]}
-            onPress={() => onEquipPet(pet.id)}
-            disabled={
-              pet.equipped || (tutorialMode !== null && !tutorialTarget)
-            }
-          >
-            <Text style={styles.actionButtonText}>
-              {pet.equipped ? copy.petsActive : copy.petsEquip}
-            </Text>
-          </TouchableOpacity>
-        )}
-        {!hideFuseButton && (
-          <TouchableOpacity
-            style={[
-              styles.fuseButton,
-              { backgroundColor: theme.hero },
-              !firstFuseCopy && { backgroundColor: theme.border },
-              tutorialMode !== null && styles.tutorialDisabled,
-            ]}
-            onPress={
-              firstFuseCopy
-                ? () => onFusePet(pet.id, firstFuseCopy.id)
-                : undefined
-            }
-            disabled={!firstFuseCopy || tutorialMode !== null}
-          >
-            <Text style={styles.fuseButtonText}>{copy.petsFuseCopy}</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            { backgroundColor: theme.accent },
+            pet.equipped && { backgroundColor: theme.border },
+          ]}
+          onPress={() => onEquipPet(pet.id)}
+          disabled={pet.equipped}
+        >
+          <Text style={styles.actionButtonText}>
+            {pet.equipped ? copy.petsActive : copy.companionTakeAlong}
+          </Text>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
+  );
+}
+
+/** A companion the player hasn't met: silhouette, the style it loves and how close it is to joining. */
+function NotMetCard({
+  gameState,
+  templateId,
+  settings,
+}: {
+  gameState: GameState;
+  templateId: string;
+  settings: AppSettings;
+}) {
+  const copy = getAppCopy(settings.language);
+  const theme = getAppTheme(settings.theme);
+  const companion = getCompanionDefinition(templateId);
+  if (!companion) {
+    return null;
+  }
+  const styleCopy = copy.companionStyles[companion.style];
+  const progress = companion.joinProgress(gameState.usage);
+
+  return (
+    <View
+      style={[
+        styles.petCard,
+        styles.notMetCard,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+      ]}
+    >
+      {/* A "?" instead of a silhouette until the art has transparent backgrounds (GAME_REDESIGN §8). */}
+      <View style={[styles.notMetBadge, { backgroundColor: theme.surfaceMuted }]}>
+        <Text style={[styles.notMetBadgeText, { color: theme.mutedText }]}>?</Text>
+      </View>
+      <View style={styles.notMetBody}>
+        <Text style={[styles.petName, { color: theme.text }]}>
+          {copy.companionNotMet}
+        </Text>
+        <Text style={[styles.petMeta, { color: theme.mutedText }]}>
+          {copy.companionLoves} {styleCopy.loves}
+        </Text>
+        <Text style={[styles.petStat, { color: theme.mutedText }]}>
+          {styleCopy.joins.replace("{target}", String(progress.target))}
+          {progress.target > 1 ? ` (${progress.current}/${progress.target})` : ""}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function StarterPicker({
+  settings,
+  highlighted,
+  onChooseStarter,
+}: {
+  settings: AppSettings;
+  highlighted: boolean;
+  onChooseStarter: (templateId: string) => void;
+}) {
+  const copy = getAppCopy(settings.language);
+  const theme = getAppTheme(settings.theme);
+  const templates = getPetTemplates();
+
+  return (
+    <View
+      style={[
+        styles.shopCard,
+        { backgroundColor: theme.surface },
+        highlighted && styles.tutorialHighlight,
+      ]}
+    >
+      <Text style={[styles.shopTitle, { color: theme.text }]}>
+        {copy.companionChooseTitle}
+      </Text>
+      <Text style={[styles.shopText, { color: theme.mutedText }]}>
+        {copy.companionChooseSubtitle}
+      </Text>
+      <View style={styles.grid}>
+        {STARTER_TEMPLATE_IDS.map((templateId) => {
+          const template = templates.find((item) => item.id === templateId);
+          const style = getCompanionDefinition(templateId)?.style;
+          if (!template || !style) {
+            return null;
+          }
+
+          return (
+            <View
+              key={templateId}
+              style={[
+                styles.starterCard,
+                {
+                  backgroundColor: theme.surfaceMuted,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
+              <Image
+                source={getPetImage(templateId, 0, "default")}
+                style={styles.petCardImage}
+                resizeMode="contain"
+              />
+              <Text style={[styles.petName, { color: theme.text }]}>
+                {template.name}
+              </Text>
+              <Text style={[styles.petMeta, { color: theme.mutedText }]}>
+                {copy.companionLoves} {copy.companionStyles[style].loves}
+              </Text>
+              <Text style={[styles.petStat, { color: theme.mutedText }]}>
+                {template.description}
+              </Text>
+              <Text style={[styles.petStat, { color: theme.text }]}>
+                {copy.companionPerk}: {copy.companionStyles[style].perk}
+              </Text>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: theme.accent }]}
+                onPress={() => onChooseStarter(templateId)}
+              >
+                <Text style={styles.actionButtonText}>
+                  {copy.companionChoose}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
@@ -2328,8 +2089,6 @@ function PetDetailModal({
   onEquipPet,
   onEquipGear,
   onFightZone,
-  onFusePet,
-  onSellPet,
   onSendPetOnExpedition,
 }: {
   visible: boolean;
@@ -2347,8 +2106,6 @@ function PetDetailModal({
     petId: string,
     battleConsumableIds: string[],
   ) => void;
-  onFusePet: (targetPetId: string, sourcePetId: string) => void;
-  onSellPet: (petId: string) => void;
   onSendPetOnExpedition: (petId: string) => void;
 }) {
   if (!visible) {
@@ -2364,7 +2121,6 @@ function PetDetailModal({
   const petTemplate = getPetTemplates().filter(
     (template) => template.id === pet.templateId,
   )[0];
-  const petXpProgress = getLevelProgress(pet.experience, PET_LEVEL_BASE_COST);
   const attachedGear = gameState.gearItems.filter(
     (gearItem) => gearItem.equippedPetId === pet.id,
   );
@@ -2383,21 +2139,11 @@ function PetDetailModal({
       luck: 0,
     },
   );
-  const fuseSourcePets = getFuseSourcePets(gameState, petId);
-  const firstFuseCopy =
-    pet.fusionLevel < MAX_PET_FUSIONS ? fuseSourcePets[0] : undefined;
-  const sellablePet = getSellablePets(gameState).filter(
-    (currentPet) => currentPet.id === pet.id,
-  )[0];
+  const companionStyle = getCompanionDefinition(pet.templateId)?.style;
   const battleEncounter = getExpeditionBattlePreview(battleZoneIndex);
   const elementLabel =
     petTemplate.element.charAt(0).toUpperCase() + petTemplate.element.slice(1);
-  const evolutionLabel =
-    pet.evolutionStage === 2
-      ? copy.petsEvolutionAscended
-      : pet.evolutionStage === 1
-        ? copy.petsEvolutionEvolved
-        : copy.petsEvolutionBase;
+  const evolutionLabel = getEvolutionLabel(pet.evolutionStage, copy);
 
   return (
     <Modal
@@ -2464,7 +2210,9 @@ function PetDetailModal({
                   <Text
                     style={[styles.detailBadgeText, { color: theme.accent }]}
                   >
-                    {pet.rarity}
+                    {companionStyle
+                      ? `${copy.companionLoves} ${copy.companionStyles[companionStyle].loves}`
+                      : pet.rarity}
                   </Text>
                 </View>
                 <View
@@ -2523,12 +2271,12 @@ function PetDetailModal({
                       { color: theme.mutedText },
                     ]}
                   >
-                    {copy.petsLevel}
+                    {copy.companionBond}
                   </Text>
                   <Text
                     style={[styles.detailQuickStatValue, { color: theme.text }]}
                   >
-                    {pet.level}
+                    {pet.bond}
                   </Text>
                 </View>
                 <View
@@ -2543,12 +2291,12 @@ function PetDetailModal({
                       { color: theme.mutedText },
                     ]}
                   >
-                    {copy.petsExperience}
+                    {copy.companionDaysTogether}
                   </Text>
                   <Text
                     style={[styles.detailQuickStatValue, { color: theme.text }]}
                   >
-                    {pet.experience}
+                    {getCalendarDayDifference(pet.createdAt, Date.now()) + 1}
                   </Text>
                 </View>
                 <View
@@ -2592,22 +2340,13 @@ function PetDetailModal({
                   </Text>
                 </View>
               </View>
-              <View
-                style={[
-                  styles.detailXpTrack,
-                  { backgroundColor: theme.surfaceMuted },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.detailXpFill,
-                    {
-                      width: `${Math.round(petXpProgress * 100)}%`,
-                      backgroundColor: theme.accent,
-                    },
-                  ]}
-                />
-              </View>
+              <BondBar bond={pet.bond} settings={settings} />
+              {companionStyle && (
+                <Text style={[styles.detailText, { color: theme.text }]}>
+                  {copy.companionPerk}:{" "}
+                  {copy.companionStyles[companionStyle].perk}
+                </Text>
+              )}
             </View>
           </View>
 
@@ -2843,7 +2582,7 @@ function PetDetailModal({
                     },
                   ]}
                 >
-                  {pet.equipped ? copy.petsActive : copy.petsEquip}
+                  {pet.equipped ? copy.petsActive : copy.companionTakeAlong}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -2888,42 +2627,6 @@ function PetDetailModal({
                   {copy.petsBattleFight}
                 </Text>
               </TouchableOpacity>
-              {firstFuseCopy && (
-                <TouchableOpacity
-                  style={[
-                    styles.detailActionButton,
-                    { backgroundColor: theme.hero },
-                  ]}
-                  onPress={() => onFusePet(pet.id, firstFuseCopy.id)}
-                >
-                  <Text
-                    style={[
-                      styles.detailActionButtonText,
-                      { color: theme.heroText },
-                    ]}
-                  >
-                    {copy.petsFuseCopy}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              {sellablePet && (
-                <TouchableOpacity
-                  style={[
-                    styles.detailActionButton,
-                    { backgroundColor: theme.danger },
-                  ]}
-                  onPress={() => onSellPet(pet.id)}
-                >
-                  <Text
-                    style={[
-                      styles.detailActionButtonText,
-                      { color: theme.heroText },
-                    ]}
-                  >
-                    {copy.petsSell}
-                  </Text>
-                </TouchableOpacity>
-              )}
             </View>
             <Text style={[styles.detailText, { color: theme.mutedText }]}>
               {copy.petsBattleWildPet}: {battleEncounter.wildPetName}
@@ -3786,6 +3489,33 @@ const styles = StyleSheet.create({
   grid: {
     gap: 12,
   },
+  notMetCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderStyle: "dashed",
+  },
+  notMetBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notMetBadgeText: {
+    fontSize: 26,
+    fontWeight: "700",
+  },
+  notMetBody: {
+    flex: 1,
+  },
+  starterCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
+  },
   petCard: {
     backgroundColor: "#fff",
     borderRadius: 14,
@@ -3813,7 +3543,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#666",
     marginTop: 4,
-    textTransform: "capitalize",
   },
   equippedBadge: {
     backgroundColor: "#dff8f4",
