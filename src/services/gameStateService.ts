@@ -34,6 +34,12 @@ import { defaultSettings, defaultTimerAlertSettings } from "../utils/settings";
 import { createTaskTimer } from "../utils/taskTimer";
 
 const SAVE_KEY = "growra_save_data";
+const CORRUPT_SAVE_KEY_PREFIX = "growra_save_data_corrupt_";
+
+export type LoadResult =
+  | { status: "empty" }
+  | { status: "loaded"; saveData: SaveData }
+  | { status: "corrupt"; backupKey: string };
 const BACKUP_PREFIX = "growra-backup";
 
 type PersistedGameState = Omit<
@@ -367,18 +373,22 @@ function parseBackupCode(backupCode: string): SaveData {
 }
 
 export const gameStateService = {
-  async loadGame(): Promise<SaveData | null> {
-    try {
-      const data = await AsyncStorage.getItem(SAVE_KEY);
-      if (!data) {
-        return null;
-      }
+  async loadGame(): Promise<LoadResult> {
+    const data = await AsyncStorage.getItem(SAVE_KEY);
+    if (!data) {
+      return { status: "empty" };
+    }
 
+    try {
       const parsedData: PersistedSaveData = JSON.parse(data);
-      return migrateSaveData(parsedData);
+      return { status: "loaded", saveData: migrateSaveData(parsedData) };
     } catch (error) {
+      // Keep the unreadable save under its own key before anything can overwrite SAVE_KEY,
+      // so a later version (or a manual fix) can still recover the player's progress.
       console.error("Failed to load game:", error);
-      return null;
+      const backupKey = `${CORRUPT_SAVE_KEY_PREFIX}${Date.now()}`;
+      await AsyncStorage.setItem(backupKey, data);
+      return { status: "corrupt", backupKey };
     }
   },
 

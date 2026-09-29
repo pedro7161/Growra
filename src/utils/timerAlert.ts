@@ -1,5 +1,5 @@
 import { File, Paths } from "expo-file-system";
-import { Audio } from "expo-av";
+import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
 import { Vibration } from "react-native";
 import { TimerAlertSettings } from "../types";
 
@@ -33,8 +33,21 @@ export async function removeStoredTimerAlertSound(uri: string): Promise<void> {
 export async function pickTimerAlertSound(
   previousUri: string
 ): Promise<{ soundName: string; soundUri: string } | null> {
-  const pickedFileResult = await File.pickFileAsync(undefined, "audio/*");
-  const pickedFile = "name" in pickedFileResult ? pickedFileResult : pickedFileResult[0];
+  let pickedFileResult: Awaited<ReturnType<typeof File.pickFileAsync>>;
+  try {
+    pickedFileResult = await File.pickFileAsync(undefined, "audio/*");
+  } catch {
+    // The user closed the picker without choosing a file.
+    return null;
+  }
+
+  // The declared type allows an array, but the picker returns one file; re-wrap it by URI.
+  const pickedUri = Array.isArray(pickedFileResult) ? pickedFileResult[0]?.uri : pickedFileResult.uri;
+  if (!pickedUri) {
+    return null;
+  }
+  const pickedFile = new File(pickedUri);
+
   const targetFile = getManagedTimerAlertFile(pickedFile.name);
 
   pickedFile.copy(targetFile);
@@ -48,20 +61,20 @@ export async function pickTimerAlertSound(
 }
 
 async function playSound(uri: string): Promise<void> {
-  await Audio.setAudioModeAsync({
+  await setAudioModeAsync({
     playsInSilentMode: true,
     shouldPlayInBackground: false,
-    staysActiveInBackground: false,
   });
 
-  const sound = new Audio.Sound();
-  try {
-    await sound.loadAsync({ uri });
-    await sound.playAsync();
-  } catch (error) {
-    console.error("Failed to load or play sound:", error);
-    sound.unloadAsync();
-  }
+  const player = createAudioPlayer({ uri });
+  // Release the native player once the alert has played, or every alert leaks one.
+  const subscription = player.addListener("playbackStatusUpdate", (status) => {
+    if (status.didJustFinish) {
+      subscription.remove();
+      player.remove();
+    }
+  });
+  player.play();
 }
 
 export async function playTimerAlert(settings: TimerAlertSettings): Promise<void> {

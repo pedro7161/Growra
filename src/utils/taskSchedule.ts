@@ -2,7 +2,6 @@ import { GameState, Task, TaskFrequency, TaskStatus } from "../types";
 import { resetTaskTimer } from "./taskTimer";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const WEEK_IN_MS = 7 * DAY_IN_MS;
 
 export function getStartOfDay(timestamp: number): number {
   const date = new Date(timestamp);
@@ -10,16 +9,25 @@ export function getStartOfDay(timestamp: number): number {
   return date.getTime();
 }
 
+// Calendar arithmetic, not millisecond arithmetic: days are 23h or 25h long across a
+// daylight-saving change, so "+ 24h" would land on the wrong day.
+export function addDaysToStartOfDay(timestamp: number, days: number): number {
+  const date = new Date(getStartOfDay(timestamp));
+  date.setDate(date.getDate() + days);
+  return date.getTime();
+}
+
 export function getStartOfNextDay(timestamp: number): number {
-  return getStartOfDay(timestamp) + DAY_IN_MS;
+  return addDaysToStartOfDay(timestamp, 1);
 }
 
 export function getStartOfNextWeek(timestamp: number): number {
-  return getStartOfDay(timestamp) + WEEK_IN_MS;
+  return addDaysToStartOfDay(timestamp, 7);
 }
 
-export function addDaysToStartOfDay(timestamp: number, days: number): number {
-  return getStartOfDay(timestamp) + days * DAY_IN_MS;
+// Whole calendar days between two timestamps. Rounds because a DST day is 23h or 25h.
+export function getCalendarDayDifference(previousTimestamp: number, nextTimestamp: number): number {
+  return Math.round((getStartOfDay(nextTimestamp) - getStartOfDay(previousTimestamp)) / DAY_IN_MS);
 }
 
 export function getNextAvailableDate(task: Task, completedAt: number): number {

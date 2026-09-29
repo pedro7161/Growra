@@ -8,6 +8,24 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "September 29, 2026",
+      items: [
+        "Daily and weekly tasks now reset at the right time around daylight-saving changes.",
+        "Streaks now grow correctly on the day after a clock change.",
+        "Tapping a task twice no longer pays its reward twice.",
+        "A save that can't be loaded is kept as a backup instead of being replaced.",
+        "Timer alert sounds play reliably and no longer leak audio players.",
+      ],
+    },
+    {
+      dateLabel: "April 8, 2026",
+      items: [
+        "Expedition map with zones, side nodes and a simple auto-battle system.",
+        "Pet evolutions with new artwork for each stage.",
+        "Gear and battle consumables dropped from expeditions.",
+      ],
+    },
+    {
       dateLabel: "April 6, 2026",
       items: [
         "Custom and predefined tasks with category-based system task groups.",
@@ -24,6 +42,24 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "29 de setembro de 2026",
+      items: [
+        "As tarefas diárias e semanais voltam à hora certa nas mudanças de hora.",
+        "A sequência cresce corretamente no dia seguinte a uma mudança de hora.",
+        "Tocar duas vezes numa tarefa já não paga a recompensa a dobrar.",
+        "Um save que não carrega é guardado como cópia em vez de ser substituído.",
+        "Os sons de alerta do temporizador tocam de forma fiável.",
+      ],
+    },
+    {
+      dateLabel: "8 de abril de 2026",
+      items: [
+        "Mapa de expedições com zonas, nós secundários e um sistema simples de batalha automática.",
+        "Evoluções de pets com arte nova para cada fase.",
+        "Equipamento e consumíveis de batalha obtidos nas expedições.",
+      ],
+    },
     {
       dateLabel: "6 de abril de 2026",
       items: [
