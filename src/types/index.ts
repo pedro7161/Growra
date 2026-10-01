@@ -23,7 +23,7 @@ export enum TaskPriority {
 
 export type AppLanguage = "en" | "pt";
 
-export type AppThemeId = "mint" | "sunset" | "ocean";
+export type AppThemeId = "mint" | "sunset" | "ocean" | "dusk" | "blossom" | "forest";
 
 export type TimerAlertMode = "vibration" | "sound";
 
