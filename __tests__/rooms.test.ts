@@ -164,3 +164,19 @@ describe('editing', () => {
     expect(next.pets).toBe(state.pets);
   });
 });
+
+import { gameStateService } from '../src/services/gameStateService';
+import { createSaveData } from '../src/utils/initialState';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+describe('migration creates rooms for existing companions', () => {
+  it('gives a pre-rooms save one room per companion after load + sync', async () => {
+    await AsyncStorage.clear();
+    const legacy = createSaveData({ ...createInitialGameState(), pets: [createCompanion('sprout'), createCompanion('moss')] }) as any;
+    delete legacy.gameState.rooms;
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify(legacy));
+    const result = await gameStateService.loadGame();
+    if (result.status !== 'loaded') throw new Error('not loaded');
+    expect(syncRooms(result.saveData.gameState).rooms).toHaveLength(2);
+  });
+});

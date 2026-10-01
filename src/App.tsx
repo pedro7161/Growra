@@ -12,6 +12,7 @@ import { googleAdsClient } from "./services/googleAdsClient";
 import { REWARDED_AD_UNIT_ID } from "./constants/adConfig";
 import { getExploreLeft, grantExploreFind } from "./utils/explore";
 import { getActiveCompanion } from "./utils/companions";
+import { syncRooms } from "./utils/rooms";
 import { resolveTheme } from "./utils/plus";
 import { buildCompletionsCsv, buildTasksCsv } from "./utils/historyCsv";
 import { File, Paths } from "expo-file-system";
@@ -231,8 +232,8 @@ export default function App() {
     let resolvedGameState: GameState;
 
     if (loadResult.status === "loaded") {
-      const syncedGameState = applyTutorialReward(
-        syncRecurringTasks(loadResult.saveData.gameState),
+      const syncedGameState = syncRooms(
+        applyTutorialReward(syncRecurringTasks(loadResult.saveData.gameState)),
       );
       const resolvedTutorialState = shouldCompleteTutorial(syncedGameState)
         ? { ...syncedGameState, tutorialCompleted: true }
@@ -275,9 +276,7 @@ export default function App() {
   };
 
   const persistGameState = async (nextGameState: GameState) => {
-    const syncedGameState = applyTutorialReward(
-      syncRecurringTasks(nextGameState),
-    );
+    const syncedGameState = syncRooms(applyTutorialReward(syncRecurringTasks(nextGameState)));
     const resolvedTutorialState = shouldCompleteTutorial(syncedGameState)
       ? { ...syncedGameState, tutorialCompleted: true }
       : syncedGameState;
