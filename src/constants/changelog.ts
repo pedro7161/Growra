@@ -8,6 +8,12 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "Version 1.6.2 · October 1, 2026",
+      items: [
+        "Tempo, Glint, Umbra, Zephie and Cindra have their own art for all three stages. No companion borrows another's picture any more.",
+      ],
+    },
+    {
       dateLabel: "Version 1.6.1 · September 29, 2026",
       items: [
         "New app icon and splash screen starring Sprout.",
@@ -57,6 +63,12 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "Versão 1.6.2 · 1 de outubro de 2026",
+      items: [
+        "O Tempo, a Glint, o Umbra, a Zephie e a Cindra têm arte própria nas três fases. Nenhum companheiro usa a imagem de outro.",
+      ],
+    },
     {
       dateLabel: "Versão 1.6.1 · 29 de setembro de 2026",
       items: [
