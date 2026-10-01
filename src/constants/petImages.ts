@@ -126,6 +126,16 @@ type StageImages = Pick<PetImages<ImageSourcePropType>, "base" | "evo1" | "evo2"
 
 /** Sleepy-mood art (P4); companions without it fall back to their normal image. */
 const SLEEPY_PET_IMAGES: Partial<Record<string, StageImages>> = {
+  nova: {
+    base: require("../../assets/pets/nova/sleepy/base.png"),
+    evo1: require("../../assets/pets/nova/sleepy/evo1.png"),
+    evo2: require("../../assets/pets/nova/sleepy/evo2.png"),
+  },
+  glint: {
+    base: require("../../assets/pets/glint/sleepy/base.png"),
+    evo1: require("../../assets/pets/glint/sleepy/evo1.png"),
+    evo2: require("../../assets/pets/glint/sleepy/evo2.png"),
+  },
   ripple: {
     base: require("../../assets/pets/ripple/sleepy/base.png"),
     evo1: require("../../assets/pets/ripple/sleepy/evo1.png"),
