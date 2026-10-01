@@ -753,7 +753,10 @@ export default function App() {
           <RoomEditorScreen
             state={gameState}
             roomId={roomEditorId}
-            onChange={(next) => void persistGameState(next)}
+            onChange={(update) => {
+              const current = gameStateRef.current;
+              if (current) void persistGameState(update(current));
+            }}
             onClose={() => setRoomEditorId(null)}
             onOpenPlus={openPlus}
             onShare={handleShareRoom}

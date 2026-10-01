@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Image, ImageSourcePropType, StyleSheet, Text } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
@@ -26,10 +26,37 @@ export default function RoomItemView(props: RoomItemViewProps) {
   const dx = useSharedValue(0);
   const dy = useSharedValue(0);
   const pinch = useSharedValue(1);
+  const active = useSharedValue(false);
+
+  // Keep the drag/pinch offset until the committed position arrives as props, so the item doesn't
+  // snap back for a frame. The timer covers edits that change nothing (props never change).
+  useEffect(() => {
+    dx.value = 0;
+    dy.value = 0;
+    pinch.value = 1;
+  }, [x, y, scale, dx, dy, pinch]);
+
+  const settleLater = () => {
+    setTimeout(() => {
+      if (active.value) return;
+      dx.value = 0;
+      dy.value = 0;
+      pinch.value = 1;
+    }, 400);
+  };
+  const commitMove = (nextX: number, nextY: number) => {
+    props.onMoveEnd(nextX, nextY);
+    settleLater();
+  };
+  const commitResize = (nextScale: number) => {
+    props.onResizeEnd(nextScale);
+    settleLater();
+  };
 
   const pan = Gesture.Pan()
     .enabled(editable)
     .onStart(() => {
+      active.value = true;
       runOnJS(props.onSelect)();
     })
     .onUpdate((event) => {
@@ -37,11 +64,8 @@ export default function RoomItemView(props: RoomItemViewProps) {
       dy.value = event.translationY;
     })
     .onEnd(() => {
-      const nextX = x + dx.value / canvasWidth;
-      const nextY = y + dy.value / canvasHeight;
-      dx.value = 0;
-      dy.value = 0;
-      runOnJS(props.onMoveEnd)(nextX, nextY);
+      active.value = false;
+      runOnJS(commitMove)(x + dx.value / canvasWidth, y + dy.value / canvasHeight);
     });
 
   const pinchGesture = Gesture.Pinch()
@@ -49,10 +73,12 @@ export default function RoomItemView(props: RoomItemViewProps) {
     .onUpdate((event) => {
       pinch.value = event.scale;
     })
+    .onStart(() => {
+      active.value = true;
+    })
     .onEnd(() => {
-      const next = scale * pinch.value;
-      pinch.value = 1;
-      runOnJS(props.onResizeEnd)(next);
+      active.value = false;
+      runOnJS(commitResize)(scale * pinch.value);
     });
 
   const tap = Gesture.Tap()

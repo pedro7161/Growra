@@ -13,6 +13,7 @@ import {
   resizeRoomItem,
   sendItemBack,
   setRoomStyle,
+  replaceRoom,
   syncRooms,
 } from '../src/utils/rooms';
 import { isPlaced } from '../src/utils/journey';
@@ -62,7 +63,7 @@ describe('syncRooms', () => {
     state = { ...state, ownedRoomStyles: [...state.ownedRoomStyles, 'japanese-room'] };
     state = setRoomStyle(state, companionRoom.id, 'japanese-room');
     const lost = syncRooms({ ...state, plus: { owned: false, lastCheckedAt: 2 } });
-    expect(lost.rooms.find((room) => room.id === companionRoom.id)!.items).toHaveLength(0);
+    expect(lost.rooms.find((room) => room.id === companionRoom.id)!.items.filter((item) => item.kind === 'decoration')).toHaveLength(0);
     expect(lost.rooms.find((room) => room.id === companionRoom.id)!.styleId).toBe('wooden-bedroom');
     expect(lost.rooms.find((room) => room.id === plusRoom.id)!.items).toHaveLength(0);
     expect(lost.decorations.every((decoration) => !isPlaced(decoration))).toBe(true);
@@ -113,8 +114,9 @@ describe('placing items', () => {
   it('removing returns the decoration to the bag', () => {
     let state = withDecoration(withPets('sprout'), 'shell');
     state = addDecorationToRoom(state, state.rooms[0].id, state.decorations[0].id);
-    state = removeRoomItem(state, state.rooms[0].id, state.rooms[0].items[0].id);
-    expect(state.rooms[0].items).toHaveLength(0);
+    const decorationItem = state.rooms[0].items.find((item) => item.kind === 'decoration')!;
+    state = removeRoomItem(state, state.rooms[0].id, decorationItem.id);
+    expect(state.rooms[0].items.filter((item) => item.kind === 'decoration')).toHaveLength(0);
     expect(isPlaced(state.decorations[0])).toBe(false);
   });
 });
@@ -123,7 +125,8 @@ describe('editing', () => {
   function oneItem() {
     let state = withDecoration(withPets('sprout'), 'shell');
     state = addDecorationToRoom(state, state.rooms[0].id, state.decorations[0].id);
-    return { state, roomId: state.rooms[0].id, itemId: state.rooms[0].items[0].id };
+    const itemId = state.rooms[0].items.find((item) => item.kind === 'decoration')!.id;
+    return { state, roomId: state.rooms[0].id, itemId };
   }
 
   it('keeps at least a quarter of the item inside the canvas', () => {
@@ -133,10 +136,10 @@ describe('editing', () => {
 
   it('clamps the move and the scale', () => {
     const { state, roomId, itemId } = oneItem();
-    const moved = moveRoomItem(state, roomId, itemId, 5, -5);
-    expect(moved.rooms[0].items[0].x).toBeCloseTo(1.05);
-    expect(resizeRoomItem(state, roomId, itemId, 9).rooms[0].items[0].scale).toBe(1.5);
-    expect(resizeRoomItem(state, roomId, itemId, 0.1).rooms[0].items[0].scale).toBe(0.5);
+    const item = (s: typeof state) => s.rooms[0].items.find((candidate) => candidate.id === itemId)!;
+    expect(item(moveRoomItem(state, roomId, itemId, 5, -5)).x).toBeCloseTo(1.05);
+    expect(item(resizeRoomItem(state, roomId, itemId, 9)).scale).toBe(1.5);
+    expect(item(resizeRoomItem(state, roomId, itemId, 0.1)).scale).toBe(0.5);
   });
 
   it('flips and reorders layers', () => {
@@ -144,10 +147,10 @@ describe('editing', () => {
     const roomId = state.rooms[0].id;
     state = addDecorationToRoom(state, roomId, state.decorations[0].id);
     state = addDecorationToRoom(state, roomId, state.decorations[1].id);
-    const [back, front] = state.rooms[0].items;
-    expect(flipRoomItem(state, roomId, back.id).rooms[0].items[0].flip).toBe(true);
-    expect(bringItemForward(state, roomId, back.id).rooms[0].items.map((i) => i.id)).toEqual([front.id, back.id]);
-    expect(sendItemBack(state, roomId, front.id).rooms[0].items.map((i) => i.id)).toEqual([front.id, back.id]);
+    const [owner, back, front] = state.rooms[0].items;
+    expect(flipRoomItem(state, roomId, back.id).rooms[0].items[1].flip).toBe(true);
+    expect(bringItemForward(state, roomId, back.id).rooms[0].items.map((i) => i.id)).toEqual([owner.id, front.id, back.id]);
+    expect(sendItemBack(state, roomId, front.id).rooms[0].items.map((i) => i.id)).toEqual([owner.id, front.id, back.id]);
     expect(bringItemForward(state, roomId, front.id)).toBe(state); // already in front
   });
 
@@ -178,5 +181,43 @@ describe('migration creates rooms for existing companions', () => {
     const result = await gameStateService.loadGame();
     if (result.status !== 'loaded') throw new Error('not loaded');
     expect(syncRooms(result.saveData.gameState).rooms).toHaveLength(2);
+  });
+});
+
+describe('review fixes', () => {
+  it('places the owner companion in a new companion room', () => {
+    const state = withPets('sprout');
+    expect(state.rooms[0].items).toHaveLength(1);
+    expect(state.rooms[0].items[0]).toMatchObject({ kind: 'companion', ref: state.pets[0].id });
+  });
+
+  it('hides a room whose owner left the save and returns its decorations to the bag', () => {
+    let state = withDecoration(withPets('sprout', 'ripple'), 'shell');
+    const ripple = state.pets[1];
+    const rippleRoom = state.rooms.find((room) => room.ownerPetId === ripple.id)!;
+    state = addDecorationToRoom(state, rippleRoom.id, state.decorations[0].id);
+    const orphaned = syncRooms({ ...state, pets: [state.pets[0]] });
+    expect(getVisibleRooms(orphaned).map((room) => room.id)).not.toContain(rippleRoom.id);
+    expect(isPlaced(orphaned.decorations[0])).toBe(false);
+  });
+
+  it('undo after add puts the decoration back in the bag', () => {
+    let state = withDecoration(withPets('sprout'), 'shell');
+    const before = state.rooms[0];
+    state = addDecorationToRoom(state, before.id, state.decorations[0].id);
+    const undone = replaceRoom(state, before);
+    expect(undone.rooms[0]).toEqual(before);
+    expect(isPlaced(undone.decorations[0])).toBe(false);
+  });
+
+  it('undo after remove takes the decoration back out of the bag', () => {
+    let state = withDecoration(withPets('sprout'), 'shell');
+    state = addDecorationToRoom(state, state.rooms[0].id, state.decorations[0].id);
+    const before = state.rooms[0];
+    const item = before.items.find((candidate) => candidate.kind === 'decoration')!;
+    state = removeRoomItem(state, before.id, item.id);
+    const undone = replaceRoom(state, before);
+    expect(undone.decorations[0].roomId).toBe(before.id);
+    expect(getRoomBag(undone)).toHaveLength(0);
   });
 });

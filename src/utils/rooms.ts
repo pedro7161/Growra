@@ -15,7 +15,14 @@ export const CANVAS_ASPECT = 1.25;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 function newRoom(ownerPetId: string | null): Room {
-  return { id: generateId(), ownerPetId, name: "", styleId: STARTER_ROOM_STYLE, items: [] };
+  // Spec §1: a companion room shows its owner, so the owner starts in the middle of the floor.
+  const items: RoomItem[] = ownerPetId ? [{ id: generateId(), kind: "companion", ref: ownerPetId, x: 0.5, y: 0.65, scale: 1, flip: false }] : [];
+  return { id: generateId(), ownerPetId, name: "", styleId: STARTER_ROOM_STYLE, items };
+}
+
+/** A companion room whose owner is no longer in the save is treated like a hidden room. */
+function isOrphanRoom(room: Room, petIds: Set<string>): boolean {
+  return room.ownerPetId !== null && !petIds.has(room.ownerPetId);
 }
 
 function isPlusDecoration(decoration: Decoration | undefined): boolean {
@@ -50,7 +57,7 @@ export function syncRooms(state: GameState): GameState {
   const kept = new Set<string>(); // decoration ids that stay in a room
 
   rooms = rooms.map((room) => {
-    const hiddenPlusRoom = room.ownerPetId === null && !plus;
+    const hiddenPlusRoom = (room.ownerPetId === null && !plus) || isOrphanRoom(room, petIds);
     const items = room.items.filter((item) => {
       if (item.kind === "companion") return petIds.has(item.ref);
       const decoration = decorationsById.get(item.ref);
@@ -79,7 +86,8 @@ export function syncRooms(state: GameState): GameState {
 }
 
 export function getVisibleRooms(state: GameState): Room[] {
-  return state.rooms.filter((room) => room.ownerPetId !== null || state.plus.owned);
+  const petIds = new Set(state.pets.map((pet) => pet.id));
+  return state.rooms.filter((room) => (room.ownerPetId !== null || state.plus.owned) && !isOrphanRoom(room, petIds));
 }
 
 /** Decorations free to put in a room: in the bag, and Plus-set items only with Plus. */

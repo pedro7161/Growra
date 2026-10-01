@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import RoomCanvas from "../components/room/RoomCanvas";
 import RoomTray from "../components/room/RoomTray";
@@ -24,6 +25,7 @@ import {
   moveRoomItem,
   removeRoomItem,
   renameRoom,
+  getVisibleRooms,
   replaceRoom,
   resizeRoomItem,
   sendItemBack,
@@ -33,7 +35,8 @@ import {
 interface RoomEditorScreenProps {
   state: GameState;
   roomId: string;
-  onChange: (next: GameState) => void;
+  /** Edits are updaters applied to the latest game state, so two quick edits can't overwrite each other. */
+  onChange: (update: (current: GameState) => GameState) => void;
   onClose: () => void;
   onOpenPlus: () => void;
   onShare: (roomCanvas: View, room: Room) => Promise<void>;
@@ -50,10 +53,10 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
   const [renaming, setRenaming] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
 
-  const room = state.rooms.find((candidate) => candidate.id === roomId);
+  const room = getVisibleRooms(state).find((candidate) => candidate.id === roomId);
 
   useEffect(() => {
-    if (!room) onClose();
+    if (!room) onClose(); // gone, or hidden (e.g. a Plus room after Plus was lost)
   }, [room, onClose]);
 
   if (!room) return null;
@@ -64,18 +67,24 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
     room.name ||
     (owner ? copy.roomDefaultName.replace("{name}", owner.name) : copy.plusRoomName.replace("{number}", String(plusIndex)));
 
-  // Every undoable edit goes through here: remember the room as it was before this edit.
-  const commit = (next: GameState) => {
-    if (next === state) return;
-    setUndo(room);
-    onChange(next);
+  // Every undoable edit goes through here: the undo snapshot is the room as it was in the same
+  // fresh state the edit is applied to.
+  const commit = (edit: (current: GameState) => GameState, afterApply?: (next: GameState) => void) => {
+    onChange((current) => {
+      const next = edit(current);
+      if (next === current) return current;
+      const before = current.rooms.find((candidate) => candidate.id === roomId);
+      if (before) setUndo(before);
+      afterApply?.(next);
+      return next;
+    });
   };
 
-  const addAndSelect = (next: GameState) => {
-    if (next === state) return;
-    commit(next);
-    const placed = next.rooms.find((candidate) => candidate.id === roomId);
-    setSelectedItemId(placed?.items[placed.items.length - 1]?.id ?? null);
+  const addAndSelect = (edit: (current: GameState) => GameState) => {
+    commit(edit, (next) => {
+      const placed = next.rooms.find((candidate) => candidate.id === roomId);
+      setSelectedItemId(placed?.items[placed.items.length - 1]?.id ?? null);
+    });
   };
 
   const handleShare = async () => {
@@ -92,15 +101,16 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
 
   const showFooter = sharing && (state.roomShareFooter || !state.plus.owned);
   const canvasWidth = Math.min(windowWidth - 32, 420);
-  const toolbar: { label: string; onPress: () => void }[] = selectedItemId
+  const selectedId = selectedItemId;
+  const toolbar: { label: string; onPress: () => void }[] = selectedId
     ? [
-        { label: copy.roomFlip, onPress: () => commit(flipRoomItem(state, roomId, selectedItemId)) },
-        { label: copy.roomForward, onPress: () => commit(bringItemForward(state, roomId, selectedItemId)) },
-        { label: copy.roomBack, onPress: () => commit(sendItemBack(state, roomId, selectedItemId)) },
+        { label: copy.roomFlip, onPress: () => commit((s) => flipRoomItem(s, roomId, selectedId)) },
+        { label: copy.roomForward, onPress: () => commit((s) => bringItemForward(s, roomId, selectedId)) },
+        { label: copy.roomBack, onPress: () => commit((s) => sendItemBack(s, roomId, selectedId)) },
         {
           label: copy.roomRemove,
           onPress: () => {
-            commit(removeRoomItem(state, roomId, selectedItemId));
+            commit((s) => removeRoomItem(s, roomId, selectedId));
             setSelectedItemId(null);
           },
         },
@@ -109,6 +119,8 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
 
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
+      {/* An RN Modal is its own window on Android: gestures inside it need their own root. */}
+      <GestureHandlerRootView style={styles.container}>
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={[styles.topBar, { borderBottomColor: theme.border }]}>
           <TouchableOpacity style={styles.nameButton} onPress={() => setRenaming(room.name || displayName)}>
@@ -117,7 +129,8 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
           <TouchableOpacity
             onPress={() => {
               if (!undo) return;
-              onChange(replaceRoom(state, undo));
+              const snapshot = undo;
+              onChange((current) => replaceRoom(current, snapshot));
               setUndo(null);
               setSelectedItemId(null);
             }}
@@ -142,8 +155,8 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
             selectedItemId={sharing ? null : selectedItemId}
             editable={!sharing}
             onSelect={setSelectedItemId}
-            onMoveEnd={(itemId, x, y) => commit(moveRoomItem(state, roomId, itemId, x, y))}
-            onResizeEnd={(itemId, scale) => commit(resizeRoomItem(state, roomId, itemId, scale))}
+            onMoveEnd={(itemId, x, y) => commit((s) => moveRoomItem(s, roomId, itemId, x, y))}
+            onResizeEnd={(itemId, scale) => commit((s) => resizeRoomItem(s, roomId, itemId, scale))}
             footer={
               showFooter ? (
                 <View style={styles.footer}>
@@ -165,7 +178,7 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
               <Text style={[styles.toolText, { color: theme.mutedText }]}>{copy.roomShareFooterToggle}</Text>
               <Switch
                 value={state.roomShareFooter}
-                onValueChange={(value) => onChange({ ...state, roomShareFooter: value })}
+                onValueChange={(value) => onChange((s) => ({ ...s, roomShareFooter: value }))}
               />
             </View>
           )}
@@ -174,11 +187,11 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
         <RoomTray
           state={state}
           room={room}
-          onAddDecoration={(decorationId) => addAndSelect(addDecorationToRoom(state, roomId, decorationId))}
-          onAddCompanion={(petId) => addAndSelect(addCompanionToRoom(state, roomId, petId))}
-          onSetStyle={(styleId) => commit(setRoomStyle(state, roomId, styleId))}
-          onBuyStyle={(styleId) => onChange(buyRoomStyle(state, styleId, Date.now()))}
-          onBuyFurniture={(typeId) => onChange(buyFurniture(state, typeId, Date.now()))}
+          onAddDecoration={(decorationId) => addAndSelect((s) => addDecorationToRoom(s, roomId, decorationId))}
+          onAddCompanion={(petId) => addAndSelect((s) => addCompanionToRoom(s, roomId, petId))}
+          onSetStyle={(styleId) => commit((s) => setRoomStyle(s, roomId, styleId))}
+          onBuyStyle={(styleId) => onChange((s) => buyRoomStyle(s, styleId, Date.now()))}
+          onBuyFurniture={(typeId) => onChange((s) => buyFurniture(s, typeId, Date.now()))}
           onOpenPlus={onOpenPlus}
         />
 
@@ -195,7 +208,8 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
               />
               <TouchableOpacity
                 onPress={() => {
-                  commit(renameRoom(state, roomId, renaming ?? ""));
+                  const name = renaming ?? "";
+                  commit((s) => renameRoom(s, roomId, name));
                   setRenaming(null);
                 }}
               >
@@ -205,6 +219,7 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
           </View>
         </Modal>
       </SafeAreaView>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
