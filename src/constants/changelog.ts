@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "Version 1.7.0 · October 1, 2026",
+      items: [
+        "Growra Plus: a one-time unlock with 3 extra themes, every past week on your Journey, CSV export, and no ads.",
+        "Send your companion exploring for a decoration, twice a day.",
+        "New explore-only decorations: comet shard, moonstone, rainbow ribbon and firefly jar.",
+      ],
+    },
+    {
       dateLabel: "Version 1.6.3 · October 1, 2026",
       items: [
         "When you've been away for a couple of days, your companion is shown fast asleep on the dashboard. Any task wakes it up.",
@@ -70,6 +78,14 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "Versão 1.7.0 · 1 de outubro de 2026",
+      items: [
+        "Growra Plus: desbloqueio único com 3 temas extra, todas as semanas passadas na Jornada, exportação CSV e sem anúncios.",
+        "Envia o teu companheiro a explorar por uma decoração, duas vezes por dia.",
+        "Novas decorações só de exploração: fragmento de cometa, pedra da lua, fita arco-íris e frasco de pirilampos.",
+      ],
+    },
     {
       dateLabel: "Versão 1.6.3 · 1 de outubro de 2026",
       items: [
