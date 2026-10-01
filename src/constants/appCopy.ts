@@ -203,6 +203,7 @@ interface AppCopy {
   tileFeatures: Record<TileFeature, string>;
   regionHints: string[];
   decorationNames: Record<string, string>;
+  settingsAdConsent: string;
   settingsPrivacy: string;
   exploreButton: string;
   exploreAdHint: string;
@@ -494,6 +495,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     exploreNoAd: "No ad available right now. Try again later.",
     journeyLookBackLocked: "See this week with Plus",
     settingsPrivacy: "Privacy policy",
+    settingsAdConsent: "Ad privacy choices",
     decorationNames: {
       "flower-pot": "flower pot",
       "mushroom-ring": "mushroom ring",
@@ -776,6 +778,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     exploreNoAd: "Nenhum anúncio disponível agora. Tenta mais tarde.",
     journeyLookBackLocked: "Vê esta semana com o Plus",
     settingsPrivacy: "Política de privacidade",
+    settingsAdConsent: "Escolhas de privacidade dos anúncios",
     decorationNames: {
       "flower-pot": "vaso de flores",
       "mushroom-ring": "círculo de cogumelos",

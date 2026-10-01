@@ -34,6 +34,8 @@ interface SettingsModalProps {
   isPlus: boolean;
   onOpenPlus: () => void;
   onExportCsv: () => Promise<void>;
+  adConsentAvailable: boolean;
+  onAdConsent: () => void;
 }
 
 export default function SettingsModal({
@@ -50,6 +52,8 @@ export default function SettingsModal({
   isPlus,
   onOpenPlus,
   onExportCsv,
+  adConsentAvailable,
+  onAdConsent,
 }: SettingsModalProps) {
   const copy = getAppCopy(gameState.settings.language);
   const theme = getAppTheme(gameState.settings.theme);
@@ -154,6 +158,11 @@ export default function SettingsModal({
             <TouchableOpacity onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}>
               <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsPrivacy}</Text>
             </TouchableOpacity>
+            {adConsentAvailable && (
+              <TouchableOpacity onPress={onAdConsent}>
+                <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsAdConsent}</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={[styles.section, { backgroundColor: theme.surface }]}>

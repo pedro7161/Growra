@@ -1,4 +1,10 @@
-import mobileAds, { AdEventType, AdsConsent, RewardedAd, RewardedAdEventType } from "react-native-google-mobile-ads";
+import mobileAds, {
+  AdEventType,
+  AdsConsent,
+  AdsConsentPrivacyOptionsRequirementStatus,
+  RewardedAd,
+  RewardedAdEventType,
+} from "react-native-google-mobile-ads";
 import { AdResult, AdsClient } from "./adsService";
 
 const AD_TIMEOUT_MS = 15000;
@@ -15,6 +21,16 @@ export const googleAdsClient: AdsClient = {
       initialized = true;
     }
     return true;
+  },
+
+  async privacyOptionsRequired() {
+    await AdsConsent.requestInfoUpdate();
+    const info = await AdsConsent.getConsentInfo();
+    return info.privacyOptionsRequirementStatus === AdsConsentPrivacyOptionsRequirementStatus.REQUIRED;
+  },
+
+  async showPrivacyOptions() {
+    await AdsConsent.showPrivacyOptionsForm();
   },
 
   showRewarded(adUnitId) {

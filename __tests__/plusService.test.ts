@@ -89,3 +89,15 @@ describe('plusService', () => {
     expect(await service.restore()).toBe('not-owned');
   });
 });
+
+describe('plusService buy watchdog', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('settles as error when the store never answers a purchase', async () => {
+    jest.useFakeTimers();
+    const client = fakeClient({ purchase: () => new Promise(() => undefined) });
+    const pending = createPlusService(client, { buyTimeoutMs: 1000 }).buy();
+    await jest.advanceTimersByTimeAsync(1001);
+    expect(await pending).toBe('error');
+  });
+});

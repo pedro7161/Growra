@@ -47,8 +47,14 @@ export const expoIapClient: BillingClient = {
       const failed = purchaseErrorListener((error) => {
         settle(error.code === ErrorCode.UserCancelled ? { kind: "cancelled" } : { kind: "error" });
       });
-      requestPurchase({ request: { google: { skus: [productId] } }, type: "in-app" }).catch(() =>
-        settle({ kind: "error" }),
+      requestPurchase({ request: { google: { skus: [productId] } }, type: "in-app" }).then(
+        (result) => {
+          // Android also resolves with the purchases; use them in case no listener event arrives.
+          const purchases = (Array.isArray(result) ? result : result ? [result] : []) as Purchase[];
+          const match = purchases.find((purchase) => purchase.productId === productId);
+          if (match) settle({ kind: "purchase", purchase: toStorePurchase(match) });
+        },
+        () => settle({ kind: "error" }),
       );
     });
   },

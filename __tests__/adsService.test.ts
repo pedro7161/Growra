@@ -37,3 +37,44 @@ describe('adsService', () => {
     expect(await createAdsService(client, 'unit').watchForReward()).toBe('unavailable');
   });
 });
+
+describe('adsService watchdog and consent options', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('settles as unavailable when the client never answers', async () => {
+    jest.useFakeTimers();
+    const client: AdsClient = {
+      ensureConsent: async () => true,
+      showRewarded: () => new Promise(() => undefined),
+    };
+    const pending = createAdsService(client, 'unit', { timeoutMs: 1000 }).watchForReward();
+    await Promise.resolve();
+    jest.advanceTimersByTime(1001);
+    expect(await pending).toBe('unavailable');
+  });
+
+  it('settles as unavailable when consent never answers', async () => {
+    jest.useFakeTimers();
+    const client: AdsClient = {
+      ensureConsent: () => new Promise(() => undefined),
+      showRewarded: async () => 'earned',
+    };
+    const pending = createAdsService(client, 'unit', { timeoutMs: 1000 }).watchForReward();
+    jest.advanceTimersByTime(1001);
+    expect(await pending).toBe('unavailable');
+  });
+
+  it('offers the privacy options form only when the client says it is required', async () => {
+    let shown = 0;
+    const client: AdsClient = {
+      ensureConsent: async () => true,
+      showRewarded: async () => 'earned',
+      privacyOptionsRequired: async () => true,
+      showPrivacyOptions: async () => { shown += 1; },
+    };
+    const service = createAdsService(client, 'unit');
+    expect(await service.canChangeConsent()).toBe(true);
+    await service.changeConsent();
+    expect(shown).toBe(1);
+  });
+});

@@ -4,7 +4,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import SettingsModal from "./components/SettingsModal";
 import GrowraPlusModal from "./components/GrowraPlusModal";
-import { applyPlusOwnership, usePlusController } from "./hooks/usePlusController";
+import { applyPlusOwnership, keepPlusOnImport, usePlusController } from "./hooks/usePlusController";
 import { createPlusService } from "./services/plusService";
 import { expoIapClient } from "./services/expoIapClient";
 import { createAdsService } from "./services/adsService";
@@ -180,6 +180,16 @@ export default function App() {
     : "done";
   const [plusVisible, setPlusVisible] = useState(false);
   const [exploreBusy, setExploreBusy] = useState(false);
+  const [adConsentAvailable, setAdConsentAvailable] = useState(false);
+
+  useEffect(() => {
+    if (settingsVisible) void adsService.canChangeConsent().then(setAdConsentAvailable);
+  }, [settingsVisible]);
+
+  const openPlus = () => {
+    setPlusVisible(true);
+    void plus.refreshPrice();
+  };
   const plus = usePlusController(plusService, (owned) => {
     const current = gameStateRef.current;
     if (!current || current.plus.owned === owned) return;
@@ -580,7 +590,10 @@ export default function App() {
 
   const handleImportData = async (backupCode: string) => {
     const importedSaveData = gameStateService.importSaveCode(backupCode);
-    await persistGameState(importedSaveData.gameState);
+    const current = gameStateRef.current;
+    // Plus ownership belongs to this device's Play account, never to a backup code.
+    await persistGameState(current ? keepPlusOnImport(importedSaveData.gameState, current) : importedSaveData.gameState);
+    void plus.restore();
   };
 
   if (loading || !gameState) {
@@ -656,7 +669,7 @@ export default function App() {
             isPlus={isPlus}
             exploreBusy={exploreBusy}
             onExplore={handleExplore}
-            onOpenPlus={() => setPlusVisible(true)}
+            onOpenPlus={openPlus}
           />
         );
       case "companions":
@@ -714,8 +727,10 @@ export default function App() {
           onExportData={handleExportData}
           onImportData={handleImportData}
           isPlus={isPlus}
-          onOpenPlus={() => setPlusVisible(true)}
+          onOpenPlus={openPlus}
           onExportCsv={handleExportCsv}
+          adConsentAvailable={adConsentAvailable}
+          onAdConsent={() => void adsService.changeConsent()}
         />
         <GrowraPlusModal
           visible={plusVisible}

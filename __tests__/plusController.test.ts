@@ -21,3 +21,41 @@ describe('applyPlusOwnership', () => {
     expect(applyPlusOwnership(withOcean, false, 2).settings.theme).toBe('ocean');
   });
 });
+
+import { keepPlusOnImport, nextPrice } from '../src/hooks/usePlusController';
+
+describe('keepPlusOnImport', () => {
+  it("keeps a paying user's Plus when importing an older backup", () => {
+    const current = { ...createInitialGameState(), plus: { owned: true, lastCheckedAt: 9 } };
+    const imported = createInitialGameState();
+    expect(keepPlusOnImport(imported, current).plus).toEqual({ owned: true, lastCheckedAt: 9 });
+  });
+
+  it("doesn't grant Plus from a backup made on a Plus device", () => {
+    const current = createInitialGameState();
+    const imported = {
+      ...createInitialGameState(),
+      plus: { owned: true, lastCheckedAt: 3 },
+      settings: { ...createInitialGameState().settings, theme: 'forest' as const },
+    };
+    const next = keepPlusOnImport(imported, current);
+    expect(next.plus.owned).toBe(false);
+    expect(next.settings.theme).toBe('mint');
+  });
+});
+
+describe('nextPrice', () => {
+  it('fetches the price again when it is still missing', async () => {
+    let calls = 0;
+    const service = { getPrice: async () => { calls += 1; return '€0.99'; } };
+    expect(await nextPrice(null, service)).toBe('€0.99');
+    expect(calls).toBe(1);
+  });
+
+  it('keeps a known price without calling the store', async () => {
+    let calls = 0;
+    const service = { getPrice: async () => { calls += 1; return '€1.99'; } };
+    expect(await nextPrice('€0.99', service)).toBe('€0.99');
+    expect(calls).toBe(0);
+  });
+});

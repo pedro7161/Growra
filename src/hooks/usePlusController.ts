@@ -14,6 +14,19 @@ export function applyPlusOwnership(state: GameState, owned: boolean, now: number
   };
 }
 
+/** Importing a backup must never change Plus: ownership always comes from this device's Play account. */
+export function keepPlusOnImport(imported: GameState, current: GameState): GameState {
+  return applyPlusOwnership(imported, current.plus.owned, current.plus.lastCheckedAt);
+}
+
+/** Re-asks the store only while the price is still unknown (e.g. the app started offline). */
+export async function nextPrice(
+  current: string | null,
+  service: Pick<PlusService, "getPrice">,
+): Promise<string | null> {
+  return current ?? (await service.getPrice());
+}
+
 /**
  * Loads the price, re-checks ownership on start and foreground, and runs buy/restore.
  * "unavailable" never changes ownership, so Plus keeps working offline.
@@ -21,6 +34,7 @@ export function applyPlusOwnership(state: GameState, owned: boolean, now: number
 export function usePlusController(service: PlusService, onOwnedChange: (owned: boolean) => void) {
   const [price, setPrice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const priceRef = useRef<string | null>(null);
   const onOwnedChangeRef = useRef(onOwnedChange);
   onOwnedChangeRef.current = onOwnedChange;
 
@@ -30,21 +44,28 @@ export function usePlusController(service: PlusService, onOwnedChange: (owned: b
     return result;
   }, [service]);
 
+  const refreshPrice = useCallback(async () => {
+    const loadedPrice = await nextPrice(priceRef.current, service);
+    priceRef.current = loadedPrice;
+    setPrice(loadedPrice);
+  }, [service]);
+
   useEffect(() => {
     let alive = true;
     (async () => {
-      const loadedPrice = await service.getPrice();
-      if (alive) setPrice(loadedPrice);
+      if (alive) await refreshPrice();
       if (alive) await restore();
     })();
     const subscription = AppState.addEventListener("change", (next) => {
-      if (next === "active") void restore();
+      if (next !== "active") return;
+      void refreshPrice();
+      void restore();
     });
     return () => {
       alive = false;
       subscription.remove();
     };
-  }, [service, restore]);
+  }, [service, restore, refreshPrice]);
 
   const buy = useCallback(async (): Promise<BuyResult> => {
     setBusy(true);
@@ -57,5 +78,5 @@ export function usePlusController(service: PlusService, onOwnedChange: (owned: b
     }
   }, [service]);
 
-  return { price, busy, buy, restore };
+  return { price, busy, buy, restore, refreshPrice };
 }

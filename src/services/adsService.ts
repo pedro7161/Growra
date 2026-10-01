@@ -5,16 +5,52 @@ export interface AdsClient {
   /** Shows the UMP consent form if required; true when ads may be requested. */
   ensureConsent(): Promise<boolean>;
   showRewarded(adUnitId: string): Promise<AdResult>;
+  /** True when the user must be able to review or withdraw consent (EEA/UK). */
+  privacyOptionsRequired?(): Promise<boolean>;
+  showPrivacyOptions?(): Promise<void>;
 }
 
-export function createAdsService(client: AdsClient, adUnitId: string) {
+/** Consent + loading + watching; after this the explore button frees up whatever the SDK does. */
+const DEFAULT_TIMEOUT_MS = 3 * 60 * 1000;
+
+export function createAdsService(client: AdsClient, adUnitId: string, options: { timeoutMs?: number } = {}) {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+
+  async function run(): Promise<AdResult> {
+    if (!(await client.ensureConsent())) return "unavailable";
+    return client.showRewarded(adUnitId);
+  }
+
   return {
-    async watchForReward(): Promise<AdResult> {
+    watchForReward(): Promise<AdResult> {
+      return new Promise<AdResult>((resolve) => {
+        const timer = setTimeout(() => resolve("unavailable"), timeoutMs);
+        run().then(
+          (result) => {
+            clearTimeout(timer);
+            resolve(result);
+          },
+          () => {
+            clearTimeout(timer);
+            resolve("unavailable");
+          },
+        );
+      });
+    },
+
+    async canChangeConsent(): Promise<boolean> {
       try {
-        if (!(await client.ensureConsent())) return "unavailable";
-        return await client.showRewarded(adUnitId);
+        return (await client.privacyOptionsRequired?.()) ?? false;
       } catch {
-        return "unavailable";
+        return false;
+      }
+    },
+
+    async changeConsent(): Promise<void> {
+      try {
+        await client.showPrivacyOptions?.();
+      } catch {
+        // The form failed to load; nothing changes.
       }
     },
   };

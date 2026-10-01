@@ -33,7 +33,30 @@ export interface PlusService {
   restore(): Promise<RestoreResult>;
 }
 
-export function createPlusService(client: BillingClient): PlusService {
+/** A purchase sheet can stay open while the user types card details; after this the button frees up. */
+const DEFAULT_BUY_TIMEOUT_MS = 10 * 60 * 1000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise<T>((resolve) => {
+    const timer = setTimeout(() => resolve(fallback), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(fallback);
+      },
+    );
+  });
+}
+
+export function createPlusService(
+  client: BillingClient,
+  options: { buyTimeoutMs?: number } = {},
+): PlusService {
+  const buyTimeoutMs = options.buyTimeoutMs ?? DEFAULT_BUY_TIMEOUT_MS;
   let connecting: Promise<boolean> | null = null;
 
   async function connect(): Promise<boolean> {
@@ -69,7 +92,7 @@ export function createPlusService(client: BillingClient): PlusService {
     async buy() {
       if (!(await connect())) return "unavailable";
       try {
-        const outcome = await client.purchase(PLUS_PRODUCT_ID);
+        const outcome = await withTimeout<PurchaseOutcome>(client.purchase(PLUS_PRODUCT_ID), buyTimeoutMs, { kind: "error" });
         if (outcome.kind === "cancelled") return "cancelled";
         if (outcome.kind === "error") return "error";
         if (outcome.purchase.state === "pending") return "pending";
