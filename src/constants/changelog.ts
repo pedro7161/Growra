@@ -8,6 +8,12 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "Version 1.6.3 · October 1, 2026",
+      items: [
+        "When you've been away for a couple of days, your companion is shown fast asleep on the dashboard. Any task wakes it up.",
+      ],
+    },
+    {
       dateLabel: "Version 1.6.2 · October 1, 2026",
       items: [
         "Tempo, Glint, Umbra, Zephie and Cindra have their own art for all three stages. No companion borrows another's picture any more.",
@@ -64,6 +70,12 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "Versão 1.6.3 · 1 de outubro de 2026",
+      items: [
+        "Quando estás fora uns dias, o teu companheiro aparece a dormir no painel. Qualquer tarefa o acorda.",
+      ],
+    },
     {
       dateLabel: "Versão 1.6.2 · 1 de outubro de 2026",
       items: [
