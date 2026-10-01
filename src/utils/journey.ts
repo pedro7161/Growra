@@ -296,7 +296,7 @@ export function buyDecoration(gameState: GameState, typeId: string): GameState {
 }
 
 export function isPlaced(decoration: Decoration): boolean {
-  return decoration.camp >= 0;
+  return decoration.camp >= 0 || decoration.roomId !== undefined;
 }
 
 /** Puts a decoration on a reached camp's spot; whatever was there goes back to the bag. */
