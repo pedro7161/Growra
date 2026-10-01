@@ -203,6 +203,13 @@ interface AppCopy {
   tileFeatures: Record<TileFeature, string>;
   regionHints: string[];
   decorationNames: Record<string, string>;
+  exploreButton: string;
+  exploreAdHint: string;
+  explorePlusHint: string;
+  exploreDone: string;
+  exploreFound: string;
+  exploreNoAd: string;
+  journeyLookBackLocked: string;
   plusTitle: string;
   plusPitch: string;
   plusPerkThemes: string;
@@ -478,6 +485,13 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     plusBadge: "Plus",
     settingsPlus: "Growra Plus",
     settingsExportCsv: "Export your history (CSV)",
+    exploreButton: "Send {name} exploring",
+    exploreAdHint: "Watch a short ad · {left} left today",
+    explorePlusHint: "{left} left today",
+    exploreDone: "Back tomorrow",
+    exploreFound: "{name} brought back a {find}!",
+    exploreNoAd: "No ad available right now. Try again later.",
+    journeyLookBackLocked: "See this week with Plus",
     decorationNames: {
       "flower-pot": "flower pot",
       "mushroom-ring": "mushroom ring",
@@ -752,6 +766,13 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     plusBadge: "Plus",
     settingsPlus: "Growra Plus",
     settingsExportCsv: "Exportar o teu histórico (CSV)",
+    exploreButton: "Enviar {name} a explorar",
+    exploreAdHint: "Vê um anúncio curto · faltam {left} hoje",
+    explorePlusHint: "faltam {left} hoje",
+    exploreDone: "Volta amanhã",
+    exploreFound: "{name} trouxe um(a) {find}!",
+    exploreNoAd: "Nenhum anúncio disponível agora. Tenta mais tarde.",
+    journeyLookBackLocked: "Vê esta semana com o Plus",
     decorationNames: {
       "flower-pot": "vaso de flores",
       "mushroom-ring": "círculo de cogumelos",

@@ -10,12 +10,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
+import ExploreButton from "../components/ExploreButton";
+import { getExploreLeft } from "../utils/explore";
 import { getAppTheme } from "../constants/appTheme";
 import { getPetImage } from "../constants/petImages";
 import { AppSettings, GameState } from "../types";
 import {
   COMPANIONS,
   getBondProgress,
+  getActiveCompanion,
   getCompanionDefinition,
   getNextEvolutionBond,
   STARTER_TEMPLATE_IDS,
@@ -29,6 +32,9 @@ interface CompanionsScreenProps {
   tutorialMode: "choose" | null;
   onChooseStarter: (templateId: string) => void;
   onEquipPet: (petId: string) => void;
+  isPlus: boolean;
+  exploreBusy: boolean;
+  onExplore: () => void;
 }
 
 export default function CompanionsScreen({
@@ -37,6 +43,9 @@ export default function CompanionsScreen({
   tutorialMode,
   onChooseStarter,
   onEquipPet,
+  isPlus,
+  exploreBusy,
+  onExplore,
 }: CompanionsScreenProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
@@ -47,6 +56,7 @@ export default function CompanionsScreen({
     (companion) => !ownedTemplateIds.has(companion.templateId),
   );
   const needsStarter = gameState.pets.length === 0;
+  const activeExplorer = getActiveCompanion(gameState);
 
   useEffect(() => {
     if (selectedPetId !== "" && !gameState.pets.some((pet) => pet.id === selectedPetId)) {
@@ -77,6 +87,16 @@ export default function CompanionsScreen({
         style={styles.content}
         contentContainerStyle={styles.contentInner}
       >
+        {activeExplorer && (
+          <ExploreButton
+            settings={settings}
+            companionName={activeExplorer.name}
+            left={getExploreLeft(gameState.explore, now)}
+            isPlus={isPlus}
+            busy={exploreBusy}
+            onPress={onExplore}
+          />
+        )}
         {needsStarter ? (
           <StarterPicker
             settings={settings}
