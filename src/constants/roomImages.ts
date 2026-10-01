@@ -8,6 +8,11 @@ const ROOM_STYLE_IMAGES: Partial<Record<string, ImageSourcePropType>> = {
   "beach-hut": require("../../assets/rooms/styles/beach-hut.jpg"),
   "library": require("../../assets/rooms/styles/library.jpg"),
   "mushroom-cottage": require("../../assets/rooms/styles/mushroom-cottage.jpg"),
+  "japanese-room": require("../../assets/rooms/styles/japanese-room.jpg"),
+  "spooky-attic": require("../../assets/rooms/styles/spooky-attic.jpg"),
+  "snowy-cabin": require("../../assets/rooms/styles/snowy-cabin.jpg"),
+  "pastel-cafe": require("../../assets/rooms/styles/pastel-cafe.jpg"),
+  "spring-garden": require("../../assets/rooms/styles/spring-garden.jpg"),
 };
 
 export const ROOM_STYLE_FALLBACK_COLORS: Record<string, string> = {
