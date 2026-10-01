@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   Alert,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,8 @@ import { getChangelog } from "../constants/changelog";
 import { AppLanguage, AppThemeId, GameState, TimerAlertMode } from "../types";
 import { getGameStatsSummary } from "../utils/settings";
 import { isPlusTheme } from "../utils/plus";
+
+const PRIVACY_POLICY_URL = "https://pedro7161.github.io/growra-website/privacy-policy.html";
 
 interface SettingsModalProps {
   visible: boolean;
@@ -148,6 +151,9 @@ export default function SettingsModal({
                 themeId={theme.id}
               />
             </View>
+            <TouchableOpacity onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}>
+              <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsPrivacy}</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={[styles.section, { backgroundColor: theme.surface }]}>
@@ -348,6 +354,11 @@ function StatRow({
 }
 
 const styles = StyleSheet.create({
+  privacyLink: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 10,
+  },
   container: {
     flex: 1,
   },
