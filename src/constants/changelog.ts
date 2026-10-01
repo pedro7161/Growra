@@ -11,6 +11,7 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
       dateLabel: "Version 1.6.2 · October 1, 2026",
       items: [
         "Tempo, Glint, Umbra, Zephie and Cindra have their own art for all three stages. No companion borrows another's picture any more.",
+        "Every companion is now drawn without a background box, and Nova has new art.",
       ],
     },
     {
@@ -67,6 +68,7 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
       dateLabel: "Versão 1.6.2 · 1 de outubro de 2026",
       items: [
         "O Tempo, a Glint, o Umbra, a Zephie e a Cindra têm arte própria nas três fases. Nenhum companheiro usa a imagem de outro.",
+        "Todos os companheiros aparecem agora sem caixa de fundo, e a Nova tem arte nova.",
       ],
     },
     {
