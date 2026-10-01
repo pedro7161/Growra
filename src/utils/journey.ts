@@ -61,6 +61,8 @@ export interface DecorationType {
   icon: string;
   /** Coins; 0 means it can only be found during focus sessions. */
   price: number;
+  /** Only from rewarded "explore" finds, never from focus timers. */
+  exploreOnly?: boolean;
 }
 
 export const DECORATION_TYPES: DecorationType[] = [
@@ -77,9 +79,13 @@ export const DECORATION_TYPES: DecorationType[] = [
   { id: "feather", icon: "🪶", price: 0 },
   { id: "clover", icon: "🍀", price: 0 },
   { id: "acorn", icon: "🌰", price: 0 },
+  { id: "comet-shard", icon: "☄️", price: 0, exploreOnly: true },
+  { id: "moonstone", icon: "🌙", price: 0, exploreOnly: true },
+  { id: "rainbow-ribbon", icon: "🌈", price: 0, exploreOnly: true },
+  { id: "firefly-jar", icon: "🫙", price: 0, exploreOnly: true },
 ];
 
-const FIND_POOL = DECORATION_TYPES.filter((type) => type.price === 0);
+const FIND_POOL = DECORATION_TYPES.filter((type) => type.price === 0 && !type.exploreOnly);
 
 export function getDecorationType(typeId: string): DecorationType | undefined {
   return DECORATION_TYPES.find((type) => type.id === typeId);
