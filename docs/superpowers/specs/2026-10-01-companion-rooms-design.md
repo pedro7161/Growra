@@ -81,10 +81,19 @@ ownedRoomStyles: string[];   // always includes the free starter style
 - **Decoration categories:** `DecorationType` gains `category: "camp" | "furniture"` and `plusOnly?: boolean`.
   - **Furniture** can only be placed in rooms.
   - **Camp items** can be placed in rooms or camps.
-- **Room styles:** `ROOM_STYLES: { id, price, plusOnly? }[]`:
+- **Room styles:** `ROOM_STYLES: { id, price, plusOnly?, season? }[]`:
   - 1 free starter;
   - 5 bought with coins;
-  - 3 Plus-only.
+  - the Plus-only sets below.
+- **Plus sets:** every set has 1 room style plus a few furniture pieces, all bought with coins by Plus players:
+  - **Japanese:** always available.
+  - **Event sets:** buyable only during their season, then kept forever.
+    - **Halloween:** 15 October – 2 November.
+    - **Christmas:** 1 December – 6 January.
+    - **Valentine's:** 1–15 February.
+    - **Easter:** the 2 weeks around Easter Sunday (date computed per year).
+  - **Outside its season** a set shows greyed out, with "Returns in {month}". Owned event items can be placed any time.
+  - Season checks use the device's local date, with the same day helpers as the rest of the app.
 - **Room shop:** buys furniture and room styles with coins. It has a Plus-only section, which opens the Plus sheet for free users. Coins remain the only currency.
 
 ### Entry points
@@ -153,13 +162,24 @@ ownedRoomStyles: string[];   // always includes the free starter style
 
 Generated with Codex (with local ComfyUI where it fits), in Growra's cozy pixel style:
 
-- **Room styles:** 9 empty rooms, 1080×1350, seen slightly from above, with open floor.
+- **Room styles:** 11 empty rooms, 1080×1350, seen slightly from above, with open floor.
   - **Starter:** cozy wooden bedroom.
   - **Coins:** greenhouse, starry attic, beach hut, library, mushroom cottage.
-  - **Plus:** cloud palace, crystal cave, cherry-blossom tea room.
-- **Furniture:** about 20 transparent sprites, 4 of them Plus-only:
+  - **Plus, Japanese:** a tatami room with shoji screens and cherry blossom outside.
+  - **Plus, events:**
+    - **Halloween:** spooky attic.
+    - **Christmas:** snowy cabin.
+    - **Valentine's:** pastel café.
+    - **Easter:** spring garden room.
+- **Furniture:** about 16 standard transparent sprites:
   - beds, rugs, shelves, a window, lamps, plants, a table, cushions, paintings, a bookcase.
   - Wall items are drawn free-standing.
+- **Plus set furniture:** 4–5 sprites per set, about 25 in total:
+  - **Japanese:** low table, futon, paper lantern lamp, bonsai, folding screen, zabuton cushions.
+  - **Halloween:** pumpkins, ghost lamp, cauldron, spider-web corner, candles.
+  - **Christmas:** tree, presents, stockings, wreath, snow globe.
+  - **Valentine's:** heart balloons, rose vase, love-letter box, cake stand.
+  - **Easter:** egg basket, bunny plush, flower crate, painted-egg garland.
 - **Companions:** the existing transparent art for each companion's current stage.
 
 ## Libraries
@@ -180,6 +200,7 @@ Each library is verified against Expo SDK 54 (native debug build) in the first t
 - **Editing:** clamping on move and resize, layer forward/back, and undo.
 - **Migration:** rooms created for companions already owned, and the starter style owned.
 - **Plus:** extra rooms hidden and restored; Plus-only items returned to the bag.
+- **Seasons:** each event set is buyable only inside its window (including the Christmas window crossing New Year, and the Easter date per year); owned event items can be placed any time.
 - **Phase 2:**
   - the room code round trip, checksum rejection, and a future version rejected;
   - quantisation keeping positions within half a step;
