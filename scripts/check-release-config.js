@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const TEST_PUBLISHER = 'ca-app-pub-3940256099942544';
-const root = path.join(__dirname, '..');
+const root = process.cwd(); // npm run executes from the project root
 const problems = [];
 if (fs.readFileSync(path.join(root, 'app.json'), 'utf8').includes(TEST_PUBLISHER)) {
   problems.push('app.json: AdMob androidAppId is still the test id');
