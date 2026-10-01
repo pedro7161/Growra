@@ -14,6 +14,7 @@ import { REWARDED_AD_UNIT_ID } from "./constants/adConfig";
 import { getExploreLeft, grantExploreFind } from "./utils/explore";
 import { getActiveCompanion } from "./utils/companions";
 import { syncRooms } from "./utils/rooms";
+import { buildRoomShareMessage, shareRoomPicture } from "./utils/roomShare";
 import { resolveTheme } from "./utils/plus";
 import { buildCompletionsCsv, buildTasksCsv } from "./utils/historyCsv";
 import { File, Paths } from "expo-file-system";
@@ -37,6 +38,7 @@ import {
   TaskType,
   TaskStatus,
   TimerAlertMode,
+  Room,
 } from "./types";
 import { upsertCustomTaskTemplate } from "./utils/customTaskTemplates";
 import {
@@ -552,6 +554,18 @@ export default function App() {
     }
   };
 
+  const handleShareRoom = async (view: View, room: Room) => {
+    const current = gameStateRef.current;
+    if (!current) return;
+    const copy = getAppCopy(current.settings.language);
+    const owner = current.pets.find((pet) => pet.id === room.ownerPetId);
+    try {
+      await shareRoomPicture(view, buildRoomShareMessage(copy, owner?.name ?? null));
+    } catch {
+      Alert.alert("🏠", copy.roomShareError);
+    }
+  };
+
   const handleBuyPlus = async () => {
     const copy = getAppCopy(gameStateRef.current?.settings.language ?? "en");
     const result = await plus.buy();
@@ -742,7 +756,7 @@ export default function App() {
             onChange={(next) => void persistGameState(next)}
             onClose={() => setRoomEditorId(null)}
             onOpenPlus={openPlus}
-            onShare={async () => undefined}
+            onShare={handleShareRoom}
           />
         )}
         <GrowraPlusModal
