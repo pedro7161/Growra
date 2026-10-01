@@ -121,3 +121,48 @@ export function getPetImage(
 
   return petImages.base;
 }
+
+type StageImages = Pick<PetImages<ImageSourcePropType>, "base" | "evo1" | "evo2">;
+
+/** Sleepy-mood art (P4); companions without it fall back to their normal image. */
+const SLEEPY_PET_IMAGES: Partial<Record<string, StageImages>> = {
+  sprout: {
+    base: require("../../assets/pets/sprout/sleepy/base.png"),
+    evo1: require("../../assets/pets/sprout/sleepy/evo1.png"),
+    evo2: require("../../assets/pets/sprout/sleepy/evo2.png"),
+  },
+  pebble: {
+    base: require("../../assets/pets/pebble/sleepy/base.png"),
+    evo1: require("../../assets/pets/pebble/sleepy/evo1.png"),
+    evo2: require("../../assets/pets/pebble/sleepy/evo2.png"),
+  },
+  moss: {
+    base: require("../../assets/pets/moss/sleepy/base.png"),
+    evo1: require("../../assets/pets/moss/sleepy/evo1.png"),
+    evo2: require("../../assets/pets/moss/sleepy/evo2.png"),
+  },
+  ember: {
+    base: require("../../assets/pets/ember/sleepy/base.png"),
+    evo1: require("../../assets/pets/ember/sleepy/evo1.png"),
+    evo2: require("../../assets/pets/ember/sleepy/evo2.png"),
+  },
+};
+
+/** The sleepy art for this companion and stage, or its normal image if it has none. */
+export function getSleepyPetImage(
+  templateId: string,
+  evolutionStage: number,
+  variantId: string
+): ImageSourcePropType {
+  const sleepy = SLEEPY_PET_IMAGES[templateId];
+  if (!sleepy) {
+    return getPetImage(templateId, evolutionStage, variantId);
+  }
+  if (evolutionStage === 2) {
+    return sleepy.evo2;
+  }
+  if (evolutionStage === 1) {
+    return sleepy.evo1;
+  }
+  return sleepy.base;
+}

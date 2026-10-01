@@ -12,7 +12,7 @@ import AddTaskModal from "../components/AddTaskModal";
 import TaskTimerControls from "../components/TaskTimerControls";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { getPetImage } from "../constants/petImages";
+import { getPetImage, getSleepyPetImage } from "../constants/petImages";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import {
     CustomTaskTemplate,
@@ -73,8 +73,9 @@ export default function DashboardScreen({
   const activeMultiplier = equippedPet
     ? (1 + streakBonus) * (1 + equippedPet.taskMultiplier)
     : 1 + streakBonus;
+  const mood = getCompanionMood(gameState, now);
   const moodLine = equippedPet
-    ? copy.companionMood[getCompanionMood(gameState, now)].replace(
+    ? copy.companionMood[mood].replace(
         "{name}",
         equippedPet.name,
       )
@@ -123,7 +124,7 @@ export default function DashboardScreen({
             </View>
             {equippedPet && (
               <Image
-                source={getPetImage(
+                source={(mood === "sleepy" ? getSleepyPetImage : getPetImage)(
                   equippedPet.templateId,
                   equippedPet.evolutionStage,
                   equippedPet.activeImageVariantId,
