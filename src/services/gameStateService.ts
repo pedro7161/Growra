@@ -4,6 +4,7 @@ import {
   Decoration,
   ExploreState,
   PlusState,
+  Room,
   GameState,
   SaveData,
   Task,
@@ -65,11 +66,17 @@ type PersistedGameState = Omit<
   | "decorations"
   | "plus"
   | "explore"
+  | "rooms"
+  | "ownedRoomStyles"
+  | "roomShareFooter"
 > & {
   days?: DayRecord[];
   decorations?: Decoration[];
   plus?: PlusState;
   explore?: ExploreState;
+  rooms?: Room[];
+  ownedRoomStyles?: string[];
+  roomShareFooter?: boolean;
   usage?: UsageStats;
   companionEvents?: CompanionEvent[];
   notices?: GameNotice[];
@@ -275,6 +282,9 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     decorations: saveData.gameState.decorations ?? [],
     plus: saveData.gameState.plus ?? { owned: false, lastCheckedAt: 0 },
     explore: saveData.gameState.explore ?? { day: 0, count: 0 },
+    rooms: saveData.gameState.rooms ?? [],
+    ownedRoomStyles: saveData.gameState.ownedRoomStyles ?? ["wooden-bedroom"],
+    roomShareFooter: saveData.gameState.roomShareFooter ?? true,
     totalTasksCompleted:
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted

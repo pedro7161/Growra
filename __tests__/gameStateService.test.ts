@@ -119,3 +119,29 @@ describe('plus and explore state', () => {
     expect(result.saveData.gameState.plus.owned).toBe(true);
   });
 });
+
+describe('room state', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('starts a new game with no rooms, the starter style and the footer on', () => {
+    const state = createInitialGameState();
+    expect(state.rooms).toEqual([]);
+    expect(state.ownedRoomStyles).toEqual(['wooden-bedroom']);
+    expect(state.roomShareFooter).toBe(true);
+  });
+
+  it('migrates an older save without room fields', async () => {
+    const legacy = createSaveData(createInitialGameState()) as any;
+    delete legacy.gameState.rooms;
+    delete legacy.gameState.ownedRoomStyles;
+    delete legacy.gameState.roomShareFooter;
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify(legacy));
+    const result = await gameStateService.loadGame();
+    if (result.status !== 'loaded') throw new Error('not loaded');
+    expect(result.saveData.gameState.rooms).toEqual([]);
+    expect(result.saveData.gameState.ownedRoomStyles).toEqual(['wooden-bedroom']);
+    expect(result.saveData.gameState.roomShareFooter).toBe(true);
+  });
+});

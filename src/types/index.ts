@@ -202,6 +202,7 @@ export interface Decoration {
   typeId: string; // see DECORATION_TYPES in utils/journey.ts
   camp: number; // camp index it sits at, or -1 while in the bag
   spot: number;
+  roomId?: string; // set while the decoration is in a room
 }
 
 // Streak Types
@@ -213,6 +214,26 @@ export interface Streak {
 }
 
 // Game State
+// A placed thing in a companion room (spec §1). Position is the item's centre as a fraction of the 4:5 canvas.
+export interface RoomItem {
+  id: string;
+  kind: "decoration" | "companion";
+  ref: string; // decoration instance id, or pet id
+  x: number;
+  y: number;
+  scale: number; // 0.5..1.5
+  flip: boolean;
+}
+
+// ownerPetId null = a Plus extra room. items order = layer order (last = front).
+export interface Room {
+  id: string;
+  ownerPetId: string | null;
+  name: string; // "" = the default name
+  styleId: string;
+  items: RoomItem[];
+}
+
 // Growra Plus ownership, cached so Plus works offline; Play is re-checked on start.
 export interface PlusState {
   owned: boolean;
@@ -246,6 +267,9 @@ export interface GameState {
   streak: Streak;
   plus: PlusState;
   explore: ExploreState;
+  rooms: Room[];
+  ownedRoomStyles: string[];
+  roomShareFooter: boolean;
   createdAt: number;
   lastPlayedAt: number;
 }

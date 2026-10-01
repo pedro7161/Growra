@@ -34,6 +34,9 @@ export function createInitialGameState(): GameState {
     streak: createInitialStreak(),
     plus: { owned: false, lastCheckedAt: 0 },
     explore: { day: 0, count: 0 },
+    rooms: [],
+    ownedRoomStyles: ["wooden-bedroom"],
+    roomShareFooter: true,
     createdAt: Date.now(),
     lastPlayedAt: Date.now(),
   };
