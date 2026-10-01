@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import ExploreButton from "../components/ExploreButton";
 import { getExploreLeft } from "../utils/explore";
+import { getVisibleRooms } from "../utils/rooms";
 import { getAppTheme } from "../constants/appTheme";
 import { getPetImage } from "../constants/petImages";
 import { AppSettings, GameState } from "../types";
@@ -35,6 +36,8 @@ interface CompanionsScreenProps {
   isPlus: boolean;
   exploreBusy: boolean;
   onExplore: () => void;
+  onOpenRoom: (roomId: string) => void;
+  onOpenPlus: () => void;
 }
 
 export default function CompanionsScreen({
@@ -46,6 +49,8 @@ export default function CompanionsScreen({
   isPlus,
   exploreBusy,
   onExplore,
+  onOpenRoom,
+  onOpenPlus,
 }: CompanionsScreenProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
@@ -87,6 +92,30 @@ export default function CompanionsScreen({
         style={styles.content}
         contentContainerStyle={styles.contentInner}
       >
+        <View style={styles.plusRooms}>
+          <Text style={[styles.plusRoomsTitle, { color: theme.text }]}>{copy.plusRoomsTitle}</Text>
+          <View style={styles.plusRoomsRow}>
+            {isPlus ? (
+              getVisibleRooms(gameState)
+                .filter((room) => room.ownerPetId === null)
+                .map((room, index) => (
+                  <TouchableOpacity
+                    key={room.id}
+                    style={[styles.actionButton, { backgroundColor: theme.accentSoft }]}
+                    onPress={() => onOpenRoom(room.id)}
+                  >
+                    <Text style={[styles.actionButtonText, { color: theme.accent }]} numberOfLines={1}>
+                      🏠 {room.name || copy.plusRoomName.replace("{number}", String(index + 1))}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+            ) : (
+              <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.surfaceMuted }]} onPress={onOpenPlus}>
+                <Text style={[styles.actionButtonText, { color: theme.mutedText }]}>🔒 {copy.plusRoomsTitle}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
         {activeExplorer && (
           <ExploreButton
             settings={settings}
@@ -114,6 +143,7 @@ export default function CompanionsScreen({
                 now={now}
                 onPress={() => setSelectedPetId(pet.id)}
                 onEquipPet={onEquipPet}
+                onOpenRoom={onOpenRoom}
               />
             ))}
             {notMetCompanions.map((companion) => (
@@ -197,6 +227,7 @@ function PetCard({
   now,
   onPress,
   onEquipPet,
+  onOpenRoom,
 }: {
   gameState: GameState;
   petId: string;
@@ -204,12 +235,14 @@ function PetCard({
   now: number;
   onPress: () => void;
   onEquipPet: (petId: string) => void;
+  onOpenRoom: (roomId: string) => void;
 }) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const pet = gameState.pets.filter((currentPet) => currentPet.id === petId)[0];
   const style = getCompanionDefinition(pet.templateId)?.style;
   const daysTogether = getCalendarDayDifference(pet.createdAt, now) + 1;
+  const roomId = gameState.rooms.find((room) => room.ownerPetId === pet.id)?.id;
 
   return (
     <TouchableOpacity
@@ -272,6 +305,14 @@ function PetCard({
             {pet.equipped ? copy.petsActive : copy.companionTakeAlong}
           </Text>
         </TouchableOpacity>
+        {roomId && (
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.accentSoft }]}
+            onPress={() => onOpenRoom(roomId)}
+          >
+            <Text style={[styles.actionButtonText, { color: theme.accent }]}>🏠 {copy.roomButton}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -616,6 +657,19 @@ function CompanionDetailModal({
 }
 
 const styles = StyleSheet.create({
+  plusRooms: {
+    gap: 6,
+    marginBottom: 12,
+  },
+  plusRoomsTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  plusRoomsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",

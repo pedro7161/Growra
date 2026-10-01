@@ -4,6 +4,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import SettingsModal from "./components/SettingsModal";
 import GrowraPlusModal from "./components/GrowraPlusModal";
+import RoomEditorScreen from "./screens/RoomEditorScreen";
 import { applyPlusOwnership, keepPlusOnImport, usePlusController } from "./hooks/usePlusController";
 import { createPlusService } from "./services/plusService";
 import { expoIapClient } from "./services/expoIapClient";
@@ -181,6 +182,7 @@ export default function App() {
     : "done";
   const [plusVisible, setPlusVisible] = useState(false);
   const [exploreBusy, setExploreBusy] = useState(false);
+  const [roomEditorId, setRoomEditorId] = useState<string | null>(null);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
 
   useEffect(() => {
@@ -682,6 +684,8 @@ export default function App() {
             isPlus={isPlus}
             exploreBusy={exploreBusy}
             onExplore={handleExplore}
+            onOpenRoom={setRoomEditorId}
+            onOpenPlus={openPlus}
           />
         );
     }
@@ -731,6 +735,16 @@ export default function App() {
           adConsentAvailable={adConsentAvailable}
           onAdConsent={() => void adsService.changeConsent()}
         />
+        {roomEditorId && (
+          <RoomEditorScreen
+            state={gameState}
+            roomId={roomEditorId}
+            onChange={(next) => void persistGameState(next)}
+            onClose={() => setRoomEditorId(null)}
+            onOpenPlus={openPlus}
+            onShare={async () => undefined}
+          />
+        )}
         <GrowraPlusModal
           visible={plusVisible}
           settings={gameState.settings}

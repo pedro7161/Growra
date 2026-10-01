@@ -203,6 +203,37 @@ interface AppCopy {
   tileFeatures: Record<TileFeature, string>;
   regionHints: string[];
   decorationNames: Record<string, string>;
+  roomShareMessage: string;
+  roomShareMessagePlus: string;
+  roomShareFooter: string;
+  roomShareFooterToggle: string;
+  roomShareError: string;
+  roomButton: string;
+  roomDefaultName: string;
+  plusRoomName: string;
+  plusRoomsTitle: string;
+  roomDone: string;
+  roomShare: string;
+  roomRename: string;
+  roomTabDecorations: string;
+  roomTabCompanions: string;
+  roomTabStyle: string;
+  roomTabShop: string;
+  roomFull: string;
+  roomBagEmpty: string;
+  roomFlip: string;
+  roomForward: string;
+  roomBack: string;
+  roomRemove: string;
+  roomUndo: string;
+  roomShopStyles: string;
+  roomShopFurniture: string;
+  roomShopPlusSets: string;
+  roomShopOwned: string;
+  roomShopBuy: string;
+  roomShopNeedsPlus: string;
+  roomShopReturns: string;
+  roomSetNames: Record<string, string>;
   roomStyleNames: Record<string, string>;
   settingsAdConsent: string;
   settingsPrivacy: string;
@@ -497,6 +528,43 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     journeyLookBackLocked: "See this week with Plus",
     settingsPrivacy: "Privacy policy",
     settingsAdConsent: "Ad privacy choices",
+    roomButton: "Room",
+    roomDefaultName: "{name}'s room",
+    plusRoomName: "Plus room {number}",
+    plusRoomsTitle: "Plus rooms",
+    roomDone: "Done",
+    roomShare: "Share",
+    roomRename: "Rename room",
+    roomTabDecorations: "Decorations",
+    roomTabCompanions: "Companions",
+    roomTabStyle: "Style",
+    roomTabShop: "Shop",
+    roomFull: "Room full (30 items)",
+    roomBagEmpty: "Nothing in your bag. Buy furniture in the shop or find decorations.",
+    roomFlip: "Flip",
+    roomForward: "Forward",
+    roomBack: "Back",
+    roomRemove: "Remove",
+    roomUndo: "Undo",
+    roomShopStyles: "Room styles",
+    roomShopFurniture: "Furniture",
+    roomShopPlusSets: "Plus sets",
+    roomShopOwned: "Owned",
+    roomShopBuy: "{price} 🪙",
+    roomShopNeedsPlus: "Plus",
+    roomShopReturns: "Returns in {month}",
+    roomSetNames: {
+      japanese: "Japanese",
+      halloween: "Halloween",
+      christmas: "Christmas",
+      valentines: "Valentine's",
+      easter: "Easter",
+    },
+    roomShareMessage: "My {name}'s room in Growra",
+    roomShareMessagePlus: "My room in Growra",
+    roomShareFooter: "Made with Growra",
+    roomShareFooterToggle: "Show \"Made with Growra\"",
+    roomShareError: "Couldn't share the picture. Please try again.",
     decorationNames: {
       "flower-pot": "flower pot",
       "mushroom-ring": "mushroom ring",
@@ -833,6 +901,43 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     journeyLookBackLocked: "Vê esta semana com o Plus",
     settingsPrivacy: "Política de privacidade",
     settingsAdConsent: "Escolhas de privacidade dos anúncios",
+    roomButton: "Quarto",
+    roomDefaultName: "Quarto de {name}",
+    plusRoomName: "Quarto Plus {number}",
+    plusRoomsTitle: "Quartos Plus",
+    roomDone: "Concluído",
+    roomShare: "Partilhar",
+    roomRename: "Mudar nome do quarto",
+    roomTabDecorations: "Decorações",
+    roomTabCompanions: "Companheiros",
+    roomTabStyle: "Estilo",
+    roomTabShop: "Loja",
+    roomFull: "Quarto cheio (30 itens)",
+    roomBagEmpty: "Nada no teu saco. Compra mobília na loja ou encontra decorações.",
+    roomFlip: "Virar",
+    roomForward: "Para a frente",
+    roomBack: "Para trás",
+    roomRemove: "Tirar",
+    roomUndo: "Desfazer",
+    roomShopStyles: "Estilos de quarto",
+    roomShopFurniture: "Mobília",
+    roomShopPlusSets: "Conjuntos Plus",
+    roomShopOwned: "Teu",
+    roomShopBuy: "{price} 🪙",
+    roomShopNeedsPlus: "Plus",
+    roomShopReturns: "Volta em {month}",
+    roomSetNames: {
+      japanese: "Japonês",
+      halloween: "Halloween",
+      christmas: "Natal",
+      valentines: "Dia dos Namorados",
+      easter: "Páscoa",
+    },
+    roomShareMessage: "O quarto do meu {name} no Growra",
+    roomShareMessagePlus: "O meu quarto no Growra",
+    roomShareFooter: "Feito com o Growra",
+    roomShareFooterToggle: "Mostrar \"Feito com o Growra\"",
+    roomShareError: "Não foi possível partilhar a imagem. Tenta outra vez.",
     decorationNames: {
       "flower-pot": "vaso de flores",
       "mushroom-ring": "círculo de cogumelos",
