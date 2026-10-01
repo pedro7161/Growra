@@ -2,6 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   DayRecord,
   Decoration,
+  ExploreState,
+  PlusState,
   GameState,
   SaveData,
   Task,
@@ -61,9 +63,13 @@ type PersistedGameState = Omit<
   | "notices"
   | "days"
   | "decorations"
+  | "plus"
+  | "explore"
 > & {
   days?: DayRecord[];
   decorations?: Decoration[];
+  plus?: PlusState;
+  explore?: ExploreState;
   usage?: UsageStats;
   companionEvents?: CompanionEvent[];
   notices?: GameNotice[];
@@ -267,6 +273,8 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     ],
     days: saveData.gameState.days ?? buildDaysFromTasks(saveData.gameState.tasks as Task[]),
     decorations: saveData.gameState.decorations ?? [],
+    plus: saveData.gameState.plus ?? { owned: false, lastCheckedAt: 0 },
+    explore: saveData.gameState.explore ?? { day: 0, count: 0 },
     totalTasksCompleted:
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted

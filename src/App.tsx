@@ -3,6 +3,19 @@ import { Alert, AppState, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import SettingsModal from "./components/SettingsModal";
+import GrowraPlusModal from "./components/GrowraPlusModal";
+import { applyPlusOwnership, keepPlusOnImport, usePlusController } from "./hooks/usePlusController";
+import { createPlusService } from "./services/plusService";
+import { expoIapClient } from "./services/expoIapClient";
+import { createAdsService } from "./services/adsService";
+import { googleAdsClient } from "./services/googleAdsClient";
+import { REWARDED_AD_UNIT_ID } from "./constants/adConfig";
+import { getExploreLeft, grantExploreFind } from "./utils/explore";
+import { getActiveCompanion } from "./utils/companions";
+import { resolveTheme } from "./utils/plus";
+import { buildCompletionsCsv, buildTasksCsv } from "./utils/historyCsv";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import CompanionRevealModal from "./components/CompanionRevealModal";
 import TutorialOverlay, { TutorialStep } from "./components/TutorialOverlay";
 import { getAppCopy } from "./constants/appCopy";
@@ -38,6 +51,7 @@ import {
   removeDecoration,
 } from "./utils/journey";
 import { createInitialGameState, createSaveData } from "./utils/initialState";
+
 import { syncRecurringTasks } from "./utils/taskSchedule";
 import {
   finishTaskTimer,
@@ -50,6 +64,9 @@ import {
   playTimerAlert,
   removeStoredTimerAlertSound,
 } from "./utils/timerAlert";
+
+const plusService = createPlusService(expoIapClient);
+const adsService = createAdsService(googleAdsClient, REWARDED_AD_UNIT_ID);
 
 type Screen = "dashboard" | "tasks" | "task-calendar" | "journey" | "companions";
 
@@ -161,6 +178,24 @@ export default function App() {
   const tutorialStep = gameState
     ? getTutorialStep(gameState, activeScreen, taskTutorialUiState)
     : "done";
+  const [plusVisible, setPlusVisible] = useState(false);
+  const [exploreBusy, setExploreBusy] = useState(false);
+  const [adConsentAvailable, setAdConsentAvailable] = useState(false);
+
+  useEffect(() => {
+    if (settingsVisible) void adsService.canChangeConsent().then(setAdConsentAvailable);
+  }, [settingsVisible]);
+
+  const openPlus = () => {
+    setPlusVisible(true);
+    void plus.refreshPrice();
+  };
+  const plus = usePlusController(plusService, (owned) => {
+    const current = gameStateRef.current;
+    if (!current || current.plus.owned === owned) return;
+    void persistGameState(applyPlusOwnership(current, owned, Date.now()));
+  });
+
   useEffect(() => {
     loadGame();
   }, []);
@@ -487,6 +522,64 @@ export default function App() {
     });
   };
 
+  const handleExplore = async () => {
+    const before = gameStateRef.current;
+    if (!before || exploreBusy || getExploreLeft(before.explore, Date.now()) === 0) return;
+    const copy = getAppCopy(before.settings.language);
+    setExploreBusy(true);
+    try {
+      if (!before.plus.owned) {
+        const result = await adsService.watchForReward();
+        if (result !== "earned") {
+          if (result === "unavailable") Alert.alert(copy.plusTitle, copy.exploreNoAd);
+          return;
+        }
+      }
+      const current = gameStateRef.current ?? before;
+      const { state, find } = grantExploreFind(current, Date.now(), Math.random());
+      if (!find) return;
+      await persistGameState(state);
+      const companion = getActiveCompanion(state);
+      Alert.alert(
+        "🧭",
+        copy.exploreFound
+          .replace("{name}", companion?.name ?? "Growra")
+          .replace("{find}", copy.decorationNames[find.id] ?? find.id),
+      );
+    } finally {
+      setExploreBusy(false);
+    }
+  };
+
+  const handleBuyPlus = async () => {
+    const copy = getAppCopy(gameStateRef.current?.settings.language ?? "en");
+    const result = await plus.buy();
+    if (result === "purchased") Alert.alert(copy.plusTitle, copy.plusThanks);
+    if (result === "pending") Alert.alert(copy.plusTitle, copy.plusPending);
+    if (result === "error") Alert.alert(copy.plusTitle, copy.plusError);
+    if (result === "unavailable") Alert.alert(copy.plusTitle, copy.plusUnavailable);
+  };
+
+  const handleRestorePlus = async () => {
+    const copy = getAppCopy(gameStateRef.current?.settings.language ?? "en");
+    const result = await plus.restore();
+    Alert.alert(
+      copy.plusTitle,
+      result === "owned" ? copy.plusRestored : result === "not-owned" ? copy.plusNotFound : copy.plusUnavailable,
+    );
+  };
+
+  const handleExportCsv = async () => {
+    const current = gameStateRef.current;
+    if (!current?.plus.owned) return;
+    const tasksFile = new File(Paths.cache, "growra-tasks.csv");
+    const completionsFile = new File(Paths.cache, "growra-completions.csv");
+    tasksFile.write(buildTasksCsv(current.tasks));
+    completionsFile.write(buildCompletionsCsv(current.days));
+    await Sharing.shareAsync(tasksFile.uri, { mimeType: "text/csv", dialogTitle: "growra-tasks.csv" });
+    await Sharing.shareAsync(completionsFile.uri, { mimeType: "text/csv", dialogTitle: "growra-completions.csv" });
+  };
+
   const handleExportData = async (): Promise<string> => {
     if (!gameState) {
       return "";
@@ -497,14 +590,18 @@ export default function App() {
 
   const handleImportData = async (backupCode: string) => {
     const importedSaveData = gameStateService.importSaveCode(backupCode);
-    await persistGameState(importedSaveData.gameState);
+    const current = gameStateRef.current;
+    // Plus ownership belongs to this device's Play account, never to a backup code.
+    await persistGameState(current ? keepPlusOnImport(importedSaveData.gameState, current) : importedSaveData.gameState);
+    void plus.restore();
   };
 
   if (loading || !gameState) {
     return <View className="flex-1" style={styles.container} />;
   }
 
-  const appTheme = getAppTheme(gameState.settings.theme);
+  const isPlus = gameState.plus.owned;
+  const appTheme = getAppTheme(resolveTheme(gameState.settings.theme, isPlus));
 
   const renderScreen = () => {
     switch (activeScreen) {
@@ -569,6 +666,10 @@ export default function App() {
             onBuyDecoration={handleBuyDecoration}
             onPlaceDecoration={handlePlaceDecoration}
             onRemoveDecoration={handleRemoveDecoration}
+            isPlus={isPlus}
+            exploreBusy={exploreBusy}
+            onExplore={handleExplore}
+            onOpenPlus={openPlus}
           />
         );
       case "companions":
@@ -579,6 +680,9 @@ export default function App() {
             tutorialMode={tutorialStep === "choose-companion" ? "choose" : null}
             onChooseStarter={handleChooseStarter}
             onEquipPet={handleEquipPet}
+            isPlus={isPlus}
+            exploreBusy={exploreBusy}
+            onExplore={handleExplore}
           />
         );
     }
@@ -622,6 +726,21 @@ export default function App() {
           onClearTimerAlertSound={handleClearTimerAlertSound}
           onExportData={handleExportData}
           onImportData={handleImportData}
+          isPlus={isPlus}
+          onOpenPlus={openPlus}
+          onExportCsv={handleExportCsv}
+          adConsentAvailable={adConsentAvailable}
+          onAdConsent={() => void adsService.changeConsent()}
+        />
+        <GrowraPlusModal
+          visible={plusVisible}
+          settings={gameState.settings}
+          isPlus={isPlus}
+          price={plus.price}
+          busy={plus.busy}
+          onBuy={handleBuyPlus}
+          onRestore={handleRestorePlus}
+          onClose={() => setPlusVisible(false)}
         />
         <TutorialOverlay
           visible={tutorialVisible && tutorialStep !== "done"}

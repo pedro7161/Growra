@@ -74,6 +74,10 @@ const DECORATION_IMAGES: Record<string, ImageSourcePropType> = {
   feather: require("../../assets/journey/decorations/feather.png"),
   clover: require("../../assets/journey/decorations/clover.png"),
   acorn: require("../../assets/journey/decorations/acorn.png"),
+  "comet-shard": require("../../assets/journey/decorations/comet-shard.png"),
+  moonstone: require("../../assets/journey/decorations/moonstone.png"),
+  "rainbow-ribbon": require("../../assets/journey/decorations/rainbow-ribbon.png"),
+  "firefly-jar": require("../../assets/journey/decorations/firefly-jar.png"),
 };
 
 export const EMPTY_SPOT_IMAGE: ImageSourcePropType = require("../../assets/journey/decorations/empty-spot.png");
