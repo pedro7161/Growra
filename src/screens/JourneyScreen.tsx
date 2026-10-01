@@ -467,7 +467,9 @@ function CampModal({
 
   const lookBack = getCampLookBack(gameState.days, campIndex);
   const lookBackVisible = isLookBackVisible(campIndex, getRoadPosition(gameState.days).campsReached, isPlus);
-  const bag = gameState.decorations.filter((decoration) => !isPlaced(decoration));
+  const bag = gameState.decorations.filter(
+    (decoration) => !isPlaced(decoration) && getDecorationType(decoration.typeId)?.category !== "furniture",
+  );
   const placedAt = (spot: number) =>
     gameState.decorations.find(
       (decoration) => decoration.camp === campIndex && decoration.spot === spot,
@@ -672,7 +674,7 @@ function DecorationsModal({
       )}
 
       <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.journeyShop}</Text>
-      {DECORATION_TYPES.map((type) => {
+      {DECORATION_TYPES.filter((type) => type.category !== "furniture").map((type) => {
         const affordable = gameState.coins >= type.price;
         return (
           <View key={type.id} style={[styles.listRow, { backgroundColor: theme.surface }]}>
