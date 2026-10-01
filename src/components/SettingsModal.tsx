@@ -15,6 +15,7 @@ import { appThemes, getAppTheme } from "../constants/appTheme";
 import { getChangelog } from "../constants/changelog";
 import { AppLanguage, AppThemeId, GameState, TimerAlertMode } from "../types";
 import { getGameStatsSummary } from "../utils/settings";
+import { isPlusTheme } from "../utils/plus";
 
 interface SettingsModalProps {
   visible: boolean;
@@ -27,6 +28,9 @@ interface SettingsModalProps {
   onClearTimerAlertSound: () => Promise<void>;
   onExportData: () => Promise<string>;
   onImportData: (backupCode: string) => Promise<void>;
+  isPlus: boolean;
+  onOpenPlus: () => void;
+  onExportCsv: () => Promise<void>;
 }
 
 export default function SettingsModal({
@@ -40,6 +44,9 @@ export default function SettingsModal({
   onClearTimerAlertSound,
   onExportData,
   onImportData,
+  isPlus,
+  onOpenPlus,
+  onExportCsv,
 }: SettingsModalProps) {
   const copy = getAppCopy(gameState.settings.language);
   const theme = getAppTheme(gameState.settings.theme);
@@ -116,12 +123,30 @@ export default function SettingsModal({
                           : theme.border,
                     },
                   ]}
-                  onPress={() => onThemeChange(themeOption.id)}
+                  onPress={() =>
+                    isPlusTheme(themeOption.id) && !isPlus ? onOpenPlus() : onThemeChange(themeOption.id)
+                  }
                 >
                   <View style={[styles.themePreview, { backgroundColor: themeOption.hero }]} />
                   <Text style={[styles.themeName, { color: themeOption.text }]}>{themeOption.name}</Text>
+                  {isPlusTheme(themeOption.id) && !isPlus && (
+                    <Text style={[styles.themeName, { color: theme.accent }]}>{copy.plusBadge}</Text>
+                  )}
                 </TouchableOpacity>
               ))}
+            </View>
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsPlus}</Text>
+            <View style={styles.optionRow}>
+              <OptionButton label={copy.plusTitle} active onPress={onOpenPlus} themeId={theme.id} />
+              <OptionButton
+                label={copy.settingsExportCsv}
+                active={false}
+                onPress={() => (isPlus ? void onExportCsv() : onOpenPlus())}
+                themeId={theme.id}
+              />
             </View>
           </View>
 

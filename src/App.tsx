@@ -3,6 +3,14 @@ import { Alert, AppState, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import SettingsModal from "./components/SettingsModal";
+import GrowraPlusModal from "./components/GrowraPlusModal";
+import { applyPlusOwnership, usePlusController } from "./hooks/usePlusController";
+import { createPlusService } from "./services/plusService";
+import { expoIapClient } from "./services/expoIapClient";
+import { resolveTheme } from "./utils/plus";
+import { buildCompletionsCsv, buildTasksCsv } from "./utils/historyCsv";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import CompanionRevealModal from "./components/CompanionRevealModal";
 import TutorialOverlay, { TutorialStep } from "./components/TutorialOverlay";
 import { getAppCopy } from "./constants/appCopy";
@@ -38,6 +46,7 @@ import {
   removeDecoration,
 } from "./utils/journey";
 import { createInitialGameState, createSaveData } from "./utils/initialState";
+
 import { syncRecurringTasks } from "./utils/taskSchedule";
 import {
   finishTaskTimer,
@@ -50,6 +59,8 @@ import {
   playTimerAlert,
   removeStoredTimerAlertSound,
 } from "./utils/timerAlert";
+
+const plusService = createPlusService(expoIapClient);
 
 type Screen = "dashboard" | "tasks" | "task-calendar" | "journey" | "companions";
 
@@ -161,6 +172,13 @@ export default function App() {
   const tutorialStep = gameState
     ? getTutorialStep(gameState, activeScreen, taskTutorialUiState)
     : "done";
+  const [plusVisible, setPlusVisible] = useState(false);
+  const plus = usePlusController(plusService, (owned) => {
+    const current = gameStateRef.current;
+    if (!current || current.plus.owned === owned) return;
+    void persistGameState(applyPlusOwnership(current, owned, Date.now()));
+  });
+
   useEffect(() => {
     loadGame();
   }, []);
@@ -487,6 +505,35 @@ export default function App() {
     });
   };
 
+  const handleBuyPlus = async () => {
+    const copy = getAppCopy(gameStateRef.current?.settings.language ?? "en");
+    const result = await plus.buy();
+    if (result === "purchased") Alert.alert(copy.plusTitle, copy.plusThanks);
+    if (result === "pending") Alert.alert(copy.plusTitle, copy.plusPending);
+    if (result === "error") Alert.alert(copy.plusTitle, copy.plusError);
+    if (result === "unavailable") Alert.alert(copy.plusTitle, copy.plusUnavailable);
+  };
+
+  const handleRestorePlus = async () => {
+    const copy = getAppCopy(gameStateRef.current?.settings.language ?? "en");
+    const result = await plus.restore();
+    Alert.alert(
+      copy.plusTitle,
+      result === "owned" ? copy.plusRestored : result === "not-owned" ? copy.plusNotFound : copy.plusUnavailable,
+    );
+  };
+
+  const handleExportCsv = async () => {
+    const current = gameStateRef.current;
+    if (!current?.plus.owned) return;
+    const tasksFile = new File(Paths.cache, "growra-tasks.csv");
+    const completionsFile = new File(Paths.cache, "growra-completions.csv");
+    tasksFile.write(buildTasksCsv(current.tasks));
+    completionsFile.write(buildCompletionsCsv(current.days));
+    await Sharing.shareAsync(tasksFile.uri, { mimeType: "text/csv", dialogTitle: "growra-tasks.csv" });
+    await Sharing.shareAsync(completionsFile.uri, { mimeType: "text/csv", dialogTitle: "growra-completions.csv" });
+  };
+
   const handleExportData = async (): Promise<string> => {
     if (!gameState) {
       return "";
@@ -504,7 +551,8 @@ export default function App() {
     return <View className="flex-1" style={styles.container} />;
   }
 
-  const appTheme = getAppTheme(gameState.settings.theme);
+  const isPlus = gameState.plus.owned;
+  const appTheme = getAppTheme(resolveTheme(gameState.settings.theme, isPlus));
 
   const renderScreen = () => {
     switch (activeScreen) {
@@ -622,6 +670,19 @@ export default function App() {
           onClearTimerAlertSound={handleClearTimerAlertSound}
           onExportData={handleExportData}
           onImportData={handleImportData}
+          isPlus={isPlus}
+          onOpenPlus={() => setPlusVisible(true)}
+          onExportCsv={handleExportCsv}
+        />
+        <GrowraPlusModal
+          visible={plusVisible}
+          settings={gameState.settings}
+          isPlus={isPlus}
+          price={plus.price}
+          busy={plus.busy}
+          onBuy={handleBuyPlus}
+          onRestore={handleRestorePlus}
+          onClose={() => setPlusVisible(false)}
         />
         <TutorialOverlay
           visible={tutorialVisible && tutorialStep !== "done"}

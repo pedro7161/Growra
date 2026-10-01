@@ -203,6 +203,24 @@ interface AppCopy {
   tileFeatures: Record<TileFeature, string>;
   regionHints: string[];
   decorationNames: Record<string, string>;
+  plusTitle: string;
+  plusPitch: string;
+  plusPerkThemes: string;
+  plusPerkHistory: string;
+  plusPerkExport: string;
+  plusPerkNoAds: string;
+  plusBuy: string;
+  plusUnavailable: string;
+  plusRestore: string;
+  plusThanks: string;
+  plusPending: string;
+  plusError: string;
+  plusRestored: string;
+  plusNotFound: string;
+  plusOwned: string;
+  plusBadge: string;
+  settingsPlus: string;
+  settingsExportCsv: string;
   timerStart: string;
   timerPause: string;
   timerResume: string;
@@ -442,6 +460,24 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "Warm stone and ember light, cosy after a long day.",
       "The top of the valley. You can see the whole road from here.",
     ],
+    plusTitle: "Growra Plus",
+    plusPitch: "A one-time unlock. No subscription.",
+    plusPerkThemes: "3 extra themes",
+    plusPerkHistory: "Every past week on your Journey",
+    plusPerkExport: "Export your history (CSV)",
+    plusPerkNoAds: "No ads: exploring gives finds straight away",
+    plusBuy: "Unlock for {price}",
+    plusUnavailable: "Store unavailable, try again later",
+    plusRestore: "Restore purchase",
+    plusThanks: "Thanks! Plus is unlocked.",
+    plusPending: "Payment pending. Plus unlocks once Google Play confirms it.",
+    plusError: "Something went wrong. Please try again.",
+    plusRestored: "Plus restored.",
+    plusNotFound: "No purchase found on this Google account.",
+    plusOwned: "Plus is active. Thank you for supporting Growra!",
+    plusBadge: "Plus",
+    settingsPlus: "Growra Plus",
+    settingsExportCsv: "Export your history (CSV)",
     decorationNames: {
       "flower-pot": "flower pot",
       "mushroom-ring": "mushroom ring",
@@ -698,6 +734,24 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "Pedra morna e luz de brasas, acolhedora depois de um dia longo.",
       "O topo do vale. Daqui vê-se o caminho todo.",
     ],
+    plusTitle: "Growra Plus",
+    plusPitch: "Desbloqueio único. Sem subscrição.",
+    plusPerkThemes: "3 temas extra",
+    plusPerkHistory: "Todas as semanas passadas na tua Jornada",
+    plusPerkExport: "Exportar o teu histórico (CSV)",
+    plusPerkNoAds: "Sem anúncios: explorar dá achados logo",
+    plusBuy: "Desbloquear por {price}",
+    plusUnavailable: "Loja indisponível, tenta mais tarde",
+    plusRestore: "Restaurar compra",
+    plusThanks: "Obrigado! O Plus está desbloqueado.",
+    plusPending: "Pagamento pendente. O Plus desbloqueia quando o Google Play confirmar.",
+    plusError: "Algo correu mal. Tenta outra vez.",
+    plusRestored: "Plus restaurado.",
+    plusNotFound: "Nenhuma compra encontrada nesta conta Google.",
+    plusOwned: "O Plus está ativo. Obrigado por apoiares o Growra!",
+    plusBadge: "Plus",
+    settingsPlus: "Growra Plus",
+    settingsExportCsv: "Exportar o teu histórico (CSV)",
     decorationNames: {
       "flower-pot": "vaso de flores",
       "mushroom-ring": "círculo de cogumelos",
