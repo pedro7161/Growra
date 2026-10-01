@@ -96,4 +96,5 @@ Files: `assets/journey/decorations/<id>.png`.
 - [x] P1 the 5 placeholder companions × 3 stages. Done 2026-10-01 by Codex (PR #11, then Cindra evo1/evo2), reframed by Claude.
 - [x] P2 the 7 existing companions redone transparent (21 images). Done 2026-10-01: 18 cut out by Claude (PR #14), and Nova redrawn by Codex.
 - [x] P3 Journey: 8 tiles, 7 features, 8 camps, 8 banners, 14 decoration sprites. Done 2026-09-29 in ComfyUI (pixel-art LoRA) and wired into `JourneyScreen` through `src/constants/journeyImages.ts`. They ship as small JPG/PNG (2 MB total); the emoji stay as a fallback.
-- [ ] P4 sleepy moods, cosmetics
+- [x] P4 sleepy moods: all 12 companions × 3 stages, done 2026-10-01 by Codex (PR #17–#21) and shown on the dashboard when the companion is sleepy.
+- [ ] P4 cosmetics: wait for the Growra Plus decision (GAME_REDESIGN §12)
