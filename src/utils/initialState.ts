@@ -32,6 +32,8 @@ export function createInitialGameState(): GameState {
     days: [],
     decorations: [],
     streak: createInitialStreak(),
+    plus: { owned: false, lastCheckedAt: 0 },
+    explore: { day: 0, count: 0 },
     createdAt: Date.now(),
     lastPlayedAt: Date.now(),
   };

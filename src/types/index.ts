@@ -213,6 +213,18 @@ export interface Streak {
 }
 
 // Game State
+// Growra Plus ownership, cached so Plus works offline; Play is re-checked on start.
+export interface PlusState {
+  owned: boolean;
+  lastCheckedAt: number;
+}
+
+// Rewarded "explore" finds: the start of the day of the last find, and the finds that day.
+export interface ExploreState {
+  day: number;
+  count: number;
+}
+
 export interface GameState {
   playerId: string;
   level: number;
@@ -232,6 +244,8 @@ export interface GameState {
   days: DayRecord[];
   decorations: Decoration[];
   streak: Streak;
+  plus: PlusState;
+  explore: ExploreState;
   createdAt: number;
   lastPlayedAt: number;
 }
