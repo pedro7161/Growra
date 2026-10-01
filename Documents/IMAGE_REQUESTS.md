@@ -94,6 +94,6 @@ Files: `assets/journey/decorations/<id>.png`.
 ## Delivery checklist
 - [x] P0 icon set + splash (items 1–6), then the Play icon and feature graphic (7–8). Done 2026-09-29 from Sprout's real art (cut out with rembg) plus a ComfyUI valley for the feature graphic. The Play files are in `Documents/store/` and **not uploaded yet**.
 - [x] P1 the 5 placeholder companions × 3 stages. Done 2026-10-01 by Codex (PR #11, then Cindra evo1/evo2), reframed by Claude.
-- [ ] P2 the 7 existing companions redone transparent (21 images)
+- [ ] P2 the 7 existing companions redone transparent (21 images). 18 done 2026-10-01 by Claude (cutouts of Sprout, Pebble, Moss, Ember, Ripple and Astra, keeping their small ground platforms, reframed to the common margin). **Nova (3) still to do**: full-bleed space scenes need a redraw (Codex).
 - [x] P3 Journey: 8 tiles, 7 features, 8 camps, 8 banners, 14 decoration sprites. Done 2026-09-29 in ComfyUI (pixel-art LoRA) and wired into `JourneyScreen` through `src/constants/journeyImages.ts`. They ship as small JPG/PNG (2 MB total); the emoji stay as a fallback.
 - [ ] P4 sleepy moods, cosmetics
