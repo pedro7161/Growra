@@ -8,8 +8,10 @@ Last checked: 2 October 2026. Re-check them whenever an SDK or data flow changes
 - Store listing, title and short and full descriptions, in pt-PT (default) and en-US.
 - Icon and feature graphic in both languages.
 - Growra Plus product: `growra_plus`, €0.99, active.
+- Phone screenshots: 4 per language (Dashboard, Tasks, Companions, New task), framed with captions. Sources and `compose.py` are in `~/Downloads/growra-store-screenshots/`.
+- Privacy policy site deployed: `https://pedro7161.github.io/growra-website/`.
 
-**Still missing in the listing:** phone screenshots, at least 2 and ideally 4–8, in both languages.
+**Could still improve:** retake the pt-PT screenshots with the app set to Português, and add a Journey or camp shot as number 5.
 
 ---
 
