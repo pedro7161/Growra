@@ -61,6 +61,12 @@ const FEATURE_IMAGES: Record<TileFeature, ImageSourcePropType> = {
 };
 
 const DECORATION_IMAGES: Record<string, ImageSourcePropType> = {
+  "wreath": require("../../assets/journey/decorations/wreath.png"),
+  "snow-globe": require("../../assets/journey/decorations/snow-globe.png"),
+  "heart-balloons": require("../../assets/journey/decorations/heart-balloons.png"),
+  "rose-vase": require("../../assets/journey/decorations/rose-vase.png"),
+  "love-letter-box": require("../../assets/journey/decorations/love-letter-box.png"),
+  "cake-stand": require("../../assets/journey/decorations/cake-stand.png"),
   "cauldron": require("../../assets/journey/decorations/cauldron.png"),
   "spider-web": require("../../assets/journey/decorations/spider-web.png"),
   "candles": require("../../assets/journey/decorations/candles.png"),
