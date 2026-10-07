@@ -55,7 +55,8 @@ import {
   placeDecoration,
   removeDecoration,
 } from "./utils/journey";
-import { playGrowraCue, setGrowraAmbienceEnabled } from "./utils/growraAudio";
+import { ambienceFor } from "./utils/ambience";
+import { playGrowraCue, setGrowraAmbience } from "./utils/growraAudio";
 import { createInitialGameState, createSaveData } from "./utils/initialState";
 
 import { syncRecurringTasks } from "./utils/taskSchedule";
@@ -200,6 +201,7 @@ export default function App() {
   const [plusVisible, setPlusVisible] = useState(false);
   const [exploreBusy, setExploreBusy] = useState(false);
   const [roomEditorId, setRoomEditorId] = useState<string | null>(null);
+  const [appActive, setAppActive] = useState(true);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
 
   const playUiTap = () => {
@@ -230,12 +232,13 @@ export default function App() {
     loadGame();
   }, []);
 
+  // The ambience follows the screen (home / journey / room editor) and pauses while the app is inactive.
   useEffect(() => {
-    void setGrowraAmbienceEnabled(gameState?.settings.musicEnabled ?? false);
-    return () => {
-      void setGrowraAmbienceEnabled(false);
-    };
-  }, [gameState?.settings.musicEnabled]);
+    const musicEnabled = appActive && (gameState?.settings.musicEnabled ?? false);
+    void setGrowraAmbience(ambienceFor(activeScreen, roomEditorId !== null, musicEnabled));
+  }, [appActive, activeScreen, roomEditorId, gameState?.settings.musicEnabled]);
+
+  useEffect(() => () => void setGrowraAmbience(null), []);
 
   useEffect(() => {
     if (!gameState) {
@@ -245,13 +248,12 @@ export default function App() {
     const subscription = AppState.addEventListener(
       "change",
       async (nextAppState) => {
+        setAppActive(nextAppState === "active");
         if (nextAppState !== "active") {
-          void setGrowraAmbienceEnabled(false);
           return;
         }
 
         const currentGameState = gameStateRef.current ?? gameState;
-        void setGrowraAmbienceEnabled(currentGameState.settings.musicEnabled);
         const syncedGameState = syncRecurringTasks(currentGameState);
 
         if (syncedGameState !== currentGameState) {
@@ -465,7 +467,7 @@ export default function App() {
     if (!gameState) return;
 
     await persistGameState(equipPet(gameState, petId));
-    void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
+    void playGrowraCue("companion-switched", gameState.settings.sfxEnabled);
   };
 
   const handleChooseStarter = async (templateId: string) => {
@@ -490,7 +492,7 @@ export default function App() {
 
     const updated = buyDecoration(gameState, typeId);
     await persistGameState(updated);
-    if (updated !== gameState) void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
+    if (updated !== gameState) void playGrowraCue("bought-with-coins", gameState.settings.sfxEnabled);
   };
 
   const handlePlaceDecoration = async (
@@ -503,7 +505,7 @@ export default function App() {
 
     const updated = placeDecoration(gameState, decorationId, camp, spot);
     await persistGameState(updated);
-    if (updated !== gameState) void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
+    if (updated !== gameState) void playGrowraCue("decoration-placed", gameState.settings.sfxEnabled);
   };
 
   const handleRemoveDecoration = async (decorationId: string) => {
@@ -540,7 +542,7 @@ export default function App() {
         theme,
       },
     });
-    void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
+    void playGrowraCue("theme-changed", gameState.settings.sfxEnabled);
   };
 
   const handleAudioPreferenceChange = async (
@@ -640,7 +642,9 @@ export default function App() {
       const { state, find } = grantExploreFind(current, Date.now(), Math.random());
       if (!find) return;
       await persistGameState(state);
-      void playGrowraCue("focus-find", current.settings.sfxEnabled);
+      // "Sent off" first, then the find reveal once it has played (no overlap).
+      void playGrowraCue("explore-sent", current.settings.sfxEnabled);
+      setTimeout(() => void playGrowraCue("focus-find", current.settings.sfxEnabled), 900);
       const companion = getActiveCompanion(state);
       Alert.alert(
         "🧭",
@@ -660,7 +664,7 @@ export default function App() {
     const owner = current.pets.find((pet) => pet.id === room.ownerPetId);
     try {
       await shareRoomPicture(view, buildRoomShareMessage(copy, owner?.name ?? null));
-      void playGrowraCue("ui-tap", current.settings.sfxEnabled);
+      void playGrowraCue("room-picture-shared", current.settings.sfxEnabled);
     } catch {
       Alert.alert("🏠", copy.roomShareError);
     }
@@ -670,7 +674,7 @@ export default function App() {
     const copy = getAppCopy(gameStateRef.current?.settings.language ?? "en");
     const result = await plus.buy();
     if (result === "purchased") {
-      void playGrowraCue("ui-tap", gameStateRef.current?.settings.sfxEnabled ?? false);
+      void playGrowraCue("plus-unlocked", gameStateRef.current?.settings.sfxEnabled ?? false);
       Alert.alert(copy.plusTitle, copy.plusThanks);
     }
     if (result === "pending") Alert.alert(copy.plusTitle, copy.plusPending);
@@ -681,7 +685,7 @@ export default function App() {
   const handleRestorePlus = async () => {
     const copy = getAppCopy(gameStateRef.current?.settings.language ?? "en");
     const result = await plus.restore();
-    if (result === "owned") void playGrowraCue("ui-tap", gameStateRef.current?.settings.sfxEnabled ?? false);
+    if (result === "owned") void playGrowraCue("plus-unlocked", gameStateRef.current?.settings.sfxEnabled ?? false);
     Alert.alert(
       copy.plusTitle,
       result === "owned" ? copy.plusRestored : result === "not-owned" ? copy.plusNotFound : copy.plusUnavailable,
@@ -882,6 +886,7 @@ export default function App() {
             }}
             onOpenPlus={openPlus}
             onShare={handleShareRoom}
+            onCoinPurchase={() => void playGrowraCue("bought-with-coins", gameStateRef.current?.settings.sfxEnabled ?? false)}
             onUiTap={playUiTap}
           />
         )}
