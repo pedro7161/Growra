@@ -41,10 +41,12 @@ interface RoomEditorScreenProps {
   onOpenPlus: () => void;
   onShare: (roomCanvas: View, room: Room) => Promise<void>;
   onUiTap: () => void;
+  /** Played instead of the UI tap when a style or furniture purchase succeeds. */
+  onCoinPurchase: () => void;
 }
 
 /** Rooms spec §2: full-screen editor for one room. */
-export default function RoomEditorScreen({ state, roomId, onChange, onClose, onOpenPlus, onShare, onUiTap }: RoomEditorScreenProps) {
+export default function RoomEditorScreen({ state, roomId, onChange, onClose, onOpenPlus, onShare, onUiTap, onCoinPurchase }: RoomEditorScreenProps) {
   const copy = getAppCopy(state.settings.language);
   const theme = getAppTheme(state.settings.theme);
   const { width: windowWidth } = useWindowDimensions();
@@ -82,10 +84,10 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
     });
   };
 
-  const applyWithoutUndo = (edit: (current: GameState) => GameState) => {
+  const applyWithoutUndo = (edit: (current: GameState) => GameState, cue: () => void = onUiTap) => {
     onChange((current) => {
       const next = edit(current);
-      if (next !== current) onUiTap();
+      if (next !== current) cue();
       return next;
     });
   };
@@ -212,8 +214,8 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
           onAddDecoration={(decorationId) => addAndSelect((s) => addDecorationToRoom(s, roomId, decorationId))}
           onAddCompanion={(petId) => addAndSelect((s) => addCompanionToRoom(s, roomId, petId))}
           onSetStyle={(styleId) => commit((s) => setRoomStyle(s, roomId, styleId))}
-          onBuyStyle={(styleId) => applyWithoutUndo((s) => buyRoomStyle(s, styleId, Date.now()))}
-          onBuyFurniture={(typeId) => applyWithoutUndo((s) => buyFurniture(s, typeId, Date.now()))}
+          onBuyStyle={(styleId) => applyWithoutUndo((s) => buyRoomStyle(s, styleId, Date.now()), onCoinPurchase)}
+          onBuyFurniture={(typeId) => applyWithoutUndo((s) => buyFurniture(s, typeId, Date.now()), onCoinPurchase)}
           onOpenPlus={onOpenPlus}
         />
 
