@@ -16,6 +16,7 @@ type TrayTab = "decorations" | "companions" | "style" | "shop";
 interface RoomTrayProps {
   state: GameState;
   room: Room;
+  onUiTap: () => void;
   onAddDecoration: (decorationId: string) => void;
   onAddCompanion: (petId: string) => void;
   onSetStyle: (styleId: string) => void;
@@ -151,7 +152,11 @@ export default function RoomTray(props: RoomTrayProps) {
           <TouchableOpacity
             key={item.id}
             style={[styles.tab, { backgroundColor: tab === item.id ? theme.accentSoft : "transparent" }]}
-            onPress={() => setTab(item.id)}
+            onPress={() => {
+              if (tab === item.id) return;
+              setTab(item.id);
+              props.onUiTap();
+            }}
           >
             <Text style={[styles.tabText, { color: tab === item.id ? theme.accent : theme.mutedText }]}>{item.label}</Text>
           </TouchableOpacity>

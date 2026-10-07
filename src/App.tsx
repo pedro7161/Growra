@@ -51,9 +51,11 @@ import {
 } from "./utils/gameplay";
 import {
   buyDecoration,
+  getRoadPosition,
   placeDecoration,
   removeDecoration,
 } from "./utils/journey";
+import { playGrowraCue, setGrowraAmbienceEnabled } from "./utils/growraAudio";
 import { createInitialGameState, createSaveData } from "./utils/initialState";
 
 import { syncRecurringTasks } from "./utils/taskSchedule";
@@ -165,6 +167,19 @@ function shouldCompleteTutorial(gameState: GameState): boolean {
   return hasCompletedTask && gameState.pets.length > 0 && gameState.equippedPetId !== "";
 }
 
+type CompanionAudioCue = "companion-greeting" | "companion-evolved" | "focus-find";
+
+function companionAudioCueFor(events: GameState["companionEvents"]): CompanionAudioCue | null {
+  if (events.some((event) => event.kind === "evolved")) return "companion-evolved";
+  if (events.some((event) => event.kind === "found")) return "focus-find";
+  if (events.some((event) => event.kind === "joined")) return "companion-greeting";
+  return null;
+}
+
+function newCompanionAudioCue(before: GameState, after: GameState): CompanionAudioCue | null {
+  return companionAudioCueFor(after.companionEvents.slice(before.companionEvents.length));
+}
+
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<Screen>("dashboard");
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -187,12 +202,22 @@ export default function App() {
   const [roomEditorId, setRoomEditorId] = useState<string | null>(null);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
 
+  const playUiTap = () => {
+    void playGrowraCue("ui-tap", gameStateRef.current?.settings.sfxEnabled ?? false);
+  };
+  const handleNavigate = (screen: Screen) => {
+    if (screen === activeScreen) return;
+    setActiveScreen(screen);
+    playUiTap();
+  };
+
   useEffect(() => {
     if (settingsVisible) void adsService.canChangeConsent().then(setAdConsentAvailable);
   }, [settingsVisible]);
 
   const openPlus = () => {
     setPlusVisible(true);
+    playUiTap();
     void plus.refreshPrice();
   };
   const plus = usePlusController(plusService, (owned) => {
@@ -206,6 +231,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    void setGrowraAmbienceEnabled(gameState?.settings.musicEnabled ?? false);
+    return () => {
+      void setGrowraAmbienceEnabled(false);
+    };
+  }, [gameState?.settings.musicEnabled]);
+
+  useEffect(() => {
     if (!gameState) {
       return;
     }
@@ -214,12 +246,15 @@ export default function App() {
       "change",
       async (nextAppState) => {
         if (nextAppState !== "active") {
+          void setGrowraAmbienceEnabled(false);
           return;
         }
 
-        const syncedGameState = syncRecurringTasks(gameState);
+        const currentGameState = gameStateRef.current ?? gameState;
+        void setGrowraAmbienceEnabled(currentGameState.settings.musicEnabled);
+        const syncedGameState = syncRecurringTasks(currentGameState);
 
-        if (syncedGameState !== gameState) {
+        if (syncedGameState !== currentGameState) {
           await persistGameState(syncedGameState);
         }
       },
@@ -299,29 +334,49 @@ export default function App() {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState(
-      applyTaskCreated(
-        {
-          ...gameState,
-          tasks: [...gameState.tasks, task],
-          customTaskTemplates: customTemplate
-            ? upsertCustomTaskTemplate(
-                gameState.customTaskTemplates,
-                customTemplate,
-              )
-            : gameState.customTaskTemplates,
-          lastPlayedAt: Date.now(),
-        },
-        task,
-      ),
+    const updated = applyTaskCreated(
+      {
+        ...gameState,
+        tasks: [...gameState.tasks, task],
+        customTaskTemplates: customTemplate
+          ? upsertCustomTaskTemplate(
+              gameState.customTaskTemplates,
+              customTemplate,
+            )
+          : gameState.customTaskTemplates,
+        lastPlayedAt: Date.now(),
+      },
+      task,
     );
+    const companionCue = newCompanionAudioCue(gameState, updated);
+    await persistGameState(updated);
+    void playGrowraCue(companionCue ?? "task-added", gameState.settings.sfxEnabled);
   };
 
   const handleCompleteTask = async (taskId: string) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState(completeTask(gameState, taskId));
+    const updated = completeTask(gameState, taskId);
+    if (updated === gameState) return;
+    const companionCue = newCompanionAudioCue(gameState, updated);
+    const tilesBefore = getRoadPosition(gameState.days).tiles;
+    const tilesAfter = getRoadPosition(updated.days).tiles;
+    const tileAdvanced = tilesAfter > tilesBefore;
+    const playerLeveledUp = updated.level > gameState.level;
+    await persistGameState(updated);
+    const cue = companionCue ?? (
+      tileAdvanced && tilesAfter % 28 === 0
+        ? "region-unlock"
+        : playerLeveledUp
+          ? "player-level-up"
+          : tileAdvanced && tilesAfter % 7 === 0
+            ? "camp-milestone"
+            : tileAdvanced
+              ? "journey-tile"
+              : "task-complete"
+    );
+    void playGrowraCue(cue, gameState.settings.sfxEnabled);
   };
 
   const handleUpdateTask = async (updatedTask: Task) => {
@@ -336,9 +391,14 @@ export default function App() {
       ),
       lastPlayedAt: Date.now(),
     };
-    await persistGameState(
-      previousTask ? applyTaskUpdated(updatedState, previousTask, updatedTask) : updatedState,
-    );
+    const nextState = previousTask
+      ? applyTaskUpdated(updatedState, previousTask, updatedTask)
+      : updatedState;
+    const companionCue = newCompanionAudioCue(gameState, nextState);
+    await persistGameState(nextState);
+    if (previousTask) {
+      void playGrowraCue(companionCue ?? "task-saved", gameState.settings.sfxEnabled);
+    }
   };
 
   const handleDeleteTask = async (taskId: string) => {
@@ -351,9 +411,14 @@ export default function App() {
       tasks: gameState.tasks.filter((task) => task.id !== taskId),
       lastPlayedAt: Date.now(),
     };
-    await persistGameState(
-      deletedTask ? applyTaskDeleted(remainingState, deletedTask) : remainingState,
-    );
+    const nextState = deletedTask
+      ? applyTaskDeleted(remainingState, deletedTask)
+      : remainingState;
+    const companionCue = newCompanionAudioCue(gameState, nextState);
+    await persistGameState(nextState);
+    if (deletedTask) {
+      void playGrowraCue(companionCue ?? "task-removed", gameState.settings.sfxEnabled);
+    }
   };
 
   const applyTimerUpdate = async (
@@ -374,14 +439,17 @@ export default function App() {
 
   const handleStartTimer = async (taskId: string) => {
     await applyTimerUpdate(taskId, startTaskTimer);
+    void playGrowraCue("timer-start", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
 
   const handlePauseTimer = async (taskId: string) => {
     await applyTimerUpdate(taskId, pauseTaskTimer);
+    void playGrowraCue("timer-pause", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
 
   const handleResetTimer = async (taskId: string) => {
     await applyTimerUpdate(taskId, resetTaskTimer);
+    void playGrowraCue("timer-reset", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
 
   const handleTimerReady = async (taskId: string) => {
@@ -397,6 +465,7 @@ export default function App() {
     if (!gameState) return;
 
     await persistGameState(equipPet(gameState, petId));
+    void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
   };
 
   const handleChooseStarter = async (templateId: string) => {
@@ -404,6 +473,7 @@ export default function App() {
     if (!gameState) return;
 
     await persistGameState(adoptStarter(gameState, templateId));
+    void playGrowraCue("companion-greeting", gameState.settings.sfxEnabled);
   };
 
   const handleCloseCompanionReveal = async () => {
@@ -411,13 +481,16 @@ export default function App() {
     if (!gameState) return;
 
     await persistGameState({ ...gameState, companionEvents: [] });
+    playUiTap();
   };
 
   const handleBuyDecoration = async (typeId: string) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState(buyDecoration(gameState, typeId));
+    const updated = buyDecoration(gameState, typeId);
+    await persistGameState(updated);
+    if (updated !== gameState) void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
   };
 
   const handlePlaceDecoration = async (
@@ -428,14 +501,18 @@ export default function App() {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState(placeDecoration(gameState, decorationId, camp, spot));
+    const updated = placeDecoration(gameState, decorationId, camp, spot);
+    await persistGameState(updated);
+    if (updated !== gameState) void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
   };
 
   const handleRemoveDecoration = async (decorationId: string) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await persistGameState(removeDecoration(gameState, decorationId));
+    const updated = removeDecoration(gameState, decorationId);
+    await persistGameState(updated);
+    if (updated !== gameState) void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
   };
 
   const handleLanguageChange = async (language: AppLanguage) => {
@@ -449,6 +526,7 @@ export default function App() {
         language,
       },
     });
+    void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
   };
 
   const handleThemeChange = async (theme: AppThemeId) => {
@@ -462,6 +540,23 @@ export default function App() {
         theme,
       },
     });
+    void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
+  };
+
+  const handleAudioPreferenceChange = async (
+    key: "musicEnabled" | "sfxEnabled",
+    enabled: boolean,
+  ) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({
+      ...gameState,
+      settings: { ...gameState.settings, [key]: enabled },
+    });
+    const tapEnabled = key === "sfxEnabled"
+      ? enabled || gameState.settings.sfxEnabled
+      : gameState.settings.sfxEnabled;
+    void playGrowraCue("ui-tap", tapEnabled);
   };
 
   const handleTimerAlertModeChange = async (mode: TimerAlertMode) => {
@@ -478,6 +573,7 @@ export default function App() {
         },
       },
     });
+    void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
   };
 
   const handlePickTimerAlertSound = async () => {
@@ -503,6 +599,7 @@ export default function App() {
         },
       },
     });
+    void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
   };
 
   const handleClearTimerAlertSound = async () => {
@@ -523,6 +620,7 @@ export default function App() {
         },
       },
     });
+    void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
   };
 
   const handleExplore = async () => {
@@ -542,6 +640,7 @@ export default function App() {
       const { state, find } = grantExploreFind(current, Date.now(), Math.random());
       if (!find) return;
       await persistGameState(state);
+      void playGrowraCue("focus-find", current.settings.sfxEnabled);
       const companion = getActiveCompanion(state);
       Alert.alert(
         "🧭",
@@ -561,6 +660,7 @@ export default function App() {
     const owner = current.pets.find((pet) => pet.id === room.ownerPetId);
     try {
       await shareRoomPicture(view, buildRoomShareMessage(copy, owner?.name ?? null));
+      void playGrowraCue("ui-tap", current.settings.sfxEnabled);
     } catch {
       Alert.alert("🏠", copy.roomShareError);
     }
@@ -569,7 +669,10 @@ export default function App() {
   const handleBuyPlus = async () => {
     const copy = getAppCopy(gameStateRef.current?.settings.language ?? "en");
     const result = await plus.buy();
-    if (result === "purchased") Alert.alert(copy.plusTitle, copy.plusThanks);
+    if (result === "purchased") {
+      void playGrowraCue("ui-tap", gameStateRef.current?.settings.sfxEnabled ?? false);
+      Alert.alert(copy.plusTitle, copy.plusThanks);
+    }
     if (result === "pending") Alert.alert(copy.plusTitle, copy.plusPending);
     if (result === "error") Alert.alert(copy.plusTitle, copy.plusError);
     if (result === "unavailable") Alert.alert(copy.plusTitle, copy.plusUnavailable);
@@ -578,6 +681,7 @@ export default function App() {
   const handleRestorePlus = async () => {
     const copy = getAppCopy(gameStateRef.current?.settings.language ?? "en");
     const result = await plus.restore();
+    if (result === "owned") void playGrowraCue("ui-tap", gameStateRef.current?.settings.sfxEnabled ?? false);
     Alert.alert(
       copy.plusTitle,
       result === "owned" ? copy.plusRestored : result === "not-owned" ? copy.plusNotFound : copy.plusUnavailable,
@@ -608,6 +712,7 @@ export default function App() {
     const current = gameStateRef.current;
     // Plus ownership belongs to this device's Play account, never to a backup code.
     await persistGameState(current ? keepPlusOnImport(importedSaveData.gameState, current) : importedSaveData.gameState);
+    playUiTap();
     void plus.restore();
   };
 
@@ -627,7 +732,11 @@ export default function App() {
             tutorialLocked={tutorialStep !== "done"}
             onAddTask={handleAddTask}
             onCompleteTask={handleCompleteTask}
-            onOpenSettings={() => setSettingsVisible(true)}
+            onOpenSettings={() => {
+              setSettingsVisible(true);
+              playUiTap();
+            }}
+            onUiTap={playUiTap}
             onStartTimer={handleStartTimer}
             onPauseTimer={handlePauseTimer}
             onResetTimer={handleResetTimer}
@@ -658,7 +767,8 @@ export default function App() {
             onCompleteTask={handleCompleteTask}
             onUpdateTask={handleUpdateTask}
             onDeleteTask={handleDeleteTask}
-            onOpenCalendar={() => setActiveScreen("task-calendar")}
+            onOpenCalendar={() => handleNavigate("task-calendar")}
+            onUiTap={playUiTap}
             onStartTimer={handleStartTimer}
             onPauseTimer={handlePauseTimer}
             onResetTimer={handleResetTimer}
@@ -670,7 +780,7 @@ export default function App() {
           <TaskCalendarScreen
             settings={gameState.settings}
             tasks={gameState.tasks}
-            onBack={() => setActiveScreen("tasks")}
+            onBack={() => handleNavigate("tasks")}
           />
         );
       case "journey":
@@ -685,6 +795,7 @@ export default function App() {
             exploreBusy={exploreBusy}
             onExplore={handleExplore}
             onOpenPlus={openPlus}
+            onUiTap={playUiTap}
           />
         );
       case "companions":
@@ -695,10 +806,14 @@ export default function App() {
             tutorialMode={tutorialStep === "choose-companion" ? "choose" : null}
             onChooseStarter={handleChooseStarter}
             onEquipPet={handleEquipPet}
+            onUiTap={playUiTap}
             isPlus={isPlus}
             exploreBusy={exploreBusy}
             onExplore={handleExplore}
-            onOpenRoom={setRoomEditorId}
+            onOpenRoom={(roomId) => {
+              setRoomEditorId(roomId);
+              playUiTap();
+            }}
             onOpenPlus={openPlus}
           />
         );
@@ -716,7 +831,7 @@ export default function App() {
           activeScreen={
             activeScreen === "task-calendar" ? "tasks" : activeScreen
           }
-          onNavigate={setActiveScreen}
+          onNavigate={handleNavigate}
           settings={gameState.settings}
           tutorialTarget={
             tutorialStep === "open-tasks" ||
@@ -735,9 +850,13 @@ export default function App() {
         <SettingsModal
           visible={settingsVisible}
           gameState={gameState}
-          onClose={() => setSettingsVisible(false)}
+          onClose={() => {
+            setSettingsVisible(false);
+            playUiTap();
+          }}
           onLanguageChange={handleLanguageChange}
           onThemeChange={handleThemeChange}
+          onAudioPreferenceChange={handleAudioPreferenceChange}
           onTimerAlertModeChange={handleTimerAlertModeChange}
           onPickTimerAlertSound={handlePickTimerAlertSound}
           onClearTimerAlertSound={handleClearTimerAlertSound}
@@ -757,9 +876,13 @@ export default function App() {
               const current = gameStateRef.current;
               if (current) void persistGameState(update(current));
             }}
-            onClose={() => setRoomEditorId(null)}
+            onClose={() => {
+              setRoomEditorId(null);
+              playUiTap();
+            }}
             onOpenPlus={openPlus}
             onShare={handleShareRoom}
+            onUiTap={playUiTap}
           />
         )}
         <GrowraPlusModal
@@ -770,7 +893,10 @@ export default function App() {
           busy={plus.busy}
           onBuy={handleBuyPlus}
           onRestore={handleRestorePlus}
-          onClose={() => setPlusVisible(false)}
+          onClose={() => {
+            setPlusVisible(false);
+            playUiTap();
+          }}
         />
         <TutorialOverlay
           visible={tutorialVisible && tutorialStep !== "done"}

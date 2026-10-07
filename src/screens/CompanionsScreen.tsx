@@ -33,6 +33,7 @@ interface CompanionsScreenProps {
   tutorialMode: "choose" | null;
   onChooseStarter: (templateId: string) => void;
   onEquipPet: (petId: string) => void;
+  onUiTap: () => void;
   isPlus: boolean;
   exploreBusy: boolean;
   onExplore: () => void;
@@ -46,6 +47,7 @@ export default function CompanionsScreen({
   tutorialMode,
   onChooseStarter,
   onEquipPet,
+  onUiTap,
   isPlus,
   exploreBusy,
   onExplore,
@@ -141,7 +143,10 @@ export default function CompanionsScreen({
                 petId={pet.id}
                 settings={settings}
                 now={now}
-                onPress={() => setSelectedPetId(pet.id)}
+                onPress={() => {
+                  setSelectedPetId(pet.id);
+                  onUiTap();
+                }}
                 onEquipPet={onEquipPet}
                 onOpenRoom={onOpenRoom}
               />
@@ -163,7 +168,10 @@ export default function CompanionsScreen({
         gameState={gameState}
         settings={settings}
         petId={selectedPetId}
-        onClose={() => setSelectedPetId("")}
+        onClose={() => {
+          setSelectedPetId("");
+          onUiTap();
+        }}
         onEquipPet={onEquipPet}
       />
     </SafeAreaView>

@@ -52,6 +52,7 @@ interface JourneyScreenProps {
   exploreBusy: boolean;
   onExplore: () => void;
   onOpenPlus: () => void;
+  onUiTap: () => void;
 }
 
 /** Horizontal offsets that make the road wind left and right. */
@@ -106,6 +107,7 @@ export default function JourneyScreen({
   exploreBusy,
   onExplore,
   onOpenPlus,
+  onUiTap,
 }: JourneyScreenProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
@@ -138,7 +140,10 @@ export default function JourneyScreen({
           campIndex={campIndex}
           decorations={gameState.decorations}
           settings={settings}
-          onPress={() => setSelectedCamp(campIndex)}
+          onPress={() => {
+            setSelectedCamp(campIndex);
+            onUiTap();
+          }}
         />,
       );
     }
@@ -159,7 +164,10 @@ export default function JourneyScreen({
               borderColor: tileRegion.borderColor,
             },
           ]}
-          onPress={() => setSelectedDay(day)}
+          onPress={() => {
+            setSelectedDay(day);
+            onUiTap();
+          }}
           activeOpacity={0.85}
         >
           <ImageBackground
@@ -226,7 +234,10 @@ export default function JourneyScreen({
           </View>
           <TouchableOpacity
             style={styles.headerButton}
-            onPress={() => setDecorationsVisible(true)}
+            onPress={() => {
+              setDecorationsVisible(true);
+              onUiTap();
+            }}
           >
             <Text style={styles.headerButtonText}>🎒 {copy.journeyDecorations}</Text>
           </TouchableOpacity>
@@ -264,13 +275,19 @@ export default function JourneyScreen({
       <DayModal
         day={selectedDay}
         settings={settings}
-        onClose={() => setSelectedDay(null)}
+        onClose={() => {
+          setSelectedDay(null);
+          onUiTap();
+        }}
       />
       <CampModal
         campIndex={selectedCamp}
         gameState={gameState}
         settings={settings}
-        onClose={() => setSelectedCamp(null)}
+        onClose={() => {
+          setSelectedCamp(null);
+          onUiTap();
+        }}
         onPlaceDecoration={onPlaceDecoration}
         onRemoveDecoration={onRemoveDecoration}
         isPlus={isPlus}
@@ -280,7 +297,10 @@ export default function JourneyScreen({
         visible={decorationsVisible}
         gameState={gameState}
         settings={settings}
-        onClose={() => setDecorationsVisible(false)}
+        onClose={() => {
+          setDecorationsVisible(false);
+          onUiTap();
+        }}
         onBuyDecoration={onBuyDecoration}
         isPlus={isPlus}
         exploreBusy={exploreBusy}

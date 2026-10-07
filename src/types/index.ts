@@ -36,6 +36,8 @@ export interface TimerAlertSettings {
 export interface AppSettings {
   language: AppLanguage;
   theme: AppThemeId;
+  musicEnabled: boolean;
+  sfxEnabled: boolean;
   timerAlert: TimerAlertSettings;
 }
 

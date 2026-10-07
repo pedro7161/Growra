@@ -47,6 +47,7 @@ interface TasksScreenProps {
   onUpdateTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onOpenCalendar: () => void;
+  onUiTap: () => void;
   onStartTimer: (taskId: string) => void;
   onPauseTimer: (taskId: string) => void;
   onResetTimer: (taskId: string) => void;
@@ -64,6 +65,7 @@ export default function TasksScreen({
   onUpdateTask,
   onDeleteTask,
   onOpenCalendar,
+  onUiTap,
   onStartTimer,
   onPauseTimer,
   onResetTimer,
@@ -174,7 +176,10 @@ export default function TasksScreen({
               tutorialTarget === "add-button" && styles.tutorialHighlight,
               tutorialOn && tutorialTarget !== "add-button" && styles.tutorialDisabled,
             ]}
-            onPress={() => setModalVisible(true)}
+            onPress={() => {
+              setModalVisible(true);
+              onUiTap();
+            }}
             disabled={tutorialOn && tutorialTarget !== "add-button"}
           >
             <Text style={[styles.addButtonText, { color: theme.accentText }]}>{copy.tasksAdd}</Text>
@@ -246,7 +251,10 @@ export default function TasksScreen({
               key={task.id}
               task={task}
               onComplete={() => onCompleteTask(task.id)}
-              onOpen={() => setSelectedTask(task)}
+              onOpen={() => {
+                setSelectedTask(task);
+                onUiTap();
+              }}
               settings={settings}
               onStartTimer={() => onStartTimer(task.id)}
               onPauseTimer={() => onPauseTimer(task.id)}
@@ -261,7 +269,10 @@ export default function TasksScreen({
 
       <AddTaskModal
         visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+        onClose={() => {
+          setModalVisible(false);
+          onUiTap();
+        }}
         settings={settings}
         customTaskTemplates={customTaskTemplates}
         tutorialEnabled={tutorialCreateFlow}
@@ -280,7 +291,10 @@ export default function TasksScreen({
         task={selectedTask}
         settings={settings}
         customTaskTemplates={customTaskTemplates}
-        onClose={() => setSelectedTask(null)}
+        onClose={() => {
+          setSelectedTask(null);
+          onUiTap();
+        }}
         onSave={(task) => {
           onUpdateTask(task);
           setSelectedTask(null);

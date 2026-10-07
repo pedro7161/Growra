@@ -299,6 +299,8 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
         : false,
     settings: {
       ...storedSettings,
+      musicEnabled: storedSettings.musicEnabled === true,
+      sfxEnabled: storedSettings.sfxEnabled === true,
       timerAlert,
     },
     customTaskTemplates: saveData.gameState.customTaskTemplates
