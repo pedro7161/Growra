@@ -36,6 +36,7 @@ interface DashboardScreenProps {
   onAddTask: (task: Task, customTemplate?: CustomTaskTemplate) => void;
   onCompleteTask: (taskId: string) => void;
   onOpenSettings: () => void;
+  onUiTap: () => void;
   onStartTimer: (taskId: string) => void;
   onPauseTimer: (taskId: string) => void;
   onResetTimer: (taskId: string) => void;
@@ -48,6 +49,7 @@ export default function DashboardScreen({
   onAddTask,
   onCompleteTask,
   onOpenSettings,
+  onUiTap,
   onStartTimer,
   onPauseTimer,
   onResetTimer,
@@ -164,7 +166,10 @@ export default function DashboardScreen({
                 { backgroundColor: theme.accent },
                 tutorialLocked && styles.tutorialDisabled,
               ]}
-              onPress={() => setModalVisible(true)}
+              onPress={() => {
+                setModalVisible(true);
+                onUiTap();
+              }}
               disabled={tutorialLocked}
             >
               <Text
@@ -251,7 +256,10 @@ export default function DashboardScreen({
                 { backgroundColor: theme.surface },
                 tutorialLocked && styles.tutorialDisabled,
               ]}
-              onPress={() => setShowPlayerLevelDetail((prev) => !prev)}
+              onPress={() => {
+                setShowPlayerLevelDetail((prev) => !prev);
+                onUiTap();
+              }}
               activeOpacity={0.8}
               disabled={tutorialLocked}
             >
@@ -331,7 +339,10 @@ export default function DashboardScreen({
 
       <AddTaskModal
         visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+        onClose={() => {
+          setModalVisible(false);
+          onUiTap();
+        }}
         settings={gameState.settings}
         customTaskTemplates={gameState.customTaskTemplates}
         tutorialEnabled={tutorialLocked}

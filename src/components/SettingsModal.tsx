@@ -26,6 +26,7 @@ interface SettingsModalProps {
   onClose: () => void;
   onLanguageChange: (language: AppLanguage) => void;
   onThemeChange: (theme: AppThemeId) => void;
+  onAudioPreferenceChange: (key: "musicEnabled" | "sfxEnabled", enabled: boolean) => void;
   onTimerAlertModeChange: (mode: TimerAlertMode) => void;
   onPickTimerAlertSound: () => Promise<void>;
   onClearTimerAlertSound: () => Promise<void>;
@@ -44,6 +45,7 @@ export default function SettingsModal({
   onClose,
   onLanguageChange,
   onThemeChange,
+  onAudioPreferenceChange,
   onTimerAlertModeChange,
   onPickTimerAlertSound,
   onClearTimerAlertSound,
@@ -163,6 +165,26 @@ export default function SettingsModal({
                 <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsAdConsent}</Text>
               </TouchableOpacity>
             )}
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {gameState.settings.language === "pt" ? "Áudio opcional" : "Optional audio"}
+            </Text>
+            <View style={styles.optionRow}>
+              <OptionButton
+                label={gameState.settings.language === "pt" ? "Ambiente" : "Ambient music"}
+                active={gameState.settings.musicEnabled}
+                onPress={() => onAudioPreferenceChange("musicEnabled", !gameState.settings.musicEnabled)}
+                themeId={theme.id}
+              />
+              <OptionButton
+                label={gameState.settings.language === "pt" ? "Sons da aplicação" : "App sounds"}
+                active={gameState.settings.sfxEnabled}
+                onPress={() => onAudioPreferenceChange("sfxEnabled", !gameState.settings.sfxEnabled)}
+                themeId={theme.id}
+              />
+            </View>
           </View>
 
           <View style={[styles.section, { backgroundColor: theme.surface }]}>

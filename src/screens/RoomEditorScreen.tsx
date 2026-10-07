@@ -40,10 +40,11 @@ interface RoomEditorScreenProps {
   onClose: () => void;
   onOpenPlus: () => void;
   onShare: (roomCanvas: View, room: Room) => Promise<void>;
+  onUiTap: () => void;
 }
 
 /** Rooms spec §2: full-screen editor for one room. */
-export default function RoomEditorScreen({ state, roomId, onChange, onClose, onOpenPlus, onShare }: RoomEditorScreenProps) {
+export default function RoomEditorScreen({ state, roomId, onChange, onClose, onOpenPlus, onShare, onUiTap }: RoomEditorScreenProps) {
   const copy = getAppCopy(state.settings.language);
   const theme = getAppTheme(state.settings.theme);
   const { width: windowWidth } = useWindowDimensions();
@@ -73,11 +74,25 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
     onChange((current) => {
       const next = edit(current);
       if (next === current) return current;
+      onUiTap();
       const before = current.rooms.find((candidate) => candidate.id === roomId);
       if (before) setUndo(before);
       afterApply?.(next);
       return next;
     });
+  };
+
+  const applyWithoutUndo = (edit: (current: GameState) => GameState) => {
+    onChange((current) => {
+      const next = edit(current);
+      if (next !== current) onUiTap();
+      return next;
+    });
+  };
+
+  const closeRename = () => {
+    setRenaming(null);
+    onUiTap();
   };
 
   const addAndSelect = (edit: (current: GameState) => GameState) => {
@@ -123,14 +138,20 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
       <GestureHandlerRootView style={styles.container}>
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={[styles.topBar, { borderBottomColor: theme.border }]}>
-          <TouchableOpacity style={styles.nameButton} onPress={() => setRenaming(room.name || displayName)}>
+          <TouchableOpacity
+            style={styles.nameButton}
+            onPress={() => {
+              setRenaming(room.name || displayName);
+              onUiTap();
+            }}
+          >
             <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>{displayName} ✎</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
               if (!undo) return;
               const snapshot = undo;
-              onChange((current) => replaceRoom(current, snapshot));
+              applyWithoutUndo((current) => replaceRoom(current, snapshot));
               setUndo(null);
               setSelectedItemId(null);
             }}
@@ -178,7 +199,7 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
               <Text style={[styles.toolText, { color: theme.mutedText }]}>{copy.roomShareFooterToggle}</Text>
               <Switch
                 value={state.roomShareFooter}
-                onValueChange={(value) => onChange((s) => ({ ...s, roomShareFooter: value }))}
+                onValueChange={(value) => applyWithoutUndo((s) => ({ ...s, roomShareFooter: value }))}
               />
             </View>
           )}
@@ -187,15 +208,16 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
         <RoomTray
           state={state}
           room={room}
+          onUiTap={onUiTap}
           onAddDecoration={(decorationId) => addAndSelect((s) => addDecorationToRoom(s, roomId, decorationId))}
           onAddCompanion={(petId) => addAndSelect((s) => addCompanionToRoom(s, roomId, petId))}
           onSetStyle={(styleId) => commit((s) => setRoomStyle(s, roomId, styleId))}
-          onBuyStyle={(styleId) => onChange((s) => buyRoomStyle(s, styleId, Date.now()))}
-          onBuyFurniture={(typeId) => onChange((s) => buyFurniture(s, typeId, Date.now()))}
+          onBuyStyle={(styleId) => applyWithoutUndo((s) => buyRoomStyle(s, styleId, Date.now()))}
+          onBuyFurniture={(typeId) => applyWithoutUndo((s) => buyFurniture(s, typeId, Date.now()))}
           onOpenPlus={onOpenPlus}
         />
 
-        <Modal visible={renaming !== null} transparent animationType="fade" onRequestClose={() => setRenaming(null)}>
+        <Modal visible={renaming !== null} transparent animationType="fade" onRequestClose={closeRename}>
           <View style={styles.renameBackdrop}>
             <View style={[styles.renameCard, { backgroundColor: theme.surface }]}>
               <Text style={[styles.name, { color: theme.text }]}>{copy.roomRename}</Text>
