@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { getLocaleFromSettings } from "../utils/settings";
+import { formatCount } from "../utils/formatCount";
 import {
     Image,
     ScrollView,
@@ -56,6 +58,7 @@ export default function DashboardScreen({
   onTimerReady,
 }: DashboardScreenProps) {
   const copy = getAppCopy(gameState.settings.language);
+  const locale = getLocaleFromSettings(gameState.settings);
   const theme = getAppTheme(gameState.settings.theme);
   const now = Date.now();
   const [modalVisible, setModalVisible] = useState(false);
@@ -247,7 +250,7 @@ export default function DashboardScreen({
                 {copy.dashboardCoins}
               </Text>
               <Text style={[styles.summaryValue, { color: theme.text }]}>
-                {gameState.coins}
+                {formatCount(gameState.coins, locale)}
               </Text>
             </View>
             <TouchableOpacity
@@ -300,7 +303,7 @@ export default function DashboardScreen({
                 {copy.dashboardTotalXp}
               </Text>
               <Text style={[styles.summaryValue, { color: theme.text }]}>
-                {gameState.totalExperience}
+                {formatCount(gameState.totalExperience, locale)}
               </Text>
             </View>
             <View
@@ -331,7 +334,7 @@ export default function DashboardScreen({
               {copy.dashboardCompleted}: {completedTasks.length}
             </Text>
             <Text style={[styles.statRow, { color: theme.text }]}>
-              {copy.dashboardAllTimeCompleted}: {gameState.totalTasksCompleted}
+              {copy.dashboardAllTimeCompleted}: {formatCount(gameState.totalTasksCompleted, locale)}
             </Text>
           </View>
         </View>
