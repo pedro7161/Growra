@@ -8,6 +8,21 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "Version 1.8.1 · October 8, 2026",
+      items: [
+        "The bottom bar has icons, and every tab label is the same size.",
+        "Your active companion's button is easier to read.",
+        "A little celebration sound when your streak reaches 7, 14 and 20 days.",
+      ],
+    },
+    {
+      dateLabel: "Version 1.8.0 · October 7, 2026",
+      items: [
+        "Companion rooms: decorate your companion's room and share a picture of it.",
+        "Soft background music and new sound effects for purchases, decorations, themes and exploring.",
+      ],
+    },
+    {
       dateLabel: "Version 1.7.0 · October 1, 2026",
       items: [
         "Growra Plus: a one-time unlock with 3 extra themes, every past week on your Journey, CSV export, and no ads.",
@@ -78,6 +93,21 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "Versão 1.8.1 · 8 de outubro de 2026",
+      items: [
+        "A barra inferior tem ícones, e todos os separadores têm o mesmo tamanho de texto.",
+        "O botão do companheiro ativo ficou mais fácil de ler.",
+        "Um pequeno som de celebração quando a tua sequência chega aos 7, 14 e 20 dias.",
+      ],
+    },
+    {
+      dateLabel: "Versão 1.8.0 · 7 de outubro de 2026",
+      items: [
+        "Quartos dos companheiros: decora o quarto do teu companheiro e partilha uma imagem.",
+        "Música ambiente suave e novos efeitos sonoros para compras, decorações, temas e explorações.",
+      ],
+    },
     {
       dateLabel: "Versão 1.7.0 · 1 de outubro de 2026",
       items: [
