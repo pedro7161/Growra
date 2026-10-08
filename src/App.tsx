@@ -20,6 +20,7 @@ import { buildCompletionsCsv, buildTasksCsv } from "./utils/historyCsv";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import CompanionRevealModal from "./components/CompanionRevealModal";
+import { reachedStreakMilestone } from "./utils/streakMilestones";
 import TutorialOverlay, { TutorialStep } from "./components/TutorialOverlay";
 import { getAppCopy } from "./constants/appCopy";
 import { getAppTheme } from "./constants/appTheme";
@@ -372,6 +373,8 @@ export default function App() {
         ? "region-unlock"
         : playerLeveledUp
           ? "player-level-up"
+          : reachedStreakMilestone(gameState.streak.level, updated.streak.level)
+            ? "streak-milestone"
           : tileAdvanced && tilesAfter % 7 === 0
             ? "camp-milestone"
             : tileAdvanced
