@@ -34,6 +34,7 @@ const cueSources = {
   "decoration-placed": require("../assets/audio/growra-decoration-placed.m4a"),
   "companion-switched": require("../assets/audio/growra-companion-switched.m4a"),
   "theme-changed": require("../assets/audio/growra-theme-changed.m4a"),
+  "streak-milestone": require("../assets/audio/growra-streak-milestone.m4a"),
 } as const;
 
 export type GrowraCue = keyof typeof cueSources;
@@ -48,6 +49,7 @@ const CUE_VOLUME: Partial<Record<GrowraCue, number>> = {
   "decoration-placed": 0.3,
   "companion-switched": 0.34,
   "theme-changed": 0.28,
+  "streak-milestone": 0.26,
 };
 
 const ambiencePlayers = new Map<AmbienceTrack, ReturnType<typeof createAudioPlayer>>();

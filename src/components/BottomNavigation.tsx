@@ -1,4 +1,5 @@
 import React from "react";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
@@ -7,9 +8,18 @@ import { AppSettings } from "../types";
 
 type Screen = "dashboard" | "tasks" | "journey" | "companions";
 
-const ACTIVE_CIRCLE_SIZE = 80;
-const ACTIVE_DOCK_WIDTH = 92;
+const ACTIVE_CIRCLE_SIZE = 68;
+const ACTIVE_DOCK_WIDTH = 82;
 const ACTIVE_DOCK_HEIGHT = 34;
+
+type IconName = React.ComponentProps<typeof Ionicons>["name"];
+
+const NAV_ICONS: Record<Screen, { active: IconName; idle: IconName }> = {
+  dashboard: { active: "home", idle: "home-outline" },
+  tasks: { active: "checkbox", idle: "checkbox-outline" },
+  journey: { active: "map", idle: "map-outline" },
+  companions: { active: "paw", idle: "paw-outline" },
+};
 
 interface BottomNavigationProps {
   activeScreen: Screen;
@@ -50,6 +60,7 @@ export default function BottomNavigation({
       >
         <NavSlot
           label={copy.navDashboard}
+          icon={NAV_ICONS.dashboard}
           active={activeScreen === "dashboard"}
           highlighted={tutorialTarget === "dashboard"}
           disabled={tutorialTarget !== null && tutorialTarget !== "dashboard"}
@@ -58,6 +69,7 @@ export default function BottomNavigation({
         />
         <NavSlot
           label={copy.navTasks}
+          icon={NAV_ICONS.tasks}
           active={activeScreen === "tasks"}
           highlighted={tutorialTarget === "tasks"}
           disabled={tutorialTarget !== null && tutorialTarget !== "tasks"}
@@ -66,6 +78,7 @@ export default function BottomNavigation({
         />
         <NavSlot
           label={copy.navJourney}
+          icon={NAV_ICONS.journey}
           active={activeScreen === "journey"}
           highlighted={tutorialTarget === "journey"}
           disabled={tutorialTarget !== null && tutorialTarget !== "journey"}
@@ -74,6 +87,7 @@ export default function BottomNavigation({
         />
         <NavSlot
           label={copy.navCompanions}
+          icon={NAV_ICONS.companions}
           active={activeScreen === "companions"}
           highlighted={tutorialTarget === "companions"}
           disabled={tutorialTarget !== null && tutorialTarget !== "companions"}
@@ -87,6 +101,7 @@ export default function BottomNavigation({
 
 function NavSlot({
   label,
+  icon,
   active,
   highlighted,
   disabled,
@@ -94,6 +109,7 @@ function NavSlot({
   settings,
 }: {
   label: string;
+  icon: { active: IconName; idle: IconName };
   active: boolean;
   highlighted: boolean;
   disabled: boolean;
@@ -147,12 +163,17 @@ function NavSlot({
         onPress={onPress}
         disabled={disabled}
       >
+        <Ionicons
+          name={active ? icon.active : icon.idle}
+          size={active ? 24 : 20}
+          color={active ? theme.accentText : theme.mutedText}
+        />
         <Text
           numberOfLines={1}
           adjustsFontSizeToFit
+          minimumFontScale={0.85}
           style={[
             styles.label,
-            active ? styles.circleLabel : styles.rectangleLabel,
             { color: active ? theme.accentText : theme.mutedText },
           ]}
         >
@@ -207,17 +228,19 @@ const styles = StyleSheet.create({
   rectangleItem: {
     alignSelf: "stretch",
     marginHorizontal: 3,
-    minHeight: 48,
-    paddingHorizontal: 6,
-    paddingVertical: 12,
+    minHeight: 52,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+    gap: 2,
     borderRadius: 16,
   },
   circleItem: {
     width: ACTIVE_CIRCLE_SIZE,
     height: ACTIVE_CIRCLE_SIZE,
     borderRadius: ACTIVE_CIRCLE_SIZE / 2,
-    marginTop: -24,
-    marginBottom: 4,
+    marginTop: -20,
+    marginBottom: 2,
+    gap: 1,
     elevation: 10,
     shadowColor: "#000",
     shadowOpacity: 0.18,
@@ -228,13 +251,8 @@ const styles = StyleSheet.create({
     },
   },
   label: {
+    fontSize: 11,
     fontWeight: "600",
-  },
-  rectangleLabel: {
-    fontSize: 12,
-  },
-  circleLabel: {
-    fontSize: 10,
     textAlign: "center",
     paddingHorizontal: 2,
   },

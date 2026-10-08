@@ -304,13 +304,13 @@ function PetCard({
           style={[
             styles.actionButton,
             { backgroundColor: theme.accent },
-            pet.equipped && { backgroundColor: theme.border },
+            pet.equipped && { backgroundColor: theme.accentSoft },
           ]}
           onPress={() => onEquipPet(pet.id)}
           disabled={pet.equipped}
         >
-          <Text style={styles.actionButtonText}>
-            {pet.equipped ? copy.petsActive : copy.companionTakeAlong}
+          <Text style={[styles.actionButtonText, pet.equipped && { color: theme.accent }]}>
+            {pet.equipped ? `✓ ${copy.petsActive}` : copy.companionTakeAlong}
           </Text>
         </TouchableOpacity>
         {roomId && (
@@ -640,7 +640,7 @@ function CompanionDetailModal({
                 style={[
                   styles.detailActionButton,
                   { backgroundColor: theme.accent },
-                  pet.equipped && { backgroundColor: theme.border },
+                  pet.equipped && { backgroundColor: theme.accentSoft },
                 ]}
                 onPress={() => onEquipPet(pet.id)}
                 disabled={pet.equipped}
@@ -649,11 +649,11 @@ function CompanionDetailModal({
                   style={[
                     styles.detailActionButtonText,
                     {
-                      color: pet.equipped ? theme.mutedText : theme.accentText,
+                      color: pet.equipped ? theme.accent : theme.accentText,
                     },
                   ]}
                 >
-                  {pet.equipped ? copy.petsActive : copy.companionTakeAlong}
+                  {pet.equipped ? `✓ ${copy.petsActive}` : copy.companionTakeAlong}
                 </Text>
               </TouchableOpacity>
             </View>
