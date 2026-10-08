@@ -203,6 +203,65 @@ interface AppCopy {
   tileFeatures: Record<TileFeature, string>;
   regionHints: string[];
   decorationNames: Record<string, string>;
+  roomShareMessage: string;
+  roomShareMessagePlus: string;
+  roomShareFooter: string;
+  roomShareFooterToggle: string;
+  roomShareError: string;
+  roomButton: string;
+  roomDefaultName: string;
+  plusRoomName: string;
+  plusRoomsTitle: string;
+  roomDone: string;
+  roomShare: string;
+  roomRename: string;
+  roomTabDecorations: string;
+  roomTabCompanions: string;
+  roomTabStyle: string;
+  roomTabShop: string;
+  roomFull: string;
+  roomBagEmpty: string;
+  roomFlip: string;
+  roomForward: string;
+  roomBack: string;
+  roomRemove: string;
+  roomUndo: string;
+  roomShopStyles: string;
+  roomShopFurniture: string;
+  roomShopPlusSets: string;
+  roomShopOwned: string;
+  roomShopBuy: string;
+  roomShopNeedsPlus: string;
+  roomShopReturns: string;
+  roomSetNames: Record<string, string>;
+  roomStyleNames: Record<string, string>;
+  settingsAdConsent: string;
+  settingsPrivacy: string;
+  exploreButton: string;
+  exploreAdHint: string;
+  explorePlusHint: string;
+  exploreDone: string;
+  exploreFound: string;
+  exploreNoAd: string;
+  journeyLookBackLocked: string;
+  plusTitle: string;
+  plusPitch: string;
+  plusPerkThemes: string;
+  plusPerkHistory: string;
+  plusPerkExport: string;
+  plusPerkNoAds: string;
+  plusBuy: string;
+  plusUnavailable: string;
+  plusRestore: string;
+  plusThanks: string;
+  plusPending: string;
+  plusError: string;
+  plusRestored: string;
+  plusNotFound: string;
+  plusOwned: string;
+  plusBadge: string;
+  settingsPlus: string;
+  settingsExportCsv: string;
   timerStart: string;
   timerPause: string;
   timerResume: string;
@@ -442,6 +501,70 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "Warm stone and ember light, cosy after a long day.",
       "The top of the valley. You can see the whole road from here.",
     ],
+    plusTitle: "Growra Plus",
+    plusPitch: "A one-time unlock. No subscription.",
+    plusPerkThemes: "3 extra themes",
+    plusPerkHistory: "Every past week on your Journey",
+    plusPerkExport: "Export your history (CSV)",
+    plusPerkNoAds: "No ads: exploring gives finds straight away",
+    plusBuy: "Unlock for {price}",
+    plusUnavailable: "Store unavailable, try again later",
+    plusRestore: "Restore purchase",
+    plusThanks: "Thanks! Plus is unlocked.",
+    plusPending: "Payment pending. Plus unlocks once Google Play confirms it.",
+    plusError: "Something went wrong. Please try again.",
+    plusRestored: "Plus restored.",
+    plusNotFound: "No purchase found on this Google account.",
+    plusOwned: "Plus is active. Thank you for supporting Growra!",
+    plusBadge: "Plus",
+    settingsPlus: "Growra Plus",
+    settingsExportCsv: "Export your history (CSV)",
+    exploreButton: "Send {name} exploring",
+    exploreAdHint: "Watch a short ad · {left} left today",
+    explorePlusHint: "{left} left today",
+    exploreDone: "Back tomorrow",
+    exploreFound: "{name} brought back a {find}!",
+    exploreNoAd: "No ad available right now. Try again later.",
+    journeyLookBackLocked: "See this week with Plus",
+    settingsPrivacy: "Privacy policy",
+    settingsAdConsent: "Ad privacy choices",
+    roomButton: "Room",
+    roomDefaultName: "{name}'s room",
+    plusRoomName: "Plus room {number}",
+    plusRoomsTitle: "Plus rooms",
+    roomDone: "Done",
+    roomShare: "Share",
+    roomRename: "Rename room",
+    roomTabDecorations: "Decorations",
+    roomTabCompanions: "Companions",
+    roomTabStyle: "Style",
+    roomTabShop: "Shop",
+    roomFull: "Room full (30 items)",
+    roomBagEmpty: "Nothing in your bag. Buy furniture in the shop or find decorations.",
+    roomFlip: "Flip",
+    roomForward: "Forward",
+    roomBack: "Back",
+    roomRemove: "Remove",
+    roomUndo: "Undo",
+    roomShopStyles: "Room styles",
+    roomShopFurniture: "Furniture",
+    roomShopPlusSets: "Plus sets",
+    roomShopOwned: "Owned",
+    roomShopBuy: "{price} 🪙",
+    roomShopNeedsPlus: "Plus",
+    roomShopReturns: "Returns in {month}",
+    roomSetNames: {
+      japanese: "Japanese",
+      halloween: "Halloween",
+      christmas: "Christmas",
+      valentines: "Valentine's",
+      easter: "Easter",
+    },
+    roomShareMessage: "My {name}'s room in Growra",
+    roomShareMessagePlus: "My room in Growra",
+    roomShareFooter: "Made with Growra",
+    roomShareFooterToggle: "Show \"Made with Growra\"",
+    roomShareError: "Couldn't share the picture. Please try again.",
     decorationNames: {
       "flower-pot": "flower pot",
       "mushroom-ring": "mushroom ring",
@@ -456,6 +579,63 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       feather: "feather",
       clover: "four-leaf clover",
       acorn: "acorn",
+      "comet-shard": "comet shard",
+      moonstone: "moonstone",
+      "rainbow-ribbon": "rainbow ribbon",
+      "firefly-jar": "firefly jar",
+      "bed": "bed",
+      "rug": "rug",
+      "bookshelf": "bookshelf",
+      "window": "window",
+      "floor-lamp": "floor lamp",
+      "potted-plant": "potted plant",
+      "round-table": "round table",
+      "armchair": "armchair",
+      "cushion": "cushion",
+      "painting": "painting",
+      "wall-clock": "wall clock",
+      "toy-chest": "toy chest",
+      "desk": "desk",
+      "beanbag": "beanbag",
+      "fairy-lights": "fairy lights",
+      "plant-shelf": "plant shelf",
+      "low-table": "low table",
+      "futon": "futon",
+      "paper-lamp": "paper lamp",
+      "bonsai": "bonsai",
+      "folding-screen": "folding screen",
+      "zabuton": "zabuton cushion",
+      "pumpkins": "pumpkins",
+      "ghost-lamp": "ghost lamp",
+      "cauldron": "cauldron",
+      "spider-web": "spider web",
+      "candles": "candles",
+      "xmas-tree": "Christmas tree",
+      "presents": "presents",
+      "stockings": "stockings",
+      "wreath": "wreath",
+      "snow-globe": "snow globe",
+      "heart-balloons": "heart balloons",
+      "rose-vase": "rose vase",
+      "love-letter-box": "love-letter box",
+      "cake-stand": "cake stand",
+      "egg-basket": "egg basket",
+      "bunny-plush": "bunny plush",
+      "flower-crate": "flower crate",
+      "egg-garland": "egg garland",
+    },
+    roomStyleNames: {
+      "wooden-bedroom": "Wooden bedroom",
+      "greenhouse": "Greenhouse",
+      "starry-attic": "Starry attic",
+      "beach-hut": "Beach hut",
+      "library": "Library",
+      "mushroom-cottage": "Mushroom cottage",
+      "japanese-room": "Japanese room",
+      "spooky-attic": "Spooky attic",
+      "snowy-cabin": "Snowy cabin",
+      "pastel-cafe": "Pastel café",
+      "spring-garden": "Spring garden",
     },
     timerStart: "Start",
     timerPause: "Pause",
@@ -694,6 +874,70 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "Pedra morna e luz de brasas, acolhedora depois de um dia longo.",
       "O topo do vale. Daqui vê-se o caminho todo.",
     ],
+    plusTitle: "Growra Plus",
+    plusPitch: "Desbloqueio único. Sem subscrição.",
+    plusPerkThemes: "3 temas extra",
+    plusPerkHistory: "Todas as semanas passadas na tua Jornada",
+    plusPerkExport: "Exportar o teu histórico (CSV)",
+    plusPerkNoAds: "Sem anúncios: explorar dá achados logo",
+    plusBuy: "Desbloquear por {price}",
+    plusUnavailable: "Loja indisponível, tenta mais tarde",
+    plusRestore: "Restaurar compra",
+    plusThanks: "Obrigado! O Plus está desbloqueado.",
+    plusPending: "Pagamento pendente. O Plus desbloqueia quando o Google Play confirmar.",
+    plusError: "Algo correu mal. Tenta outra vez.",
+    plusRestored: "Plus restaurado.",
+    plusNotFound: "Nenhuma compra encontrada nesta conta Google.",
+    plusOwned: "O Plus está ativo. Obrigado por apoiares o Growra!",
+    plusBadge: "Plus",
+    settingsPlus: "Growra Plus",
+    settingsExportCsv: "Exportar o teu histórico (CSV)",
+    exploreButton: "Enviar {name} a explorar",
+    exploreAdHint: "Vê um anúncio curto · faltam {left} hoje",
+    explorePlusHint: "faltam {left} hoje",
+    exploreDone: "Volta amanhã",
+    exploreFound: "{name} trouxe um(a) {find}!",
+    exploreNoAd: "Nenhum anúncio disponível agora. Tenta mais tarde.",
+    journeyLookBackLocked: "Vê esta semana com o Plus",
+    settingsPrivacy: "Política de privacidade",
+    settingsAdConsent: "Escolhas de privacidade dos anúncios",
+    roomButton: "Quarto",
+    roomDefaultName: "Quarto de {name}",
+    plusRoomName: "Quarto Plus {number}",
+    plusRoomsTitle: "Quartos Plus",
+    roomDone: "Concluído",
+    roomShare: "Partilhar",
+    roomRename: "Mudar nome do quarto",
+    roomTabDecorations: "Decorações",
+    roomTabCompanions: "Companheiros",
+    roomTabStyle: "Estilo",
+    roomTabShop: "Loja",
+    roomFull: "Quarto cheio (30 itens)",
+    roomBagEmpty: "Nada no teu saco. Compra mobília na loja ou encontra decorações.",
+    roomFlip: "Virar",
+    roomForward: "Para a frente",
+    roomBack: "Para trás",
+    roomRemove: "Tirar",
+    roomUndo: "Desfazer",
+    roomShopStyles: "Estilos de quarto",
+    roomShopFurniture: "Mobília",
+    roomShopPlusSets: "Conjuntos Plus",
+    roomShopOwned: "Teu",
+    roomShopBuy: "{price} 🪙",
+    roomShopNeedsPlus: "Plus",
+    roomShopReturns: "Volta em {month}",
+    roomSetNames: {
+      japanese: "Japonês",
+      halloween: "Halloween",
+      christmas: "Natal",
+      valentines: "Dia dos Namorados",
+      easter: "Páscoa",
+    },
+    roomShareMessage: "O quarto do meu {name} no Growra",
+    roomShareMessagePlus: "O meu quarto no Growra",
+    roomShareFooter: "Feito com o Growra",
+    roomShareFooterToggle: "Mostrar \"Feito com o Growra\"",
+    roomShareError: "Não foi possível partilhar a imagem. Tenta outra vez.",
     decorationNames: {
       "flower-pot": "vaso de flores",
       "mushroom-ring": "círculo de cogumelos",
@@ -708,6 +952,63 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       feather: "pena",
       clover: "trevo de quatro folhas",
       acorn: "bolota",
+      "comet-shard": "fragmento de cometa",
+      moonstone: "pedra da lua",
+      "rainbow-ribbon": "fita arco-íris",
+      "firefly-jar": "frasco de pirilampos",
+      "bed": "cama",
+      "rug": "tapete",
+      "bookshelf": "estante",
+      "window": "janela",
+      "floor-lamp": "candeeiro de pé",
+      "potted-plant": "vaso com planta",
+      "round-table": "mesa redonda",
+      "armchair": "poltrona",
+      "cushion": "almofada",
+      "painting": "quadro",
+      "wall-clock": "relógio de parede",
+      "toy-chest": "baú de brinquedos",
+      "desk": "secretária",
+      "beanbag": "puff",
+      "fairy-lights": "luzinhas",
+      "plant-shelf": "prateleira de plantas",
+      "low-table": "mesa baixa",
+      "futon": "futon",
+      "paper-lamp": "candeeiro de papel",
+      "bonsai": "bonsai",
+      "folding-screen": "biombo",
+      "zabuton": "almofada zabuton",
+      "pumpkins": "abóboras",
+      "ghost-lamp": "candeeiro fantasma",
+      "cauldron": "caldeirão",
+      "spider-web": "teia de aranha",
+      "candles": "velas",
+      "xmas-tree": "árvore de Natal",
+      "presents": "presentes",
+      "stockings": "meias de Natal",
+      "wreath": "coroa de Natal",
+      "snow-globe": "globo de neve",
+      "heart-balloons": "balões de coração",
+      "rose-vase": "jarra de rosas",
+      "love-letter-box": "caixa de cartas de amor",
+      "cake-stand": "suporte de bolo",
+      "egg-basket": "cesto de ovos",
+      "bunny-plush": "coelhinho de peluche",
+      "flower-crate": "caixa de flores",
+      "egg-garland": "grinalda de ovos",
+    },
+    roomStyleNames: {
+      "wooden-bedroom": "Quarto de madeira",
+      "greenhouse": "Estufa",
+      "starry-attic": "Sótão estrelado",
+      "beach-hut": "Cabana de praia",
+      "library": "Biblioteca",
+      "mushroom-cottage": "Casinha cogumelo",
+      "japanese-room": "Quarto japonês",
+      "spooky-attic": "Sótão assustador",
+      "snowy-cabin": "Cabana nevada",
+      "pastel-cafe": "Café pastel",
+      "spring-garden": "Jardim de primavera",
     },
     timerStart: "Começar",
     timerPause: "Pausa",

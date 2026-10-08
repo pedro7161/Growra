@@ -20,6 +20,8 @@ export const defaultTimerAlertSettings: TimerAlertSettings = {
 export const defaultSettings: AppSettings = {
   language: "en",
   theme: "mint",
+  musicEnabled: false,
+  sfxEnabled: false,
   timerAlert: defaultTimerAlertSettings,
 };
 

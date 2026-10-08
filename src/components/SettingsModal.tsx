@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   Alert,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -15,6 +16,9 @@ import { appThemes, getAppTheme } from "../constants/appTheme";
 import { getChangelog } from "../constants/changelog";
 import { AppLanguage, AppThemeId, GameState, TimerAlertMode } from "../types";
 import { getGameStatsSummary } from "../utils/settings";
+import { isPlusTheme } from "../utils/plus";
+
+const PRIVACY_POLICY_URL = "https://pedro7161.github.io/growra-website/privacy-policy.html";
 
 interface SettingsModalProps {
   visible: boolean;
@@ -22,11 +26,17 @@ interface SettingsModalProps {
   onClose: () => void;
   onLanguageChange: (language: AppLanguage) => void;
   onThemeChange: (theme: AppThemeId) => void;
+  onAudioPreferenceChange: (key: "musicEnabled" | "sfxEnabled", enabled: boolean) => void;
   onTimerAlertModeChange: (mode: TimerAlertMode) => void;
   onPickTimerAlertSound: () => Promise<void>;
   onClearTimerAlertSound: () => Promise<void>;
   onExportData: () => Promise<string>;
   onImportData: (backupCode: string) => Promise<void>;
+  isPlus: boolean;
+  onOpenPlus: () => void;
+  onExportCsv: () => Promise<void>;
+  adConsentAvailable: boolean;
+  onAdConsent: () => void;
 }
 
 export default function SettingsModal({
@@ -35,11 +45,17 @@ export default function SettingsModal({
   onClose,
   onLanguageChange,
   onThemeChange,
+  onAudioPreferenceChange,
   onTimerAlertModeChange,
   onPickTimerAlertSound,
   onClearTimerAlertSound,
   onExportData,
   onImportData,
+  isPlus,
+  onOpenPlus,
+  onExportCsv,
+  adConsentAvailable,
+  onAdConsent,
 }: SettingsModalProps) {
   const copy = getAppCopy(gameState.settings.language);
   const theme = getAppTheme(gameState.settings.theme);
@@ -116,12 +132,58 @@ export default function SettingsModal({
                           : theme.border,
                     },
                   ]}
-                  onPress={() => onThemeChange(themeOption.id)}
+                  onPress={() =>
+                    isPlusTheme(themeOption.id) && !isPlus ? onOpenPlus() : onThemeChange(themeOption.id)
+                  }
                 >
                   <View style={[styles.themePreview, { backgroundColor: themeOption.hero }]} />
                   <Text style={[styles.themeName, { color: themeOption.text }]}>{themeOption.name}</Text>
+                  {isPlusTheme(themeOption.id) && !isPlus && (
+                    <Text style={[styles.themeName, { color: theme.accent }]}>{copy.plusBadge}</Text>
+                  )}
                 </TouchableOpacity>
               ))}
+            </View>
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsPlus}</Text>
+            <View style={styles.optionRow}>
+              <OptionButton label={copy.plusTitle} active onPress={onOpenPlus} themeId={theme.id} />
+              <OptionButton
+                label={copy.settingsExportCsv}
+                active={false}
+                onPress={() => (isPlus ? void onExportCsv() : onOpenPlus())}
+                themeId={theme.id}
+              />
+            </View>
+            <TouchableOpacity onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}>
+              <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsPrivacy}</Text>
+            </TouchableOpacity>
+            {adConsentAvailable && (
+              <TouchableOpacity onPress={onAdConsent}>
+                <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsAdConsent}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {gameState.settings.language === "pt" ? "Áudio opcional" : "Optional audio"}
+            </Text>
+            <View style={styles.optionRow}>
+              <OptionButton
+                label={gameState.settings.language === "pt" ? "Ambiente" : "Ambient music"}
+                active={gameState.settings.musicEnabled}
+                onPress={() => onAudioPreferenceChange("musicEnabled", !gameState.settings.musicEnabled)}
+                themeId={theme.id}
+              />
+              <OptionButton
+                label={gameState.settings.language === "pt" ? "Sons da aplicação" : "App sounds"}
+                active={gameState.settings.sfxEnabled}
+                onPress={() => onAudioPreferenceChange("sfxEnabled", !gameState.settings.sfxEnabled)}
+                themeId={theme.id}
+              />
             </View>
           </View>
 
@@ -323,6 +385,11 @@ function StatRow({
 }
 
 const styles = StyleSheet.create({
+  privacyLink: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 10,
+  },
   container: {
     flex: 1,
   },

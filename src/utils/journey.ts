@@ -61,6 +61,14 @@ export interface DecorationType {
   icon: string;
   /** Coins; 0 means it can only be found during focus sessions. */
   price: number;
+  /** Only from rewarded "explore" finds, never from focus timers. */
+  exploreOnly?: boolean;
+  /** "furniture" can only go in rooms; undefined = an outdoor camp item (rooms or camps). */
+  category?: "camp" | "furniture";
+  /** Plus set this item belongs to (rooms spec §1). */
+  set?: "japanese" | "halloween" | "christmas" | "valentines" | "easter";
+  /** Drawn width in a room as a fraction of the canvas width; default 0.2. */
+  roomSize?: number;
 }
 
 export const DECORATION_TYPES: DecorationType[] = [
@@ -77,9 +85,54 @@ export const DECORATION_TYPES: DecorationType[] = [
   { id: "feather", icon: "🪶", price: 0 },
   { id: "clover", icon: "🍀", price: 0 },
   { id: "acorn", icon: "🌰", price: 0 },
+  { id: "comet-shard", icon: "☄️", price: 0, exploreOnly: true },
+  { id: "moonstone", icon: "🌙", price: 0, exploreOnly: true },
+  { id: "rainbow-ribbon", icon: "🌈", price: 0, exploreOnly: true },
+  { id: "firefly-jar", icon: "🫙", price: 0, exploreOnly: true },
+  // Room furniture (rooms spec §1, §4); sets are Plus-only
+  { id: "bed", icon: "🛏️", price: 120, category: "furniture", roomSize: 0.45 },
+  { id: "rug", icon: "🟫", price: 80, category: "furniture", roomSize: 0.5 },
+  { id: "bookshelf", icon: "📚", price: 120, category: "furniture", roomSize: 0.3 },
+  { id: "window", icon: "🪟", price: 100, category: "furniture", roomSize: 0.3 },
+  { id: "floor-lamp", icon: "💡", price: 80, category: "furniture", roomSize: 0.18 },
+  { id: "potted-plant", icon: "🪴", price: 60, category: "furniture", roomSize: 0.18 },
+  { id: "round-table", icon: "🪑", price: 90, category: "furniture", roomSize: 0.3 },
+  { id: "armchair", icon: "🛋️", price: 110, category: "furniture", roomSize: 0.3 },
+  { id: "cushion", icon: "🟣", price: 40, category: "furniture", roomSize: 0.15 },
+  { id: "painting", icon: "🖼️", price: 70, category: "furniture", roomSize: 0.22 },
+  { id: "wall-clock", icon: "🕰️", price: 70, category: "furniture", roomSize: 0.15 },
+  { id: "toy-chest", icon: "🧸", price: 90, category: "furniture", roomSize: 0.25 },
+  { id: "desk", icon: "🗄️", price: 110, category: "furniture", roomSize: 0.35 },
+  { id: "beanbag", icon: "🫘", price: 70, category: "furniture", roomSize: 0.25 },
+  { id: "fairy-lights", icon: "✨", price: 60, category: "furniture", roomSize: 0.4 },
+  { id: "plant-shelf", icon: "🌿", price: 90, category: "furniture", roomSize: 0.28 },
+  { id: "low-table", icon: "🍵", price: 100, category: "furniture", set: "japanese", roomSize: 0.35 },
+  { id: "futon", icon: "🛏️", price: 120, category: "furniture", set: "japanese", roomSize: 0.45 },
+  { id: "paper-lamp", icon: "🏮", price: 80, category: "furniture", set: "japanese", roomSize: 0.18 },
+  { id: "bonsai", icon: "🌳", price: 90, category: "furniture", set: "japanese", roomSize: 0.2 },
+  { id: "folding-screen", icon: "🎎", price: 110, category: "furniture", set: "japanese", roomSize: 0.4 },
+  { id: "zabuton", icon: "🟥", price: 50, category: "furniture", set: "japanese", roomSize: 0.15 },
+  { id: "pumpkins", icon: "🎃", price: 80, category: "furniture", set: "halloween", roomSize: 0.22 },
+  { id: "ghost-lamp", icon: "👻", price: 90, category: "furniture", set: "halloween", roomSize: 0.18 },
+  { id: "cauldron", icon: "🫕", price: 100, category: "furniture", set: "halloween", roomSize: 0.25 },
+  { id: "spider-web", icon: "🕸️", price: 60, category: "furniture", set: "halloween", roomSize: 0.3 },
+  { id: "candles", icon: "🕯️", price: 60, category: "furniture", set: "halloween", roomSize: 0.15 },
+  { id: "xmas-tree", icon: "🎄", price: 120, category: "furniture", set: "christmas", roomSize: 0.35 },
+  { id: "presents", icon: "🎁", price: 80, category: "furniture", set: "christmas", roomSize: 0.22 },
+  { id: "stockings", icon: "🧦", price: 60, category: "furniture", set: "christmas", roomSize: 0.2 },
+  { id: "wreath", icon: "💚", price: 70, category: "furniture", set: "christmas", roomSize: 0.2 },
+  { id: "snow-globe", icon: "🔮", price: 90, category: "furniture", set: "christmas", roomSize: 0.15 },
+  { id: "heart-balloons", icon: "🎈", price: 80, category: "furniture", set: "valentines", roomSize: 0.25 },
+  { id: "rose-vase", icon: "🌹", price: 70, category: "furniture", set: "valentines", roomSize: 0.15 },
+  { id: "love-letter-box", icon: "💌", price: 60, category: "furniture", set: "valentines", roomSize: 0.18 },
+  { id: "cake-stand", icon: "🎂", price: 90, category: "furniture", set: "valentines", roomSize: 0.2 },
+  { id: "egg-basket", icon: "🧺", price: 80, category: "furniture", set: "easter", roomSize: 0.2 },
+  { id: "bunny-plush", icon: "🐰", price: 90, category: "furniture", set: "easter", roomSize: 0.2 },
+  { id: "flower-crate", icon: "🌷", price: 70, category: "furniture", set: "easter", roomSize: 0.25 },
+  { id: "egg-garland", icon: "🥚", price: 60, category: "furniture", set: "easter", roomSize: 0.4 },
 ];
 
-const FIND_POOL = DECORATION_TYPES.filter((type) => type.price === 0);
+const FIND_POOL = DECORATION_TYPES.filter((type) => type.price === 0 && !type.exploreOnly);
 
 export function getDecorationType(typeId: string): DecorationType | undefined {
   return DECORATION_TYPES.find((type) => type.id === typeId);
@@ -230,7 +283,7 @@ export function getCampLookBack(days: DayRecord[], campIndex: number): LookBack 
 /** Decorations: bought with coins or found, then placed on camp spots (§5.4). */
 export function buyDecoration(gameState: GameState, typeId: string): GameState {
   const type = getDecorationType(typeId);
-  if (!type || type.price <= 0 || gameState.coins < type.price) {
+  if (!type || type.price <= 0 || type.category === "furniture" || gameState.coins < type.price) {
     return gameState;
   }
 
@@ -243,7 +296,7 @@ export function buyDecoration(gameState: GameState, typeId: string): GameState {
 }
 
 export function isPlaced(decoration: Decoration): boolean {
-  return decoration.camp >= 0;
+  return decoration.camp >= 0 || decoration.roomId !== undefined;
 }
 
 /** Puts a decoration on a reached camp's spot; whatever was there goes back to the bag. */

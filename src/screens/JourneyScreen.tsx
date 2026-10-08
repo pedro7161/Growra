@@ -37,6 +37,9 @@ import {
   TileFeature,
 } from "../utils/journey";
 import { getLocaleFromSettings } from "../utils/settings";
+import { isLookBackVisible } from "../utils/plus";
+import { getExploreLeft } from "../utils/explore";
+import ExploreButton from "../components/ExploreButton";
 import { getStartOfDay } from "../utils/taskSchedule";
 
 interface JourneyScreenProps {
@@ -45,6 +48,11 @@ interface JourneyScreenProps {
   onBuyDecoration: (typeId: string) => void;
   onPlaceDecoration: (decorationId: string, camp: number, spot: number) => void;
   onRemoveDecoration: (decorationId: string) => void;
+  isPlus: boolean;
+  exploreBusy: boolean;
+  onExplore: () => void;
+  onOpenPlus: () => void;
+  onUiTap: () => void;
 }
 
 /** Horizontal offsets that make the road wind left and right. */
@@ -95,6 +103,11 @@ export default function JourneyScreen({
   onBuyDecoration,
   onPlaceDecoration,
   onRemoveDecoration,
+  isPlus,
+  exploreBusy,
+  onExplore,
+  onOpenPlus,
+  onUiTap,
 }: JourneyScreenProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
@@ -127,7 +140,10 @@ export default function JourneyScreen({
           campIndex={campIndex}
           decorations={gameState.decorations}
           settings={settings}
-          onPress={() => setSelectedCamp(campIndex)}
+          onPress={() => {
+            setSelectedCamp(campIndex);
+            onUiTap();
+          }}
         />,
       );
     }
@@ -148,7 +164,10 @@ export default function JourneyScreen({
               borderColor: tileRegion.borderColor,
             },
           ]}
-          onPress={() => setSelectedDay(day)}
+          onPress={() => {
+            setSelectedDay(day);
+            onUiTap();
+          }}
           activeOpacity={0.85}
         >
           <ImageBackground
@@ -215,7 +234,10 @@ export default function JourneyScreen({
           </View>
           <TouchableOpacity
             style={styles.headerButton}
-            onPress={() => setDecorationsVisible(true)}
+            onPress={() => {
+              setDecorationsVisible(true);
+              onUiTap();
+            }}
           >
             <Text style={styles.headerButtonText}>🎒 {copy.journeyDecorations}</Text>
           </TouchableOpacity>
@@ -253,22 +275,36 @@ export default function JourneyScreen({
       <DayModal
         day={selectedDay}
         settings={settings}
-        onClose={() => setSelectedDay(null)}
+        onClose={() => {
+          setSelectedDay(null);
+          onUiTap();
+        }}
       />
       <CampModal
         campIndex={selectedCamp}
         gameState={gameState}
         settings={settings}
-        onClose={() => setSelectedCamp(null)}
+        onClose={() => {
+          setSelectedCamp(null);
+          onUiTap();
+        }}
         onPlaceDecoration={onPlaceDecoration}
         onRemoveDecoration={onRemoveDecoration}
+        isPlus={isPlus}
+        onOpenPlus={onOpenPlus}
       />
       <DecorationsModal
         visible={decorationsVisible}
         gameState={gameState}
         settings={settings}
-        onClose={() => setDecorationsVisible(false)}
+        onClose={() => {
+          setDecorationsVisible(false);
+          onUiTap();
+        }}
         onBuyDecoration={onBuyDecoration}
+        isPlus={isPlus}
+        exploreBusy={exploreBusy}
+        onExplore={onExplore}
       />
     </SafeAreaView>
   );
@@ -429,6 +465,8 @@ function CampModal({
   onClose,
   onPlaceDecoration,
   onRemoveDecoration,
+  isPlus,
+  onOpenPlus,
 }: {
   campIndex: number | null;
   gameState: GameState;
@@ -436,6 +474,8 @@ function CampModal({
   onClose: () => void;
   onPlaceDecoration: (decorationId: string, camp: number, spot: number) => void;
   onRemoveDecoration: (decorationId: string) => void;
+  isPlus: boolean;
+  onOpenPlus: () => void;
 }) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
@@ -446,7 +486,10 @@ function CampModal({
   }
 
   const lookBack = getCampLookBack(gameState.days, campIndex);
-  const bag = gameState.decorations.filter((decoration) => !isPlaced(decoration));
+  const lookBackVisible = isLookBackVisible(campIndex, getRoadPosition(gameState.days).campsReached, isPlus);
+  const bag = gameState.decorations.filter(
+    (decoration) => !isPlaced(decoration) && getDecorationType(decoration.typeId)?.category !== "furniture",
+  );
   const placedAt = (spot: number) =>
     gameState.decorations.find(
       (decoration) => decoration.camp === campIndex && decoration.spot === spot,
@@ -483,7 +526,15 @@ function CampModal({
         })}
       </ImageBackground>
 
-      {lookBack && (
+      {lookBack && !lookBackVisible && (
+        <TouchableOpacity
+          style={[styles.lookBack, { backgroundColor: theme.surface }]}
+          onPress={onOpenPlus}
+        >
+          <Text style={[styles.sectionTitle, { color: theme.accent }]}>🔒 {copy.journeyLookBackLocked}</Text>
+        </TouchableOpacity>
+      )}
+      {lookBack && lookBackVisible && (
         <View style={[styles.lookBack, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.journeyLookBack}</Text>
           <Text style={[styles.lookBackLine, { color: theme.text }]}>
@@ -581,15 +632,22 @@ function DecorationsModal({
   settings,
   onClose,
   onBuyDecoration,
+  isPlus,
+  exploreBusy,
+  onExplore,
 }: {
   visible: boolean;
   gameState: GameState;
   settings: AppSettings;
   onClose: () => void;
   onBuyDecoration: (typeId: string) => void;
+  isPlus: boolean;
+  exploreBusy: boolean;
+  onExplore: () => void;
 }) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
+  const explorer = getActiveCompanion(gameState);
   if (!visible) {
     return null;
   }
@@ -608,6 +666,16 @@ function DecorationsModal({
       settings={settings}
       onClose={onClose}
     >
+      {explorer && (
+        <ExploreButton
+          settings={settings}
+          companionName={explorer.name}
+          left={getExploreLeft(gameState.explore, Date.now())}
+          isPlus={isPlus}
+          busy={exploreBusy}
+          onPress={onExplore}
+        />
+      )}
       <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.journeyBag}</Text>
       {bagCounts.size === 0 ? (
         <Text style={[styles.mutedLine, { color: theme.mutedText }]}>{copy.journeyBagEmpty}</Text>
@@ -626,7 +694,7 @@ function DecorationsModal({
       )}
 
       <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.journeyShop}</Text>
-      {DECORATION_TYPES.map((type) => {
+      {DECORATION_TYPES.filter((type) => type.category !== "furniture").map((type) => {
         const affordable = gameState.coins >= type.price;
         return (
           <View key={type.id} style={[styles.listRow, { backgroundColor: theme.surface }]}>

@@ -87,3 +87,61 @@ describe('gameStateService.loadGame', () => {
     expect('gearItems' in gameState).toBe(false);
   });
 });
+
+describe('plus and explore state', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('defaults a new game to no Plus and no finds today', () => {
+    const state = createInitialGameState();
+    expect(state.plus).toEqual({ owned: false, lastCheckedAt: 0 });
+    expect(state.explore).toEqual({ day: 0, count: 0 });
+  });
+
+  it('migrates an older save without plus/explore', async () => {
+    const legacy = createSaveData(createInitialGameState()) as any;
+    delete legacy.gameState.plus;
+    delete legacy.gameState.explore;
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify(legacy));
+    const result = await gameStateService.loadGame();
+    expect(result.status).toBe('loaded');
+    if (result.status !== 'loaded') return;
+    expect(result.saveData.gameState.plus).toEqual({ owned: false, lastCheckedAt: 0 });
+    expect(result.saveData.gameState.explore).toEqual({ day: 0, count: 0 });
+  });
+
+  it('keeps an owned Plus through save and load', async () => {
+    const state = { ...createInitialGameState(), plus: { owned: true, lastCheckedAt: 5 } };
+    await gameStateService.saveGame(createSaveData(state));
+    const result = await gameStateService.loadGame();
+    if (result.status !== 'loaded') throw new Error('not loaded');
+    expect(result.saveData.gameState.plus.owned).toBe(true);
+  });
+});
+
+describe('room state', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('starts a new game with no rooms, the starter style and the footer on', () => {
+    const state = createInitialGameState();
+    expect(state.rooms).toEqual([]);
+    expect(state.ownedRoomStyles).toEqual(['wooden-bedroom']);
+    expect(state.roomShareFooter).toBe(true);
+  });
+
+  it('migrates an older save without room fields', async () => {
+    const legacy = createSaveData(createInitialGameState()) as any;
+    delete legacy.gameState.rooms;
+    delete legacy.gameState.ownedRoomStyles;
+    delete legacy.gameState.roomShareFooter;
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify(legacy));
+    const result = await gameStateService.loadGame();
+    if (result.status !== 'loaded') throw new Error('not loaded');
+    expect(result.saveData.gameState.rooms).toEqual([]);
+    expect(result.saveData.gameState.ownedRoomStyles).toEqual(['wooden-bedroom']);
+    expect(result.saveData.gameState.roomShareFooter).toBe(true);
+  });
+});

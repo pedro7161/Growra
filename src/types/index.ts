@@ -23,7 +23,7 @@ export enum TaskPriority {
 
 export type AppLanguage = "en" | "pt";
 
-export type AppThemeId = "mint" | "sunset" | "ocean";
+export type AppThemeId = "mint" | "sunset" | "ocean" | "dusk" | "blossom" | "forest";
 
 export type TimerAlertMode = "vibration" | "sound";
 
@@ -36,6 +36,8 @@ export interface TimerAlertSettings {
 export interface AppSettings {
   language: AppLanguage;
   theme: AppThemeId;
+  musicEnabled: boolean;
+  sfxEnabled: boolean;
   timerAlert: TimerAlertSettings;
 }
 
@@ -202,6 +204,7 @@ export interface Decoration {
   typeId: string; // see DECORATION_TYPES in utils/journey.ts
   camp: number; // camp index it sits at, or -1 while in the bag
   spot: number;
+  roomId?: string; // set while the decoration is in a room
 }
 
 // Streak Types
@@ -213,6 +216,38 @@ export interface Streak {
 }
 
 // Game State
+// A placed thing in a companion room (spec §1). Position is the item's centre as a fraction of the 4:5 canvas.
+export interface RoomItem {
+  id: string;
+  kind: "decoration" | "companion";
+  ref: string; // decoration instance id, or pet id
+  x: number;
+  y: number;
+  scale: number; // 0.5..1.5
+  flip: boolean;
+}
+
+// ownerPetId null = a Plus extra room. items order = layer order (last = front).
+export interface Room {
+  id: string;
+  ownerPetId: string | null;
+  name: string; // "" = the default name
+  styleId: string;
+  items: RoomItem[];
+}
+
+// Growra Plus ownership, cached so Plus works offline; Play is re-checked on start.
+export interface PlusState {
+  owned: boolean;
+  lastCheckedAt: number;
+}
+
+// Rewarded "explore" finds: the start of the day of the last find, and the finds that day.
+export interface ExploreState {
+  day: number;
+  count: number;
+}
+
 export interface GameState {
   playerId: string;
   level: number;
@@ -232,6 +267,11 @@ export interface GameState {
   days: DayRecord[];
   decorations: Decoration[];
   streak: Streak;
+  plus: PlusState;
+  explore: ExploreState;
+  rooms: Room[];
+  ownedRoomStyles: string[];
+  roomShareFooter: boolean;
   createdAt: number;
   lastPlayedAt: number;
 }
