@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { companionDescription } from "../utils/companionText";
 import { getLocaleFromSettings } from "../utils/settings";
 import { formatCount } from "../utils/formatCount";
 import {
@@ -433,7 +434,7 @@ function StarterPicker({
                 {copy.companionLoves} {copy.companionStyles[style].loves}
               </Text>
               <Text style={[styles.petStat, { color: theme.mutedText }]}>
-                {template.description}
+                {companionDescription(copy, template)}
               </Text>
               <Text style={[styles.petStat, { color: theme.text }]}>
                 {copy.companionPerk}: {copy.companionStyles[style].perk}
@@ -600,7 +601,7 @@ function CompanionDetailModal({
                     { color: theme.mutedText },
                   ]}
                 >
-                  {petTemplate.description}
+                  {companionDescription(copy, petTemplate)}
                 </Text>
               )}
 

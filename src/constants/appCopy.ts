@@ -169,6 +169,8 @@ interface AppCopy {
   companionRevealSubtitle: string;
   companionMood: Record<CompanionMood, string>;
   companionStyles: Record<CompanionStyle, CompanionStyleCopy>;
+  /** Companion descriptions by companion id; a missing entry falls back to the English original in utils/gameplay.ts. */
+  companionBios: Partial<Record<string, string>>;
   dashboardActiveDays: string;
   tutorialChooseCompanionHint: string;
   companionFoundTitle: string;
@@ -442,6 +444,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       glowing: "{name} is glowing. What a day!",
       sleepy: "{name} dozed off while you were away. Any task wakes it up.",
     },
+    companionBios: {},
     companionStyles: {
       "getting-started": { loves: "getting started", perk: "+2 coins on your first task each day", joins: "Joins after {target} active days" },
       flow: { loves: "going with the flow", perk: "+1 Bond when you move a task to later", joins: "Joins when you move a task to a later day" },
@@ -818,6 +821,20 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       happy: "{name} está contente com o dia de hoje.",
       glowing: "{name} está a brilhar. Que dia!",
       sleepy: "{name} adormeceu enquanto estavas fora. Qualquer tarefa o acorda.",
+    },
+    companionBios: {
+      sprout: "Um amigo do bosque dos cogumelos que brilha mais onde quer que descanse.",
+      pebble: "Uma pequena criatura de pedra, robusta, que junta flores e musgo.",
+      moss: "Um montinho calmo do bosque que leva um pequeno prado às costas.",
+      zephie: "Uma nuvem de brisa que brinca com pétalas e folhas como se fizessem parte da sua aura.",
+      ember: "Um espírito de chama alegre que arde mais forte no seu núcleo.",
+      ripple: "Uma criatura de água brincalhona que deixa anéis brilhantes onde quer que mergulhe.",
+      tempo: "Uma nuvem de trovão que junta luz da chuva e zumbe antes de cada pequeno relâmpago.",
+      glint: "Uma criatura de prisma cujos pequenos chifres de cristal espalham luz quente pela relva.",
+      astra: "Uma nuvem de estrelas que brilha como um céu inteiro em miniatura.",
+      umbra: "Um espírito de sombra aveludado que brilha suavemente no nevoeiro ao luar, em vez de se esconder nele.",
+      nova: "Um companheiro com coração de estrela, cuja aura junta fogo e luz das estrelas.",
+      cindra: "Uma fera fofa de lava, com um coração de magma brilhante e o hábito de levantar faíscas.",
     },
     companionStyles: {
       "getting-started": { loves: "começar", perk: "+2 moedas na primeira tarefa de cada dia", joins: "Junta-se após {target} dias ativos" },
