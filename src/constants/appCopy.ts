@@ -212,6 +212,7 @@ interface AppCopy {
   roomDefaultName: string;
   plusRoomName: string;
   plusRoomsTitle: string;
+  plusRoomsUnlock: string;
   roomDone: string;
   roomShare: string;
   roomRename: string;
@@ -536,6 +537,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     roomDefaultName: "{name}'s room",
     plusRoomName: "Plus room {number}",
     plusRoomsTitle: "Plus rooms",
+    plusRoomsUnlock: "Unlock with Growra Plus",
     roomDone: "Done",
     roomShare: "Share",
     roomRename: "Rename room",
@@ -912,6 +914,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     roomDefaultName: "Quarto de {name}",
     plusRoomName: "Quarto Plus {number}",
     plusRoomsTitle: "Quartos Plus",
+    plusRoomsUnlock: "Desbloquear com o Growra Plus",
     roomDone: "Concluído",
     roomShare: "Partilhar",
     roomRename: "Mudar nome do quarto",
