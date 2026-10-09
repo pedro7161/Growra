@@ -25,6 +25,7 @@ import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
 import TaskTimerControls from "../components/TaskTimerControls";
 import { getLocaleFromSettings } from "../utils/settings";
+import { taskFrequencyLabel } from "../utils/taskLabels";
 
 interface TasksScreenProps {
   settings: AppSettings;
@@ -376,26 +377,24 @@ function TaskItem({
         style={styles.taskContent}
         onPress={tutorialEnabled ? undefined : onOpen}
       >
-        <View style={styles.taskTopRow}>
-          <Text
-            style={[styles.taskName, { color: theme.text }, isCompleted && styles.taskNameCompleted]}
-          >
-            {task.name}
-          </Text>
-          <View style={styles.taskColorMeta}>
-            <View style={[styles.taskColorDot, { backgroundColor: task.calendarColor }]} />
-            <Text style={[styles.taskPriority, { color: theme.mutedText }]}>{priorityLabel}</Text>
-          </View>
-        </View>
+        <Text
+          style={[styles.taskName, { color: theme.text }, isCompleted && styles.taskNameCompleted]}
+        >
+          {task.name}
+        </Text>
         {task.description && (
           <Text style={[styles.taskDescription, { color: theme.mutedText }]}>{task.description}</Text>
         )}
         <View style={styles.taskMeta}>
+          <View style={styles.taskColorMeta}>
+            <View style={[styles.taskColorDot, { backgroundColor: task.calendarColor }]} />
+            <Text style={[styles.taskPriority, { color: theme.mutedText }]}>{priorityLabel}</Text>
+          </View>
           <Text style={[styles.taskType, { backgroundColor: theme.surfaceMuted, color: theme.mutedText }]}>
             {predefinedTask ? predefinedTask.category : task.category}
           </Text>
           <Text style={[styles.taskFrequency, { backgroundColor: theme.accentSoft, color: theme.accent }]}>
-            {task.frequency}
+            {taskFrequencyLabel(copy, task.frequency)}
           </Text>
           {isScheduled ? (
             <Text style={[styles.taskSchedule, { backgroundColor: theme.warningSoft, color: theme.warning }]}>
@@ -610,20 +609,17 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 6,
   },
+  // The priority sits with the other tags, so the task name gets the card's full width.
   taskMeta: {
     flexDirection: "row",
-    gap: 8,
-  },
-  taskTopRow: {
-    flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
+    gap: 8,
   },
   taskColorMeta: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 5,
   },
   taskColorDot: {
     width: 10,

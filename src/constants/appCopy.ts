@@ -262,6 +262,9 @@ interface AppCopy {
   plusBadge: string;
   settingsPlus: string;
   settingsExportCsv: string;
+  timerLabel: string;
+  taskStatusPending: string;
+  taskStatusCompleted: string;
   timerStart: string;
   timerPause: string;
   timerResume: string;
@@ -638,6 +641,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "pastel-cafe": "Pastel café",
       "spring-garden": "Spring garden",
     },
+    timerLabel: "Timer",
+    taskStatusPending: "Pending",
+    taskStatusCompleted: "Completed",
     timerStart: "Start",
     timerPause: "Pause",
     timerResume: "Resume",
@@ -1011,6 +1017,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "pastel-cafe": "Café pastel",
       "spring-garden": "Jardim de primavera",
     },
+    timerLabel: "Temporizador",
+    taskStatusPending: "Pendente",
+    taskStatusCompleted: "Concluída",
     timerStart: "Começar",
     timerPause: "Pausa",
     timerResume: "Retomar",
