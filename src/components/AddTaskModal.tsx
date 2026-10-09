@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { categorySuggestions, matchExistingCategory } from "../utils/categorySuggestions";
 import {
   View,
   StyleSheet,
@@ -12,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { AppSettings, CustomTaskTemplate, TaskType, TaskFrequency, TaskPriority } from "../types";
+import { AppSettings, CustomTaskTemplate, Task, TaskType, TaskFrequency, TaskPriority } from "../types";
 import { getPredefinedTask, getPredefinedTaskGroups, predefinedTasks } from "../constants/predefinedTasks";
 import { taskPriorityOptions } from "../constants/taskConfig";
 import { getStartOfDay } from "../utils/taskSchedule";
@@ -49,6 +50,8 @@ interface AddTaskModalProps {
   onClose: () => void;
   settings: AppSettings;
   customTaskTemplates: CustomTaskTemplate[];
+  /** The player's tasks, so the category field can offer the categories they already use. */
+  existingTasks?: Task[];
   tutorialEnabled: boolean;
   tutorialTarget:
     | "modal-type-predefined"
@@ -68,6 +71,7 @@ export default function AddTaskModal({
   onClose,
   settings,
   customTaskTemplates,
+  existingTasks = [],
   tutorialEnabled,
   tutorialTarget,
   onTutorialStateChange,
@@ -77,7 +81,11 @@ export default function AddTaskModal({
   const theme = getAppTheme(settings.theme);
   const predefinedTaskGroups = getPredefinedTaskGroups();
   const customTaskGroups = getCustomTaskTemplateGroups(customTaskTemplates);
-  const customCategories = [...new Set(customTaskTemplates.map((template) => template.category))];
+  const usedCategories = [
+    ...existingTasks.filter((task) => task.type === TaskType.CUSTOM).map((task) => task.category),
+    ...customTaskTemplates.map((template) => template.category),
+  ];
+  const customCategories = categorySuggestions(usedCategories);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -136,7 +144,7 @@ export default function AddTaskModal({
         description,
         predefinedTaskId: "",
         customTemplateId,
-        category,
+        category: matchExistingCategory(category, categorySuggestions(usedCategories, Number.MAX_SAFE_INTEGER)),
         type,
         frequency,
         priority,

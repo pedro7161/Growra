@@ -276,6 +276,7 @@ export default function TasksScreen({
         }}
         settings={settings}
         customTaskTemplates={customTaskTemplates}
+        existingTasks={tasks}
         tutorialEnabled={tutorialCreateFlow}
         tutorialTarget={
           tutorialTarget === "modal-type-predefined" ||

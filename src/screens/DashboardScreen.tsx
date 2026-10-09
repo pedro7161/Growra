@@ -348,6 +348,7 @@ export default function DashboardScreen({
         }}
         settings={gameState.settings}
         customTaskTemplates={gameState.customTaskTemplates}
+        existingTasks={gameState.tasks}
         tutorialEnabled={tutorialLocked}
         tutorialTarget={null}
         onTutorialStateChange={() => {}}

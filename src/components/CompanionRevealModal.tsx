@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { companionDescription } from "../utils/companionText";
 import {
   Animated,
   Easing,
@@ -292,7 +293,7 @@ export default function CompanionRevealModal({
                     </View>
                   </View>
                   <Text style={[styles.petDescription, { color: theme.mutedText }]}>
-                    {activeTemplate.description}
+                    {companionDescription(copy, activeTemplate)}
                   </Text>
                   <View style={styles.statGrid}>
                     <StatPill label={copy.companionBond} value={String(activePet.bond)} themeColor={theme.text} mutedColor={theme.mutedText} bgColor={theme.surfaceMuted} />
