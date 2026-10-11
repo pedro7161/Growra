@@ -8,6 +8,12 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "Version 1.8.2 · October 11, 2026",
+      items: [
+        "The Companions tab is now called Pets, so its name fits on small phones.",
+      ],
+    },
+    {
       dateLabel: "Version 1.8.1 · October 8, 2026",
       items: [
         "The bottom bar has icons, and every tab label is the same size.",
@@ -93,6 +99,12 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "Versão 1.8.2 · 11 de outubro de 2026",
+      items: [
+        "O separador Companheiros chama-se agora Amigos, para o nome caber em telemóveis pequenos.",
+      ],
+    },
     {
       dateLabel: "Versão 1.8.1 · 8 de outubro de 2026",
       items: [
