@@ -8,6 +8,12 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "Version 1.8.3 · October 13, 2026",
+      items: [
+        "Growra now tells you when a new version is ready on Google Play, and can download it in the background while you use the app.",
+      ],
+    },
+    {
       dateLabel: "Version 1.8.2 · October 11, 2026",
       items: [
         "The Companions tab is now called Pets, so its name fits on small phones.",
@@ -99,6 +105,12 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "Versão 1.8.3 · 13 de outubro de 2026",
+      items: [
+        "O Growra avisa agora quando há uma nova versão no Google Play e pode transferi-la em segundo plano enquanto usas a app.",
+      ],
+    },
     {
       dateLabel: "Versão 1.8.2 · 11 de outubro de 2026",
       items: [
