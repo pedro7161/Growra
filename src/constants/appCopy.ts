@@ -245,6 +245,20 @@ interface AppCopy {
   exploreNoAd: string;
   journeyLookBackLocked: string;
   plusTitle: string;
+  updateAvailableTag: string;
+  updateAvailableTitle: string;
+  updateAvailableBody: string;
+  updateDownloading: string;
+  updateReadyTag: string;
+  updateReadyTitle: string;
+  updateReadyBody: string;
+  updateRequiredTag: string;
+  updateRequiredTitle: string;
+  updateRequiredBody: string;
+  updateButton: string;
+  updateNowButton: string;
+  updateRestartButton: string;
+  updateLaterButton: string;
   plusPitch: string;
   plusPerkThemes: string;
   plusPerkHistory: string;
@@ -502,6 +516,20 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "Warm stone and ember light, cosy after a long day.",
       "The top of the valley. You can see the whole road from here.",
     ],
+    updateAvailableTag: "New version",
+    updateAvailableTitle: "Update available",
+    updateAvailableBody: "A new version of Growra is out. It downloads in the background while you use the app.",
+    updateDownloading: "Downloading update…",
+    updateReadyTag: "Downloaded",
+    updateReadyTitle: "Restart to finish",
+    updateReadyBody: "Growra will close and reopen in a few seconds. Your tasks and pets are kept.",
+    updateRequiredTag: "Update required",
+    updateRequiredTitle: "This version is out of date",
+    updateRequiredBody: "An important fix is out. Update Growra to keep using it; your tasks and pets are kept.",
+    updateButton: "Update",
+    updateNowButton: "Update now",
+    updateRestartButton: "Restart",
+    updateLaterButton: "Later",
     plusTitle: "Growra Plus",
     plusPitch: "A one-time unlock. No subscription.",
     plusPerkThemes: "3 extra themes",
@@ -875,6 +903,20 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "Pedra morna e luz de brasas, acolhedora depois de um dia longo.",
       "O topo do vale. Daqui vê-se o caminho todo.",
     ],
+    updateAvailableTag: "Nova versão",
+    updateAvailableTitle: "Há uma atualização",
+    updateAvailableBody: "Saiu uma nova versão do Growra. É transferida em segundo plano enquanto usas a app.",
+    updateDownloading: "A transferir atualização…",
+    updateReadyTag: "Transferida",
+    updateReadyTitle: "Reinicia para terminar",
+    updateReadyBody: "O Growra fecha e volta a abrir em poucos segundos. As tuas tarefas e companheiros ficam guardados.",
+    updateRequiredTag: "Atualização obrigatória",
+    updateRequiredTitle: "Esta versão está desatualizada",
+    updateRequiredBody: "Saiu uma correção importante. Atualiza o Growra para continuar a usá-lo; as tuas tarefas e companheiros ficam guardados.",
+    updateButton: "Atualizar",
+    updateNowButton: "Atualizar agora",
+    updateRestartButton: "Reiniciar",
+    updateLaterButton: "Mais tarde",
     plusTitle: "Growra Plus",
     plusPitch: "Desbloqueio único. Sem subscrição.",
     plusPerkThemes: "3 temas extra",
