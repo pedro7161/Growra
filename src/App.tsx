@@ -4,6 +4,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import SettingsModal from "./components/SettingsModal";
 import GrowraPlusModal from "./components/GrowraPlusModal";
+import UpdatePrompt from "./components/UpdatePrompt";
+import { useAppUpdate } from "./hooks/useAppUpdate";
 import RoomEditorScreen from "./screens/RoomEditorScreen";
 import { applyPlusOwnership, keepPlusOnImport, usePlusController } from "./hooks/usePlusController";
 import { createPlusService } from "./services/plusService";
@@ -223,6 +225,7 @@ export default function App() {
     playUiTap();
     void plus.refreshPrice();
   };
+  const appUpdate = useAppUpdate();
   const plus = usePlusController(plusService, (owned) => {
     const current = gameStateRef.current;
     if (!current || current.plus.owned === owned) return;
@@ -893,6 +896,12 @@ export default function App() {
             onUiTap={playUiTap}
           />
         )}
+        <UpdatePrompt
+          settings={gameState.settings}
+          state={appUpdate.state}
+          progress={appUpdate.progress}
+          controller={appUpdate.controller}
+        />
         <GrowraPlusModal
           visible={plusVisible}
           settings={gameState.settings}
