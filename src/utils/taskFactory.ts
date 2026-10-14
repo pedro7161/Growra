@@ -36,7 +36,12 @@ export function buildTaskFromFormValues(values: TaskFormValues): {
   const task =
     values.type === TaskType.PREDEFINED
       ? createPredefinedTask(
-          getPredefinedTask(values.predefinedTaskId),
+          // Keep the name/description the form showed (translated for Portuguese players).
+          {
+            ...getPredefinedTask(values.predefinedTaskId),
+            name: values.name || getPredefinedTask(values.predefinedTaskId).name,
+            description: values.description || getPredefinedTask(values.predefinedTaskId).description,
+          },
           values.frequency,
           values.dueDate,
           values.timerEnabled,

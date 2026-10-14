@@ -138,6 +138,25 @@ interface AppCopy {
   settingsChangelog: string;
   settingsUpdatedOn: string;
   tutorialSkip: string;
+  tutorialStepLabel: string;
+  tutorialOpenJourney: string;
+  tutorialWelcomeTitle: string;
+  tutorialWelcomeBody: string;
+  tutorialWelcomePoint1: string;
+  tutorialWelcomePoint2: string;
+  tutorialWelcomePoint3: string;
+  tutorialTipCalendar: string;
+  tutorialTipJourney: string;
+  tutorialTipCompanions: string;
+  tutorialTipSettings: string;
+  tutorialTourTitle: string;
+  tutorialTourBody: string;
+  tutorialFinishBody: string;
+  tutorialFinishGift: string;
+  tutorialStart: string;
+  tutorialLetsGo: string;
+  tutorialSkipAll: string;
+  settingsReplayTutorial: string;
   tutorialNext: string;
   tutorialFinish: string;
   tutorialGuideTitle: string;
@@ -435,19 +454,38 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsChangelog: "Changelog",
     settingsUpdatedOn: "Updated on",
     tutorialSkip: "Skip",
+    tutorialStepLabel: "Step {n} of {total}",
+    tutorialOpenJourney: "Last step: open Journey. Every day you complete a task adds a tile to your road.",
+    tutorialWelcomeTitle: "Welcome to Growra",
+    tutorialWelcomeBody: "A to-do list you shape your way, with a companion that grows as you get things done. A quick tour earns you {coins} coins.",
+    tutorialWelcomePoint1: "✅ Tasks your way: habits, chores, study, lists or your day plan",
+    tutorialWelcomePoint2: "🐾 A companion that grows with every task you finish",
+    tutorialWelcomePoint3: "🗺️ A Journey road made of the days you show up",
+    tutorialTipCalendar: "📅 Calendar and ⏱ focus timer live in Tasks",
+    tutorialTipJourney: "🗺️ Your Journey grows one tile per active day, with a camp every 7",
+    tutorialTipCompanions: "🐾 More companions join as you use Growra your way",
+    tutorialTipSettings: "🎨 Themes and dark mode are in Settings",
+    tutorialTourTitle: "Growra at a glance",
+    tutorialTourBody: "A quick reminder of where everything is.",
+    tutorialFinishBody: "Your companion is ready and your Journey has begun.",
+    tutorialFinishGift: "+{coins} 🪙 welcome gift",
+    tutorialStart: "Show me around",
+    tutorialLetsGo: "Let's go",
+    tutorialSkipAll: "Skip the tour",
+    settingsReplayTutorial: "Show the tour again",
     tutorialNext: "Next",
     tutorialFinish: "Finish",
     tutorialGuideTitle: "Tutorial",
     tutorialGuideSubtitle: "Do the steps in the app to unlock the next one.",
     tutorialCreateTaskTitle: "Create your first task",
-    tutorialCreateTaskHint: "Open Tasks and add any task.",
+    tutorialCreateTaskHint: "Tap + Add to create your first task.",
     tutorialChoosePredefinedTaskHint: "Pick the Predefined option.",
     tutorialChooseWaterTaskHint: "Select the Drink Water task.",
-    tutorialConfirmTaskAddHint: "Tap Add to create your first task.",
+    tutorialConfirmTaskAddHint: "Any task works: pick a Predefined one like Drink Water, or write your own. Then tap Add.",
     tutorialCompleteTaskTitle: "Complete that task",
-    tutorialCompleteTaskHint: "Mark the task as done to earn your first coins.",
-    tutorialOpenTasks: "Open Tasks",
-    tutorialOpenRealm: "Open Pets",
+    tutorialCompleteTaskHint: "Tap the box next to your task to complete it. Your first one pays +{coins} coins!",
+    tutorialOpenTasks: "Tap Tasks below to start your list.",
+    tutorialOpenRealm: "Nice! Now open Pets to meet your companion.",
     tutorialRewardTitle: "You're ready!",
     tutorialStep1Title: "Welcome to Growra!",
     tutorialStep1Body: "Your dashboard shows today's tasks, your streak bonus, and your equipped pet. Complete tasks to earn coins and XP.",
@@ -490,7 +528,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "big-days": { loves: "big days", perk: "+10 coins on your 5th task of a day", joins: "Joins on your first day with 5 tasks done" },
     },
     dashboardActiveDays: "Active days",
-    tutorialChooseCompanionHint: "Pick your first companion.",
+    tutorialChooseCompanionHint: "Choose your first companion. The others join as you use Growra.",
     companionFoundTitle: "{name} found something!",
     companionFoundSubtitle: "A {item} from your focus session. It's in your bag on the Journey.",
     journeyTitle: "Journey",
@@ -838,20 +876,39 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsBackupInvalid: "O código de backup é inválido.",
     settingsChangelog: "Registo de alterações",
     settingsUpdatedOn: "Atualizado em",
-    tutorialSkip: "Pular",
+    tutorialSkip: "Saltar",
+    tutorialStepLabel: "Passo {n} de {total}",
+    tutorialOpenJourney: "Último passo: abre a Jornada. Cada dia em que concluis uma tarefa acrescenta um mosaico ao teu caminho.",
+    tutorialWelcomeTitle: "Bem-vindo ao Growra",
+    tutorialWelcomeBody: "Uma lista de tarefas à tua maneira, com um companheiro que cresce à medida que fazes as coisas. Uma visita rápida dá-te {coins} moedas.",
+    tutorialWelcomePoint1: "✅ Tarefas à tua maneira: hábitos, casa, estudo, listas ou o plano do dia",
+    tutorialWelcomePoint2: "🐾 Um companheiro que cresce com cada tarefa que concluis",
+    tutorialWelcomePoint3: "🗺️ Um caminho de Jornada feito dos dias em que apareces",
+    tutorialTipCalendar: "📅 O calendário e o ⏱ temporizador de foco estão em Tarefas",
+    tutorialTipJourney: "🗺️ A tua Jornada cresce um mosaico por dia ativo, com um acampamento a cada 7",
+    tutorialTipCompanions: "🐾 Mais companheiros juntam-se a ti quando usas o Growra à tua maneira",
+    tutorialTipSettings: "🎨 Os temas e o modo escuro estão nas Definições",
+    tutorialTourTitle: "O Growra num relance",
+    tutorialTourBody: "Um lembrete rápido de onde está tudo.",
+    tutorialFinishBody: "O teu companheiro está pronto e a tua Jornada começou.",
+    tutorialFinishGift: "+{coins} 🪙 de boas-vindas",
+    tutorialStart: "Mostra-me",
+    tutorialLetsGo: "Vamos lá",
+    tutorialSkipAll: "Saltar a visita",
+    settingsReplayTutorial: "Ver a visita outra vez",
     tutorialNext: "Próximo",
     tutorialFinish: "Terminar",
     tutorialGuideTitle: "Tutorial",
     tutorialGuideSubtitle: "Faz as etapas no jogo para desbloquear a seguinte.",
     tutorialCreateTaskTitle: "Cria a tua primeira tarefa",
-    tutorialCreateTaskHint: "Abre Tarefas e adiciona qualquer tarefa.",
+    tutorialCreateTaskHint: "Carrega em + Adicionar para criar a tua primeira tarefa.",
     tutorialChoosePredefinedTaskHint: "Escolhe a opção Predefinida.",
     tutorialChooseWaterTaskHint: "Seleciona a tarefa Beber água.",
-    tutorialConfirmTaskAddHint: "Carrega em Adicionar para criar a tua primeira tarefa.",
+    tutorialConfirmTaskAddHint: "Qualquer tarefa serve: escolhe uma Predefinida, como Beber água, ou escreve a tua. Depois carrega em Adicionar.",
     tutorialCompleteTaskTitle: "Conclui essa tarefa",
-    tutorialCompleteTaskHint: "Marca a tarefa como feita para ganhares as primeiras moedas.",
-    tutorialOpenTasks: "Abrir tarefas",
-    tutorialOpenRealm: "Abrir Amigos",
+    tutorialCompleteTaskHint: "Toca na caixa ao lado da tarefa para a concluir. A primeira dá +{coins} moedas!",
+    tutorialOpenTasks: "Toca em Tarefas, em baixo, para começar a tua lista.",
+    tutorialOpenRealm: "Boa! Agora abre Amigos para conhecer o teu companheiro.",
     tutorialRewardTitle: "Estás pronto!",
     tutorialStep1Title: "Bem-vindo ao Growra!",
     tutorialStep1Body: "O teu painel mostra as tarefas de hoje, o bónus de sequência e o teu pet equipado. Completa tarefas para ganhar moedas e XP.",
@@ -907,7 +964,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "big-days": { loves: "dias em grande", perk: "+10 moedas na 5.ª tarefa do dia", joins: "Junta-se no primeiro dia com 5 tarefas feitas" },
     },
     dashboardActiveDays: "Dias ativos",
-    tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro.",
+    tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro. Os outros juntam-se a ti quando usas o Growra.",
     companionFoundTitle: "{name} encontrou uma coisa!",
     companionFoundSubtitle: "Um(a) {item} da tua sessão de foco. Está na tua mochila na Jornada.",
     journeyTitle: "Jornada",

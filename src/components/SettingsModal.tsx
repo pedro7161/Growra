@@ -30,6 +30,7 @@ interface SettingsModalProps {
   onAppearanceChange: (appearance: AppAppearance) => void;
   onAudioPreferenceChange: (key: "musicEnabled" | "sfxEnabled", enabled: boolean) => void;
   onConfirmExitChange: (enabled: boolean) => void;
+  onReplayTutorial: () => void;
   onTimerAlertModeChange: (mode: TimerAlertMode) => void;
   onPickTimerAlertSound: () => Promise<void>;
   onClearTimerAlertSound: () => Promise<void>;
@@ -50,6 +51,7 @@ export default function SettingsModal({
   onThemeChange,
   onAppearanceChange,
   onConfirmExitChange,
+  onReplayTutorial,
   onAudioPreferenceChange,
   onTimerAlertModeChange,
   onPickTimerAlertSound,
@@ -183,6 +185,9 @@ export default function SettingsModal({
                 themeId={theme.id}
               />
             </View>
+            <TouchableOpacity onPress={onReplayTutorial}>
+              <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsReplayTutorial}</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => void openStoreListing()}>
               <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsRateApp}</Text>
             </TouchableOpacity>

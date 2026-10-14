@@ -1,92 +1,64 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings } from "../types";
+import { TUTORIAL_FIRST_TASK_REWARD, TUTORIAL_STEP_COUNT, TutorialStep, tutorialStepNumber } from "../utils/tutorial";
 
-export type TutorialStep =
-  | "open-tasks"
-  | "tap-add-task"
-  | "choose-predefined-task"
-  | "choose-water-task"
-  | "confirm-task-add"
-  | "complete-task"
-  | "open-realm"
-  | "choose-companion"
-  | "done";
+export type { TutorialStep } from "../utils/tutorial";
 
 interface TutorialOverlayProps {
   visible: boolean;
   step: TutorialStep;
   settings: AppSettings;
+  onSkip: () => void;
 }
 
-export default function TutorialOverlay({
-  visible,
-  step,
-  settings,
-}: TutorialOverlayProps) {
+/**
+ * The guided-step hint: a card just above the tab bar (so it never covers screen titles), with
+ * step dots and a Skip button. The button to tap is highlighted by the screen itself.
+ */
+export default function TutorialOverlay({ visible, step, settings, onSkip }: TutorialOverlayProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
+  if (!visible || step === "done") return null;
 
-  if (!visible) {
-    return null;
-  }
-
-  const message =
-    step === "open-tasks"
-      ? copy.tutorialOpenTasks
-      : step === "tap-add-task"
-        ? copy.tutorialCreateTaskHint
-        : step === "choose-predefined-task"
-          ? copy.tutorialChoosePredefinedTaskHint
-          : step === "choose-water-task"
-            ? copy.tutorialChooseWaterTaskHint
-            : step === "confirm-task-add"
-              ? copy.tutorialConfirmTaskAddHint
-          : step === "complete-task"
-            ? copy.tutorialCompleteTaskHint
-            : step === "open-realm"
-            ? copy.tutorialOpenRealm
-            : step === "choose-companion"
-              ? copy.tutorialChooseCompanionHint
-              : copy.tutorialRewardTitle;
-
-  const stepLabel =
-    step === "open-tasks" ||
-    step === "tap-add-task" ||
-    step === "choose-predefined-task" ||
-    step === "choose-water-task" ||
-    step === "confirm-task-add"
-      ? "1 / 3"
-      : step === "complete-task"
-        ? "2 / 3"
-        : "3 / 3";
+  const message: Record<Exclude<TutorialStep, "done">, string> = {
+    "open-tasks": copy.tutorialOpenTasks,
+    "tap-add-task": copy.tutorialCreateTaskHint,
+    "confirm-task-add": copy.tutorialConfirmTaskAddHint,
+    "complete-task": copy.tutorialCompleteTaskHint.replace("{coins}", String(TUTORIAL_FIRST_TASK_REWARD)),
+    "open-realm": copy.tutorialOpenRealm,
+    "choose-companion": copy.tutorialChooseCompanionHint,
+    "open-journey": copy.tutorialOpenJourney,
+  };
+  const current = tutorialStepNumber(step);
 
   return (
-    <View pointerEvents="none" style={styles.overlayRoot}>
-      <SafeAreaView pointerEvents="none" style={styles.safeArea}>
-        <View
-          style={[
-            styles.bubble,
-            {
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
-            },
-          ]}
-        >
-          <Text style={[styles.title, { color: theme.text }]}>
-            {copy.tutorialGuideTitle}
-          </Text>
+    <View pointerEvents="box-none" style={styles.overlayRoot}>
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.accent }]}>
+        <View style={styles.headerRow}>
+          <View style={styles.dots}>
+            {Array.from({ length: TUTORIAL_STEP_COUNT }, (_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.dot,
+                  { backgroundColor: index < current ? theme.accent : theme.border },
+                  index === current - 1 && styles.dotCurrent,
+                ]}
+              />
+            ))}
+          </View>
           <Text style={[styles.stepLabel, { color: theme.mutedText }]}>
-            {stepLabel}
+            {copy.tutorialStepLabel.replace("{n}", String(current)).replace("{total}", String(TUTORIAL_STEP_COUNT))}
           </Text>
-          <Text style={[styles.message, { color: theme.mutedText }]}>
-            {message}
-          </Text>
+          <TouchableOpacity onPress={onSkip} hitSlop={10}>
+            <Text style={[styles.skip, { color: theme.mutedText }]}>{copy.tutorialSkip}</Text>
+          </TouchableOpacity>
         </View>
-      </SafeAreaView>
+        <Text style={[styles.message, { color: theme.text }]}>{message[step]}</Text>
+      </View>
     </View>
   );
 }
@@ -95,43 +67,28 @@ const styles = StyleSheet.create({
   overlayRoot: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 40,
-    alignItems: "center",
-    justifyContent: "flex-start",
+    justifyContent: "flex-end",
     paddingHorizontal: 12,
-    paddingTop: 10,
+    // Sits just above the bottom tab bar.
+    paddingBottom: 96,
   },
-  safeArea: {
-    width: "100%",
-  },
-  bubble: {
-    alignSelf: "center",
-    maxWidth: 280,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 4,
+  card: {
+    borderWidth: 1.5,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 6,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
   },
-  title: {
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  stepLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  message: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  dots: { flexDirection: "row", gap: 5 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  dotCurrent: { width: 18 },
+  stepLabel: { flex: 1, fontSize: 12, fontWeight: "700" },
+  skip: { fontSize: 13, fontWeight: "600", paddingVertical: 2 },
+  message: { fontSize: 15, lineHeight: 21, fontWeight: "600" },
 });
