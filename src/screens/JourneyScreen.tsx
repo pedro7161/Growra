@@ -36,6 +36,7 @@ import {
   TILES_PER_CAMP,
   TILES_PER_REGION,
   TileFeature,
+  regionName,
 } from "../utils/journey";
 import { getLocaleFromSettings } from "../utils/settings";
 import { isLookBackVisible } from "../utils/plus";
@@ -208,7 +209,7 @@ export default function JourneyScreen({
           <Text style={styles.regionBannerText}>
             {fill(copy.journeyRegion, {
               number: regionNumber + 1,
-              name: tileRegion.name,
+              name: regionName(tileRegion, settings.language),
             })}
           </Text>
         </View>,
@@ -228,7 +229,7 @@ export default function JourneyScreen({
         <View style={styles.headerShade} />
         <View style={styles.headerRow}>
           <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>{region.name}</Text>
+            <Text style={styles.headerTitle}>{regionName(region, settings.language)}</Text>
             <Text style={styles.headerSeason}>
               {copy.journeyTitle} • {fill(copy.journeySeason, { season: position.season })}
             </Text>

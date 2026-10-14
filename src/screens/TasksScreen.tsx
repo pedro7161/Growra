@@ -25,7 +25,7 @@ import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
 import TaskTimerControls from "../components/TaskTimerControls";
 import { getLocaleFromSettings } from "../utils/settings";
-import { taskFrequencyLabel } from "../utils/taskLabels";
+import { taskCategoryLabel, taskFrequencyLabel } from "../utils/taskLabels";
 
 interface TasksScreenProps {
   settings: AppSettings;
@@ -107,7 +107,10 @@ export default function TasksScreen({
         task.category.toLowerCase().includes(normalizedQuery) ||
         task.frequency.toLowerCase().includes(normalizedQuery) ||
         task.type.toLowerCase().includes(normalizedQuery) ||
-        (predefinedTask ? predefinedTask.category.toLowerCase().includes(normalizedQuery) : false)
+        (predefinedTask ? predefinedTask.category.toLowerCase().includes(normalizedQuery) : false) ||
+        taskCategoryLabel(settings.language, predefinedTask ? predefinedTask.category : task.category)
+          .toLowerCase()
+          .includes(normalizedQuery)
       );
     })
     .sort((leftTask, rightTask) => {
@@ -392,7 +395,7 @@ function TaskItem({
             <Text style={[styles.taskPriority, { color: theme.mutedText }]}>{priorityLabel}</Text>
           </View>
           <Text style={[styles.taskType, { backgroundColor: theme.surfaceMuted, color: theme.mutedText }]}>
-            {predefinedTask ? predefinedTask.category : task.category}
+            {taskCategoryLabel(settings.language, predefinedTask ? predefinedTask.category : task.category)}
           </Text>
           <Text style={[styles.taskFrequency, { backgroundColor: theme.accentSoft, color: theme.accent }]}>
             {taskFrequencyLabel(copy, task.frequency)}

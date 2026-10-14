@@ -1,4 +1,4 @@
-import { DayRecord, Decoration, GameState, Task } from "../types";
+import { AppLanguage, DayRecord, Decoration, GameState, Task } from "../types";
 import { getCalendarDayDifference, getStartOfDay } from "./taskSchedule";
 import { generateId } from "./idUtils";
 import type { CompletionFacts } from "./companions";
@@ -369,4 +369,20 @@ export function buildDaysFromTasks(tasks: Task[]): DayRecord[] {
             : day.completions,
       }));
     }, []);
+}
+
+/** Portuguese region names (English names live in REGIONS). */
+const REGION_NAMES_PT: Record<string, string> = {
+  "sunlit-coast": "Costa Soalheira",
+  "mossway-grove": "Bosque do Musgo",
+  "amber-dunes": "Dunas de Âmbar",
+  "cloudbreak-ridge": "Serra das Nuvens",
+  "moonpool-marsh": "Pântano da Lua",
+  "glasswind-expanse": "Planície do Vento de Vidro",
+  "cinder-hollow": "Vale das Cinzas",
+  "skyheart-summit": "Cume do Coração do Céu",
+};
+
+export function regionName(region: Region, language: AppLanguage): string {
+  return language === "pt" ? REGION_NAMES_PT[region.id] ?? region.name : region.name;
 }
