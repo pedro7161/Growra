@@ -105,6 +105,10 @@ interface AppCopy {
   settingsTitle: string;
   settingsLanguage: string;
   settingsTheme: string;
+  settingsAppearance: string;
+  settingsAppearanceSystem: string;
+  settingsAppearanceLight: string;
+  settingsAppearanceDark: string;
   settingsStats: string;
   settingsClose: string;
   settingsTotalTasks: string;
@@ -390,6 +394,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsTitle: "Settings",
     settingsLanguage: "Language",
     settingsTheme: "Color Theme",
+    settingsAppearance: "Appearance",
+    settingsAppearanceSystem: "Follow phone",
+    settingsAppearanceLight: "Light",
+    settingsAppearanceDark: "Dark",
     settingsStats: "All Stats",
     settingsClose: "Close",
     settingsTotalTasks: "Total tasks completed",
@@ -782,6 +790,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsTitle: "Definições",
     settingsLanguage: "Idioma",
     settingsTheme: "Tema de cor",
+    settingsAppearance: "Aparência",
+    settingsAppearanceSystem: "Seguir o telemóvel",
+    settingsAppearanceLight: "Claro",
+    settingsAppearanceDark: "Escuro",
     settingsStats: "Todas as estatísticas",
     settingsClose: "Fechar",
     settingsTotalTasks: "Total de tarefas concluídas",

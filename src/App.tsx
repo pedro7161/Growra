@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, AppState, StyleSheet, View } from "react-native";
+import { Alert, AppState, StyleSheet, useColorScheme, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import SettingsModal from "./components/SettingsModal";
@@ -25,7 +26,7 @@ import CompanionRevealModal from "./components/CompanionRevealModal";
 import { reachedStreakMilestone } from "./utils/streakMilestones";
 import TutorialOverlay, { TutorialStep } from "./components/TutorialOverlay";
 import { getAppCopy } from "./constants/appCopy";
-import { getAppTheme } from "./constants/appTheme";
+import { getAppTheme, resolveDarkAppearance, setDarkAppearance } from "./constants/appTheme";
 import DashboardScreen from "./screens/DashboardScreen";
 import CompanionsScreen from "./screens/CompanionsScreen";
 import JourneyScreen from "./screens/JourneyScreen";
@@ -34,6 +35,7 @@ import TasksScreen from "./screens/TasksScreen";
 import { gameStateService } from "./services/gameStateService";
 import {
   AppLanguage,
+  AppAppearance,
   AppThemeId,
   CustomTaskTemplate,
   GameState,
@@ -187,6 +189,10 @@ function newCompanionAudioCue(before: GameState, after: GameState): CompanionAud
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<Screen>("dashboard");
   const [gameState, setGameState] = useState<GameState | null>(null);
+  // Dark mode: resolved here, before any screen renders, so every getAppTheme() call agrees.
+  const systemScheme = useColorScheme();
+  const darkMode = resolveDarkAppearance(gameState?.settings.appearance ?? "system", systemScheme);
+  setDarkAppearance(darkMode);
   // Latest state for event handlers. Reading `gameState` from the render closure lets two
   // quick taps both act on the same old state (e.g. completing one task twice).
   const gameStateRef = useRef<GameState | null>(null);
@@ -537,6 +543,12 @@ export default function App() {
     void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
   };
 
+  const handleAppearanceChange = async (appearance: AppAppearance) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, appearance } });
+  };
+
   const handleThemeChange = async (theme: AppThemeId) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
@@ -832,6 +844,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      <StatusBar style={darkMode ? "light" : "dark"} />
       <View
         className="flex-1"
         style={[styles.container, { backgroundColor: appTheme.background }]}
@@ -866,6 +879,7 @@ export default function App() {
           }}
           onLanguageChange={handleLanguageChange}
           onThemeChange={handleThemeChange}
+          onAppearanceChange={handleAppearanceChange}
           onAudioPreferenceChange={handleAudioPreferenceChange}
           onTimerAlertModeChange={handleTimerAlertModeChange}
           onPickTimerAlertSound={handlePickTimerAlertSound}

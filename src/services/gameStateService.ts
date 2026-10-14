@@ -299,6 +299,11 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
         : false,
     settings: {
       ...storedSettings,
+      // Saves from before dark mode have no appearance: follow the phone.
+      appearance:
+        storedSettings.appearance === "light" || storedSettings.appearance === "dark"
+          ? storedSettings.appearance
+          : "system",
       musicEnabled: storedSettings.musicEnabled === true,
       sfxEnabled: storedSettings.sfxEnabled === true,
       timerAlert,
