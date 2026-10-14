@@ -14,9 +14,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { appThemes, getAppTheme } from "../constants/appTheme";
 import { getChangelog } from "../constants/changelog";
-import { AppLanguage, AppThemeId, GameState, TimerAlertMode } from "../types";
+import { AppAppearance, AppLanguage, AppThemeId, GameState, TimerAlertMode } from "../types";
 import { getGameStatsSummary } from "../utils/settings";
 import { isPlusTheme } from "../utils/plus";
+import { openStoreListing } from "../services/reviewService";
 
 const PRIVACY_POLICY_URL = "https://pedro7161.github.io/growra-website/privacy-policy.html";
 
@@ -26,7 +27,10 @@ interface SettingsModalProps {
   onClose: () => void;
   onLanguageChange: (language: AppLanguage) => void;
   onThemeChange: (theme: AppThemeId) => void;
+  onAppearanceChange: (appearance: AppAppearance) => void;
   onAudioPreferenceChange: (key: "musicEnabled" | "sfxEnabled", enabled: boolean) => void;
+  onConfirmExitChange: (enabled: boolean) => void;
+  onReplayTutorial: () => void;
   onTimerAlertModeChange: (mode: TimerAlertMode) => void;
   onPickTimerAlertSound: () => Promise<void>;
   onClearTimerAlertSound: () => Promise<void>;
@@ -45,6 +49,9 @@ export default function SettingsModal({
   onClose,
   onLanguageChange,
   onThemeChange,
+  onAppearanceChange,
+  onConfirmExitChange,
+  onReplayTutorial,
   onAudioPreferenceChange,
   onTimerAlertModeChange,
   onPickTimerAlertSound,
@@ -117,9 +124,30 @@ export default function SettingsModal({
           </View>
 
           <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsAppearance}</Text>
+            <View style={styles.optionRow}>
+              {(["system", "light", "dark"] as const).map((appearance) => (
+                <OptionButton
+                  key={appearance}
+                  label={
+                    appearance === "system"
+                      ? copy.settingsAppearanceSystem
+                      : appearance === "light"
+                        ? copy.settingsAppearanceLight
+                        : copy.settingsAppearanceDark
+                  }
+                  active={gameState.settings.appearance === appearance}
+                  onPress={() => onAppearanceChange(appearance)}
+                  themeId={theme.id}
+                />
+              ))}
+            </View>
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsTheme}</Text>
             <View style={styles.themeList}>
-              {Object.values(appThemes).map((themeOption) => (
+              {Object.values(appThemes).map(({ id }) => getAppTheme(id)).map((themeOption) => (
                 <TouchableOpacity
                   key={themeOption.id}
                   style={[
@@ -136,7 +164,7 @@ export default function SettingsModal({
                     isPlusTheme(themeOption.id) && !isPlus ? onOpenPlus() : onThemeChange(themeOption.id)
                   }
                 >
-                  <View style={[styles.themePreview, { backgroundColor: themeOption.hero }]} />
+                  <View style={[styles.themePreview, { backgroundColor: themeOption.accent }]} />
                   <Text style={[styles.themeName, { color: themeOption.text }]}>{themeOption.name}</Text>
                   {isPlusTheme(themeOption.id) && !isPlus && (
                     <Text style={[styles.themeName, { color: theme.accent }]}>{copy.plusBadge}</Text>
@@ -157,6 +185,12 @@ export default function SettingsModal({
                 themeId={theme.id}
               />
             </View>
+            <TouchableOpacity onPress={onReplayTutorial}>
+              <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsReplayTutorial}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => void openStoreListing()}>
+              <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsRateApp}</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}>
               <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsPrivacy}</Text>
             </TouchableOpacity>
@@ -182,6 +216,24 @@ export default function SettingsModal({
                 label={gameState.settings.language === "pt" ? "Sons da aplicação" : "App sounds"}
                 active={gameState.settings.sfxEnabled}
                 onPress={() => onAudioPreferenceChange("sfxEnabled", !gameState.settings.sfxEnabled)}
+                themeId={theme.id}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsConfirmExit}</Text>
+            <View style={styles.optionRow}>
+              <OptionButton
+                label={copy.settingsOn}
+                active={gameState.settings.confirmExit}
+                onPress={() => onConfirmExitChange(true)}
+                themeId={theme.id}
+              />
+              <OptionButton
+                label={copy.settingsOff}
+                active={!gameState.settings.confirmExit}
+                onPress={() => onConfirmExitChange(false)}
                 themeId={theme.id}
               />
             </View>
@@ -442,11 +494,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     paddingVertical: 12,
+    paddingHorizontal: 8,
     alignItems: "center",
+    // Buttons in a row stretch to the tallest one (a two-line label); keep every label centered.
+    justifyContent: "center",
   },
   optionButtonText: {
     fontSize: 14,
     fontWeight: "600",
+    textAlign: "center",
   },
   helpText: {
     fontSize: 13,

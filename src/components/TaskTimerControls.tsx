@@ -90,7 +90,7 @@ export default function TaskTimerControls({
   return (
     <View style={[styles.container, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}>
       <View style={styles.metaRow}>
-        <Text style={[styles.label, { color: theme.mutedText }]}>Timer</Text>
+        <Text style={[styles.label, { color: theme.mutedText }]}>{copy.timerLabel}</Text>
         <Text style={[styles.status, { color: theme.text }]}>{statusLabel}</Text>
       </View>
       <View style={styles.metaRow}>

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, AppState, StyleSheet, View } from "react-native";
+import { Alert, AppState, BackHandler, StyleSheet, useColorScheme, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import SettingsModal from "./components/SettingsModal";
@@ -23,23 +24,32 @@ import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import CompanionRevealModal from "./components/CompanionRevealModal";
 import { reachedStreakMilestone } from "./utils/streakMilestones";
-import TutorialOverlay, { TutorialStep } from "./components/TutorialOverlay";
+import TutorialOverlay from "./components/TutorialOverlay";
+import TutorialCards, { TutorialCardMode } from "./components/TutorialCards";
+import {
+  applyFirstTaskReward,
+  finishTutorial,
+  getTutorialStep,
+  shouldFinishTutorial,
+  skipTutorial,
+} from "./utils/tutorial";
 import { getAppCopy } from "./constants/appCopy";
-import { getAppTheme } from "./constants/appTheme";
+import { getAppTheme, resolveDarkAppearance, setDarkAppearance } from "./constants/appTheme";
 import DashboardScreen from "./screens/DashboardScreen";
 import CompanionsScreen from "./screens/CompanionsScreen";
 import JourneyScreen from "./screens/JourneyScreen";
 import TaskCalendarScreen from "./screens/TaskCalendarScreen";
 import TasksScreen from "./screens/TasksScreen";
 import { gameStateService } from "./services/gameStateService";
+import { maybeAskForReview, reachedCamp } from "./services/reviewService";
 import {
   AppLanguage,
+  AppAppearance,
   AppThemeId,
   CustomTaskTemplate,
   GameState,
   Task,
   TaskType,
-  TaskStatus,
   TimerAlertMode,
   Room,
 } from "./types";
@@ -86,91 +96,6 @@ interface TaskTutorialUiState {
   selectedPredefinedTaskId: string;
 }
 
-const TUTORIAL_FIRST_TASK_REWARD = 100;
-
-function applyTutorialReward(gameState: GameState): GameState {
-  if (gameState.tutorialCompleted) {
-    return gameState;
-  }
-
-  if (gameState.tutorialRewardGranted) {
-    return gameState;
-  }
-
-  const hasCompletedTask = gameState.tasks.some(
-    (task) => task.status === TaskStatus.COMPLETED,
-  );
-
-  if (!hasCompletedTask) {
-    return gameState;
-  }
-
-  return {
-    ...gameState,
-    coins: gameState.coins + TUTORIAL_FIRST_TASK_REWARD,
-    tutorialRewardGranted: true,
-  };
-}
-
-function getTutorialStep(
-  gameState: GameState,
-  activeScreen: Screen,
-  taskTutorialUiState: TaskTutorialUiState,
-): TutorialStep {
-  if (gameState.tutorialCompleted) {
-    return "done";
-  }
-
-  const hasTask = gameState.tasks.length > 0;
-  const hasCompletedTask = gameState.tasks.some(
-    (task) => task.status === TaskStatus.COMPLETED,
-  );
-  const hasPet = gameState.pets.length > 0;
-  const hasEquippedPet = gameState.equippedPetId !== "";
-
-  if (!hasTask) {
-    if (activeScreen !== "tasks") {
-      return "open-tasks";
-    }
-
-    if (!taskTutorialUiState.modalVisible) {
-      return "tap-add-task";
-    }
-
-    if (taskTutorialUiState.taskType !== TaskType.PREDEFINED) {
-      return "choose-predefined-task";
-    }
-
-    if (taskTutorialUiState.selectedPredefinedTaskId !== "drink-water") {
-      return "choose-water-task";
-    }
-
-    return "confirm-task-add";
-  }
-
-  if (!hasCompletedTask) {
-    return activeScreen === "tasks" ? "complete-task" : "open-tasks";
-  }
-
-  if (!hasPet || !hasEquippedPet) {
-    return activeScreen === "companions" ? "choose-companion" : "open-realm";
-  }
-
-  return "done";
-}
-
-function shouldCompleteTutorial(gameState: GameState): boolean {
-  if (gameState.tutorialCompleted) {
-    return false;
-  }
-
-  const hasCompletedTask = gameState.tasks.some(
-    (task) => task.status === TaskStatus.COMPLETED,
-  );
-
-  return hasCompletedTask && gameState.pets.length > 0 && gameState.equippedPetId !== "";
-}
-
 type CompanionAudioCue = "companion-greeting" | "companion-evolved" | "focus-find";
 
 function companionAudioCueFor(events: GameState["companionEvents"]): CompanionAudioCue | null {
@@ -187,25 +112,54 @@ function newCompanionAudioCue(before: GameState, after: GameState): CompanionAud
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<Screen>("dashboard");
   const [gameState, setGameState] = useState<GameState | null>(null);
+  // Dark mode: resolved here, before any screen renders, so every getAppTheme() call agrees.
+  const systemScheme = useColorScheme();
+  const darkMode = resolveDarkAppearance(gameState?.settings.appearance ?? "system", systemScheme);
+  setDarkAppearance(darkMode);
   // Latest state for event handlers. Reading `gameState` from the render closure lets two
   // quick taps both act on the same old state (e.g. completing one task twice).
   const gameStateRef = useRef<GameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [tutorialVisible, setTutorialVisible] = useState(false);
+  const [tutorialCard, setTutorialCard] = useState<TutorialCardMode | null>(null);
   const [taskTutorialUiState, setTaskTutorialUiState] = useState<TaskTutorialUiState>({
     modalVisible: false,
     taskType: TaskType.CUSTOM,
     selectedPredefinedTaskId: "",
   });
   const tutorialStep = gameState
-    ? getTutorialStep(gameState, activeScreen, taskTutorialUiState)
+    ? getTutorialStep(gameState, activeScreen, taskTutorialUiState.modalVisible)
     : "done";
   const [plusVisible, setPlusVisible] = useState(false);
   const [exploreBusy, setExploreBusy] = useState(false);
   const [roomEditorId, setRoomEditorId] = useState<string | null>(null);
   const [appActive, setAppActive] = useState(true);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
+
+  // Android Back: close the room editor, then return to the dashboard, then (optionally) ask
+  // before leaving. Open modals handle Back themselves (onRequestClose) and never reach this.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (roomEditorId) {
+        setRoomEditorId(null);
+        return true;
+      }
+      if (activeScreen !== "dashboard") {
+        setActiveScreen("dashboard");
+        return true;
+      }
+      const current = gameStateRef.current;
+      if (!current?.settings.confirmExit) return false;
+      const copy = getAppCopy(current.settings.language);
+      Alert.alert(copy.exitTitle, copy.exitMessage, [
+        { text: copy.exitStay, style: "cancel" },
+        { text: copy.exitLeave, style: "destructive", onPress: () => BackHandler.exitApp() },
+      ]);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [activeScreen, roomEditorId]);
 
   const playUiTap = () => {
     void playGrowraCue("ui-tap", gameStateRef.current?.settings.sfxEnabled ?? false);
@@ -278,13 +232,10 @@ export default function App() {
 
     if (loadResult.status === "loaded") {
       const syncedGameState = syncRooms(
-        applyTutorialReward(syncRecurringTasks(loadResult.saveData.gameState)),
+        applyFirstTaskReward(syncRecurringTasks(loadResult.saveData.gameState)),
       );
-      const resolvedTutorialState = shouldCompleteTutorial(syncedGameState)
-        ? { ...syncedGameState, tutorialCompleted: true }
-        : syncedGameState;
-      await gameStateService.saveGame(createSaveData(resolvedTutorialState));
-      resolvedGameState = resolvedTutorialState;
+      await gameStateService.saveGame(createSaveData(syncedGameState));
+      resolvedGameState = syncedGameState;
     } else {
       if (loadResult.status === "corrupt") {
         Alert.alert(
@@ -314,23 +265,19 @@ export default function App() {
     gameStateRef.current = resolvedGameState;
     setGameState(resolvedGameState);
     if (!resolvedGameState.tutorialCompleted) {
-      setTutorialVisible(true);
+      // Brand-new players get the welcome card first; anyone mid-tutorial goes straight back to it.
+      if (resolvedGameState.tasks.length === 0) setTutorialCard("welcome");
+      else setTutorialVisible(true);
     }
 
     setLoading(false);
   };
 
   const persistGameState = async (nextGameState: GameState) => {
-    const syncedGameState = syncRooms(applyTutorialReward(syncRecurringTasks(nextGameState)));
-    const resolvedTutorialState = shouldCompleteTutorial(syncedGameState)
-      ? { ...syncedGameState, tutorialCompleted: true }
-      : syncedGameState;
-    gameStateRef.current = resolvedTutorialState;
-    setGameState(resolvedTutorialState);
-    await gameStateService.saveGame(createSaveData(resolvedTutorialState));
-    if (resolvedTutorialState.tutorialCompleted && !syncedGameState.tutorialCompleted) {
-      setTutorialVisible(false);
-    }
+    const syncedGameState = syncRooms(applyFirstTaskReward(syncRecurringTasks(nextGameState)));
+    gameStateRef.current = syncedGameState;
+    setGameState(syncedGameState);
+    await gameStateService.saveGame(createSaveData(syncedGameState));
   };
 
   const handleAddTask = async (
@@ -385,6 +332,9 @@ export default function App() {
               : "task-complete"
     );
     void playGrowraCue(cue, gameState.settings.sfxEnabled);
+    // A camp is a natural, happy moment: offer Play's review popup there (once per install),
+    // after the camp cue has had a moment to play.
+    if (reachedCamp(tilesBefore, tilesAfter)) setTimeout(() => void maybeAskForReview(), 1500);
   };
 
   const handleUpdateTask = async (updatedTask: Task) => {
@@ -535,6 +485,36 @@ export default function App() {
       },
     });
     void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
+  };
+
+  const handleSkipTutorial = async () => {
+    const current = gameStateRef.current;
+    setTutorialVisible(false);
+    setTutorialCard(null);
+    if (current) await persistGameState(skipTutorial(current));
+  };
+
+  // The tutorial ends when the player opens the Journey after choosing a companion: pay the
+  // welcome gift and show the finish card.
+  useEffect(() => {
+    const current = gameStateRef.current;
+    if (!current || !tutorialVisible || !shouldFinishTutorial(current, activeScreen)) return;
+    setTutorialVisible(false);
+    setTutorialCard("finish");
+    void persistGameState(finishTutorial(current));
+    void playGrowraCue("camp-milestone", current.settings.sfxEnabled);
+  }, [activeScreen, gameState, tutorialVisible]);
+
+  const handleConfirmExitChange = async (confirmExit: boolean) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, confirmExit } });
+  };
+
+  const handleAppearanceChange = async (appearance: AppAppearance) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, appearance } });
   };
 
   const handleThemeChange = async (theme: AppThemeId) => {
@@ -760,17 +740,15 @@ export default function App() {
             tasks={gameState.tasks}
             customTaskTemplates={gameState.customTaskTemplates}
             tutorialTarget={
-              tutorialStep === "tap-add-task"
-                ? "add-button"
-                : tutorialStep === "choose-predefined-task"
-                  ? "modal-type-predefined"
-                  : tutorialStep === "choose-water-task"
-                    ? "modal-task-drink-water"
-                    : tutorialStep === "confirm-task-add"
-                      ? "modal-submit"
-                      : tutorialStep === "complete-task"
-                        ? "task-complete"
-                        : null
+              !tutorialVisible
+                ? null
+                : tutorialStep === "tap-add-task"
+                  ? "add-button"
+                  : tutorialStep === "confirm-task-add"
+                    ? "modal-submit"
+                    : tutorialStep === "complete-task"
+                      ? "task-complete"
+                      : null
             }
             onTutorialStateChange={setTaskTutorialUiState}
             onAddTask={handleAddTask}
@@ -832,6 +810,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      <StatusBar style={darkMode ? "light" : "dark"} />
       <View
         className="flex-1"
         style={[styles.container, { backgroundColor: appTheme.background }]}
@@ -844,17 +823,18 @@ export default function App() {
           onNavigate={handleNavigate}
           settings={gameState.settings}
           tutorialTarget={
-            tutorialStep === "open-tasks" ||
-            tutorialStep === "tap-add-task" ||
-            tutorialStep === "choose-predefined-task" ||
-            tutorialStep === "choose-water-task" ||
-            tutorialStep === "confirm-task-add" ||
-            tutorialStep === "complete-task"
-              ? "tasks"
-              : tutorialStep === "open-realm" ||
-                  tutorialStep === "choose-companion"
-                ? "companions"
-                : null
+            !tutorialVisible
+              ? null
+              : tutorialStep === "open-tasks" ||
+                  tutorialStep === "tap-add-task" ||
+                  tutorialStep === "confirm-task-add" ||
+                  tutorialStep === "complete-task"
+                ? "tasks"
+                : tutorialStep === "open-realm" || tutorialStep === "choose-companion"
+                  ? "companions"
+                  : tutorialStep === "open-journey"
+                    ? "journey"
+                    : null
           }
         />
         <SettingsModal
@@ -866,6 +846,12 @@ export default function App() {
           }}
           onLanguageChange={handleLanguageChange}
           onThemeChange={handleThemeChange}
+          onAppearanceChange={handleAppearanceChange}
+          onConfirmExitChange={handleConfirmExitChange}
+          onReplayTutorial={() => {
+            setSettingsVisible(false);
+            setTutorialCard("tour");
+          }}
           onAudioPreferenceChange={handleAudioPreferenceChange}
           onTimerAlertModeChange={handleTimerAlertModeChange}
           onPickTimerAlertSound={handlePickTimerAlertSound}
@@ -916,9 +902,24 @@ export default function App() {
           }}
         />
         <TutorialOverlay
-          visible={tutorialVisible && tutorialStep !== "done"}
+          visible={tutorialVisible && tutorialStep !== "done" && tutorialCard === null}
           step={tutorialStep}
           settings={gameState.settings}
+          onSkip={handleSkipTutorial}
+        />
+        <TutorialCards
+          mode={tutorialCard}
+          settings={gameState.settings}
+          onStart={() => {
+            setTutorialCard(null);
+            setTutorialVisible(true);
+            playUiTap();
+          }}
+          onSkip={handleSkipTutorial}
+          onClose={() => {
+            setTutorialCard(null);
+            playUiTap();
+          }}
         />
         <CompanionRevealModal
           visible={gameState.companionEvents.length > 0}

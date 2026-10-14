@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { categorySuggestions, matchExistingCategory } from "../utils/categorySuggestions";
 import {
   View,
   StyleSheet,
@@ -12,21 +13,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { AppSettings, CustomTaskTemplate, TaskType, TaskFrequency, TaskPriority } from "../types";
-import { getPredefinedTask, getPredefinedTaskGroups, predefinedTasks } from "../constants/predefinedTasks";
+import { AppSettings, CustomTaskTemplate, Task, TaskType, TaskFrequency, TaskPriority } from "../types";
+import { getPredefinedTask, getPredefinedTaskGroups, localizePredefinedTask, predefinedTasks } from "../constants/predefinedTasks";
 import { taskPriorityOptions } from "../constants/taskConfig";
 import { getStartOfDay } from "../utils/taskSchedule";
 import TaskDatePicker from "./TaskDatePicker";
 import { getCustomTaskTemplateGroups } from "../utils/customTaskTemplates";
 
-function getPriorityLabel(priority: TaskPriority): string {
-  if (priority === TaskPriority.HIGH) {
-    return "High";
-  }
-  if (priority === TaskPriority.LOW) {
-    return "Low";
-  }
-  return "Medium";
+function getPriorityLabel(copy: ReturnType<typeof getAppCopy>, priority: TaskPriority): string {
+  if (priority === TaskPriority.HIGH) return copy.tasksPriorityHigh;
+  if (priority === TaskPriority.LOW) return copy.tasksPriorityLow;
+  return copy.tasksPriorityMedium;
 }
 
 interface TaskFormValues {
@@ -49,6 +46,8 @@ interface AddTaskModalProps {
   onClose: () => void;
   settings: AppSettings;
   customTaskTemplates: CustomTaskTemplate[];
+  /** The player's tasks, so the category field can offer the categories they already use. */
+  existingTasks?: Task[];
   tutorialEnabled: boolean;
   tutorialTarget:
     | "modal-type-predefined"
@@ -68,6 +67,7 @@ export default function AddTaskModal({
   onClose,
   settings,
   customTaskTemplates,
+  existingTasks = [],
   tutorialEnabled,
   tutorialTarget,
   onTutorialStateChange,
@@ -75,9 +75,16 @@ export default function AddTaskModal({
 }: AddTaskModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
-  const predefinedTaskGroups = getPredefinedTaskGroups();
+  const predefinedTaskGroups = getPredefinedTaskGroups().map((group) => ({
+    ...group,
+    tasks: group.tasks.map((task) => localizePredefinedTask(task, settings.language)),
+  }));
   const customTaskGroups = getCustomTaskTemplateGroups(customTaskTemplates);
-  const customCategories = [...new Set(customTaskTemplates.map((template) => template.category))];
+  const usedCategories = [
+    ...existingTasks.filter((task) => task.type === TaskType.CUSTOM).map((task) => task.category),
+    ...customTaskTemplates.map((template) => template.category),
+  ];
+  const customCategories = categorySuggestions(usedCategories);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -99,11 +106,13 @@ export default function AddTaskModal({
   const [showSaveTemplateHelp, setShowSaveTemplateHelp] = useState(false);
   const [tutorialSelectedPredefinedTaskId, setTutorialSelectedPredefinedTaskId] =
     useState("");
-  const selectedPredefinedTask = getPredefinedTask(predefinedTaskId);
+  const selectedPredefinedTask = localizePredefinedTask(getPredefinedTask(predefinedTaskId), settings.language);
   const predefinedTutorialTarget = tutorialTarget === "modal-type-predefined";
   const waterTutorialTarget = tutorialTarget === "modal-task-drink-water";
   const submitTutorialTarget = tutorialTarget === "modal-submit";
-  const tutorialOn = tutorialEnabled && tutorialTarget !== null;
+  // The old guided flow locked the form to Predefined > Drink Water. The tutorial now accepts any
+  // task: on the "modal-submit" step everything stays usable and only Add is highlighted.
+  const tutorialOn = tutorialEnabled && tutorialTarget !== null && !submitTutorialTarget;
 
   useEffect(() => {
     setCollapsedCustomCategories((currentValue) => ({
@@ -136,7 +145,7 @@ export default function AddTaskModal({
         description,
         predefinedTaskId: "",
         customTemplateId,
-        category,
+        category: matchExistingCategory(category, categorySuggestions(usedCategories, Number.MAX_SAFE_INTEGER)),
         type,
         frequency,
         priority,
@@ -250,6 +259,13 @@ export default function AddTaskModal({
               <Text style={[styles.submitButton, { color: theme.accent }]}>{copy.addTaskConfirm}</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Tutorial hint: the main screen's tutorial card can't show above this modal. */}
+          {tutorialEnabled && submitTutorialTarget && (
+            <View style={[styles.tutorialHint, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
+              <Text style={[styles.tutorialHintText, { color: theme.text }]}>{copy.tutorialConfirmTaskAddHint}</Text>
+            </View>
+          )}
 
           {/* Form */}
           <View style={styles.form}>
@@ -558,7 +574,7 @@ export default function AddTaskModal({
                 {taskPriorityOptions.map((priorityOption) => (
                   <ChipButton
                     key={priorityOption}
-                    label={getPriorityLabel(priorityOption)}
+                    label={getPriorityLabel(copy, priorityOption)}
                     active={priority === priorityOption}
                     onPress={() => setPriority(priorityOption)}
                     settings={settings}
@@ -782,6 +798,18 @@ function ChipButton({
 }
 
 const styles = StyleSheet.create({
+  tutorialHint: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  tutorialHintText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "600",
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",

@@ -25,6 +25,9 @@ export type AppLanguage = "en" | "pt";
 
 export type AppThemeId = "mint" | "sunset" | "ocean" | "dusk" | "blossom" | "forest";
 
+/** Light or dark colors; "system" follows the phone's setting. */
+export type AppAppearance = "system" | "light" | "dark";
+
 export type TimerAlertMode = "vibration" | "sound";
 
 export interface TimerAlertSettings {
@@ -36,6 +39,9 @@ export interface TimerAlertSettings {
 export interface AppSettings {
   language: AppLanguage;
   theme: AppThemeId;
+  appearance: AppAppearance;
+  /** Ask "Leave Growra?" when Back is pressed on the dashboard. */
+  confirmExit: boolean;
   musicEnabled: boolean;
   sfxEnabled: boolean;
   timerAlert: TimerAlertSettings;

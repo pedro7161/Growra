@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { companionDescription } from "../utils/companionText";
+import { getLocaleFromSettings } from "../utils/settings";
+import { formatCount } from "../utils/formatCount";
 import {
   Image,
   Modal,
@@ -85,7 +88,7 @@ export default function CompanionsScreen({
           {copy.petsTitle}
         </Text>
         <Text style={[styles.subtitle, { color: theme.mutedText }]}>
-          {gameState.pets.length}/{COMPANIONS.length} • {gameState.coins}{" "}
+          {gameState.pets.length}/{COMPANIONS.length} • {formatCount(gameState.coins, getLocaleFromSettings(settings))}{" "}
           {copy.petsCoinsPity}
         </Text>
       </View>
@@ -113,7 +116,7 @@ export default function CompanionsScreen({
                 ))
             ) : (
               <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.surfaceMuted }]} onPress={onOpenPlus}>
-                <Text style={[styles.actionButtonText, { color: theme.mutedText }]}>🔒 {copy.plusRoomsTitle}</Text>
+                <Text style={[styles.actionButtonText, { color: theme.mutedText }]}>🔒 {copy.plusRoomsUnlock}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -431,7 +434,7 @@ function StarterPicker({
                 {copy.companionLoves} {copy.companionStyles[style].loves}
               </Text>
               <Text style={[styles.petStat, { color: theme.mutedText }]}>
-                {template.description}
+                {companionDescription(copy, template)}
               </Text>
               <Text style={[styles.petStat, { color: theme.text }]}>
                 {copy.companionPerk}: {copy.companionStyles[style].perk}
@@ -598,7 +601,7 @@ function CompanionDetailModal({
                     { color: theme.mutedText },
                   ]}
                 >
-                  {petTemplate.description}
+                  {companionDescription(copy, petTemplate)}
                 </Text>
               )}
 

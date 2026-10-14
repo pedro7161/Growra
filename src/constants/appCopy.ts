@@ -105,6 +105,10 @@ interface AppCopy {
   settingsTitle: string;
   settingsLanguage: string;
   settingsTheme: string;
+  settingsAppearance: string;
+  settingsAppearanceSystem: string;
+  settingsAppearanceLight: string;
+  settingsAppearanceDark: string;
   settingsStats: string;
   settingsClose: string;
   settingsTotalTasks: string;
@@ -134,6 +138,25 @@ interface AppCopy {
   settingsChangelog: string;
   settingsUpdatedOn: string;
   tutorialSkip: string;
+  tutorialStepLabel: string;
+  tutorialOpenJourney: string;
+  tutorialWelcomeTitle: string;
+  tutorialWelcomeBody: string;
+  tutorialWelcomePoint1: string;
+  tutorialWelcomePoint2: string;
+  tutorialWelcomePoint3: string;
+  tutorialTipCalendar: string;
+  tutorialTipJourney: string;
+  tutorialTipCompanions: string;
+  tutorialTipSettings: string;
+  tutorialTourTitle: string;
+  tutorialTourBody: string;
+  tutorialFinishBody: string;
+  tutorialFinishGift: string;
+  tutorialStart: string;
+  tutorialLetsGo: string;
+  tutorialSkipAll: string;
+  settingsReplayTutorial: string;
   tutorialNext: string;
   tutorialFinish: string;
   tutorialGuideTitle: string;
@@ -169,6 +192,8 @@ interface AppCopy {
   companionRevealSubtitle: string;
   companionMood: Record<CompanionMood, string>;
   companionStyles: Record<CompanionStyle, CompanionStyleCopy>;
+  /** Companion descriptions by companion id; a missing entry falls back to the English original in utils/gameplay.ts. */
+  companionBios: Partial<Record<string, string>>;
   dashboardActiveDays: string;
   tutorialChooseCompanionHint: string;
   companionFoundTitle: string;
@@ -212,6 +237,7 @@ interface AppCopy {
   roomDefaultName: string;
   plusRoomName: string;
   plusRoomsTitle: string;
+  plusRoomsUnlock: string;
   roomDone: string;
   roomShare: string;
   roomRename: string;
@@ -237,6 +263,14 @@ interface AppCopy {
   roomStyleNames: Record<string, string>;
   settingsAdConsent: string;
   settingsPrivacy: string;
+  settingsRateApp: string;
+  settingsConfirmExit: string;
+  settingsOn: string;
+  settingsOff: string;
+  exitTitle: string;
+  exitMessage: string;
+  exitLeave: string;
+  exitStay: string;
   exploreButton: string;
   exploreAdHint: string;
   explorePlusHint: string;
@@ -276,6 +310,9 @@ interface AppCopy {
   plusBadge: string;
   settingsPlus: string;
   settingsExportCsv: string;
+  timerLabel: string;
+  taskStatusPending: string;
+  taskStatusCompleted: string;
   timerStart: string;
   timerPause: string;
   timerResume: string;
@@ -384,6 +421,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsTitle: "Settings",
     settingsLanguage: "Language",
     settingsTheme: "Color Theme",
+    settingsAppearance: "Appearance",
+    settingsAppearanceSystem: "Follow phone",
+    settingsAppearanceLight: "Light",
+    settingsAppearanceDark: "Dark",
     settingsStats: "All Stats",
     settingsClose: "Close",
     settingsTotalTasks: "Total tasks completed",
@@ -413,19 +454,38 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsChangelog: "Changelog",
     settingsUpdatedOn: "Updated on",
     tutorialSkip: "Skip",
+    tutorialStepLabel: "Step {n} of {total}",
+    tutorialOpenJourney: "Last step: open Journey. Every day you complete a task adds a tile to your road.",
+    tutorialWelcomeTitle: "Welcome to Growra",
+    tutorialWelcomeBody: "A to-do list you shape your way, with a companion that grows as you get things done. A quick tour earns you {coins} coins.",
+    tutorialWelcomePoint1: "✅ Tasks your way: habits, chores, study, lists or your day plan",
+    tutorialWelcomePoint2: "🐾 A companion that grows with every task you finish",
+    tutorialWelcomePoint3: "🗺️ A Journey road made of the days you show up",
+    tutorialTipCalendar: "📅 Calendar and ⏱ focus timer live in Tasks",
+    tutorialTipJourney: "🗺️ Your Journey grows one tile per active day, with a camp every 7",
+    tutorialTipCompanions: "🐾 More companions join as you use Growra your way",
+    tutorialTipSettings: "🎨 Themes and dark mode are in Settings",
+    tutorialTourTitle: "Growra at a glance",
+    tutorialTourBody: "A quick reminder of where everything is.",
+    tutorialFinishBody: "Your companion is ready and your Journey has begun.",
+    tutorialFinishGift: "+{coins} 🪙 welcome gift",
+    tutorialStart: "Show me around",
+    tutorialLetsGo: "Let's go",
+    tutorialSkipAll: "Skip the tour",
+    settingsReplayTutorial: "Show the tour again",
     tutorialNext: "Next",
     tutorialFinish: "Finish",
     tutorialGuideTitle: "Tutorial",
     tutorialGuideSubtitle: "Do the steps in the app to unlock the next one.",
     tutorialCreateTaskTitle: "Create your first task",
-    tutorialCreateTaskHint: "Open Tasks and add any task.",
+    tutorialCreateTaskHint: "Tap + Add to create your first task.",
     tutorialChoosePredefinedTaskHint: "Pick the Predefined option.",
     tutorialChooseWaterTaskHint: "Select the Drink Water task.",
-    tutorialConfirmTaskAddHint: "Tap Add to create your first task.",
+    tutorialConfirmTaskAddHint: "Any task works: pick a Predefined one like Drink Water, or write your own. Then tap Add.",
     tutorialCompleteTaskTitle: "Complete that task",
-    tutorialCompleteTaskHint: "Mark the task as done to earn your first coins.",
-    tutorialOpenTasks: "Open Tasks",
-    tutorialOpenRealm: "Open Pets",
+    tutorialCompleteTaskHint: "Tap the box next to your task to complete it. Your first one pays +{coins} coins!",
+    tutorialOpenTasks: "Tap Tasks below to start your list.",
+    tutorialOpenRealm: "Nice! Now open Pets to meet your companion.",
     tutorialRewardTitle: "You're ready!",
     tutorialStep1Title: "Welcome to Growra!",
     tutorialStep1Body: "Your dashboard shows today's tasks, your streak bonus, and your equipped pet. Complete tasks to earn coins and XP.",
@@ -452,6 +512,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       glowing: "{name} is glowing. What a day!",
       sleepy: "{name} dozed off while you were away. Any task wakes it up.",
     },
+    companionBios: {},
     companionStyles: {
       "getting-started": { loves: "getting started", perk: "+2 coins on your first task each day", joins: "Joins after {target} active days" },
       flow: { loves: "going with the flow", perk: "+1 Bond when you move a task to later", joins: "Joins when you move a task to a later day" },
@@ -467,7 +528,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "big-days": { loves: "big days", perk: "+10 coins on your 5th task of a day", joins: "Joins on your first day with 5 tasks done" },
     },
     dashboardActiveDays: "Active days",
-    tutorialChooseCompanionHint: "Pick your first companion.",
+    tutorialChooseCompanionHint: "Choose your first companion. The others join as you use Growra.",
     companionFoundTitle: "{name} found something!",
     companionFoundSubtitle: "A {item} from your focus session. It's in your bag on the Journey.",
     journeyTitle: "Journey",
@@ -556,11 +617,20 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     exploreNoAd: "No ad available right now. Try again later.",
     journeyLookBackLocked: "See this week with Plus",
     settingsPrivacy: "Privacy policy",
+    settingsRateApp: "Rate Growra on Google Play",
+    settingsConfirmExit: "Ask before leaving the app",
+    settingsOn: "On",
+    settingsOff: "Off",
+    exitTitle: "Leave Growra?",
+    exitMessage: "Your tasks and progress are saved.",
+    exitLeave: "Leave",
+    exitStay: "Stay",
     settingsAdConsent: "Ad privacy choices",
     roomButton: "Room",
     roomDefaultName: "{name}'s room",
     plusRoomName: "Plus room {number}",
     plusRoomsTitle: "Plus rooms",
+    plusRoomsUnlock: "Unlock with Growra Plus",
     roomDone: "Done",
     roomShare: "Share",
     roomRename: "Rename room",
@@ -666,6 +736,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "pastel-cafe": "Pastel café",
       "spring-garden": "Spring garden",
     },
+    timerLabel: "Timer",
+    taskStatusPending: "Pending",
+    taskStatusCompleted: "Completed",
     timerStart: "Start",
     timerPause: "Pause",
     timerResume: "Resume",
@@ -771,6 +844,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsTitle: "Definições",
     settingsLanguage: "Idioma",
     settingsTheme: "Tema de cor",
+    settingsAppearance: "Aparência",
+    settingsAppearanceSystem: "Seguir o telemóvel",
+    settingsAppearanceLight: "Claro",
+    settingsAppearanceDark: "Escuro",
     settingsStats: "Todas as estatísticas",
     settingsClose: "Fechar",
     settingsTotalTasks: "Total de tarefas concluídas",
@@ -799,20 +876,39 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsBackupInvalid: "O código de backup é inválido.",
     settingsChangelog: "Registo de alterações",
     settingsUpdatedOn: "Atualizado em",
-    tutorialSkip: "Pular",
+    tutorialSkip: "Saltar",
+    tutorialStepLabel: "Passo {n} de {total}",
+    tutorialOpenJourney: "Último passo: abre a Jornada. Cada dia em que concluis uma tarefa acrescenta um mosaico ao teu caminho.",
+    tutorialWelcomeTitle: "Bem-vindo ao Growra",
+    tutorialWelcomeBody: "Uma lista de tarefas à tua maneira, com um companheiro que cresce à medida que fazes as coisas. Uma visita rápida dá-te {coins} moedas.",
+    tutorialWelcomePoint1: "✅ Tarefas à tua maneira: hábitos, casa, estudo, listas ou o plano do dia",
+    tutorialWelcomePoint2: "🐾 Um companheiro que cresce com cada tarefa que concluis",
+    tutorialWelcomePoint3: "🗺️ Um caminho de Jornada feito dos dias em que apareces",
+    tutorialTipCalendar: "📅 O calendário e o ⏱ temporizador de foco estão em Tarefas",
+    tutorialTipJourney: "🗺️ A tua Jornada cresce um mosaico por dia ativo, com um acampamento a cada 7",
+    tutorialTipCompanions: "🐾 Mais companheiros juntam-se a ti quando usas o Growra à tua maneira",
+    tutorialTipSettings: "🎨 Os temas e o modo escuro estão nas Definições",
+    tutorialTourTitle: "O Growra num relance",
+    tutorialTourBody: "Um lembrete rápido de onde está tudo.",
+    tutorialFinishBody: "O teu companheiro está pronto e a tua Jornada começou.",
+    tutorialFinishGift: "+{coins} 🪙 de boas-vindas",
+    tutorialStart: "Mostra-me",
+    tutorialLetsGo: "Vamos lá",
+    tutorialSkipAll: "Saltar a visita",
+    settingsReplayTutorial: "Ver a visita outra vez",
     tutorialNext: "Próximo",
     tutorialFinish: "Terminar",
     tutorialGuideTitle: "Tutorial",
     tutorialGuideSubtitle: "Faz as etapas no jogo para desbloquear a seguinte.",
     tutorialCreateTaskTitle: "Cria a tua primeira tarefa",
-    tutorialCreateTaskHint: "Abre Tarefas e adiciona qualquer tarefa.",
+    tutorialCreateTaskHint: "Carrega em + Adicionar para criar a tua primeira tarefa.",
     tutorialChoosePredefinedTaskHint: "Escolhe a opção Predefinida.",
     tutorialChooseWaterTaskHint: "Seleciona a tarefa Beber água.",
-    tutorialConfirmTaskAddHint: "Carrega em Adicionar para criar a tua primeira tarefa.",
+    tutorialConfirmTaskAddHint: "Qualquer tarefa serve: escolhe uma Predefinida, como Beber água, ou escreve a tua. Depois carrega em Adicionar.",
     tutorialCompleteTaskTitle: "Conclui essa tarefa",
-    tutorialCompleteTaskHint: "Marca a tarefa como feita para ganhares as primeiras moedas.",
-    tutorialOpenTasks: "Abrir tarefas",
-    tutorialOpenRealm: "Abrir Amigos",
+    tutorialCompleteTaskHint: "Toca na caixa ao lado da tarefa para a concluir. A primeira dá +{coins} moedas!",
+    tutorialOpenTasks: "Toca em Tarefas, em baixo, para começar a tua lista.",
+    tutorialOpenRealm: "Boa! Agora abre Amigos para conhecer o teu companheiro.",
     tutorialRewardTitle: "Estás pronto!",
     tutorialStep1Title: "Bem-vindo ao Growra!",
     tutorialStep1Body: "O teu painel mostra as tarefas de hoje, o bónus de sequência e o teu pet equipado. Completa tarefas para ganhar moedas e XP.",
@@ -839,6 +935,20 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       glowing: "{name} está a brilhar. Que dia!",
       sleepy: "{name} adormeceu enquanto estavas fora. Qualquer tarefa o acorda.",
     },
+    companionBios: {
+      sprout: "Um amigo do bosque dos cogumelos que brilha mais onde quer que descanse.",
+      pebble: "Uma pequena criatura de pedra, robusta, que junta flores e musgo.",
+      moss: "Um montinho calmo do bosque que leva um pequeno prado às costas.",
+      zephie: "Uma nuvem de brisa que brinca com pétalas e folhas como se fizessem parte da sua aura.",
+      ember: "Um espírito de chama alegre que arde mais forte no seu núcleo.",
+      ripple: "Uma criatura de água brincalhona que deixa anéis brilhantes onde quer que mergulhe.",
+      tempo: "Uma nuvem de trovão que junta luz da chuva e zumbe antes de cada pequeno relâmpago.",
+      glint: "Uma criatura de prisma cujos pequenos chifres de cristal espalham luz quente pela relva.",
+      astra: "Uma nuvem de estrelas que brilha como um céu inteiro em miniatura.",
+      umbra: "Um espírito de sombra aveludado que brilha suavemente no nevoeiro ao luar, em vez de se esconder nele.",
+      nova: "Um companheiro com coração de estrela, cuja aura junta fogo e luz das estrelas.",
+      cindra: "Uma fera fofa de lava, com um coração de magma brilhante e o hábito de levantar faíscas.",
+    },
     companionStyles: {
       "getting-started": { loves: "começar", perk: "+2 moedas na primeira tarefa de cada dia", joins: "Junta-se após {target} dias ativos" },
       flow: { loves: "ir com a corrente", perk: "+1 de Laço quando adias uma tarefa", joins: "Junta-se quando adias uma tarefa para outro dia" },
@@ -854,7 +964,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "big-days": { loves: "dias em grande", perk: "+10 moedas na 5.ª tarefa do dia", joins: "Junta-se no primeiro dia com 5 tarefas feitas" },
     },
     dashboardActiveDays: "Dias ativos",
-    tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro.",
+    tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro. Os outros juntam-se a ti quando usas o Growra.",
     companionFoundTitle: "{name} encontrou uma coisa!",
     companionFoundSubtitle: "Um(a) {item} da tua sessão de foco. Está na tua mochila na Jornada.",
     journeyTitle: "Jornada",
@@ -943,11 +1053,20 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     exploreNoAd: "Nenhum anúncio disponível agora. Tenta mais tarde.",
     journeyLookBackLocked: "Vê esta semana com o Plus",
     settingsPrivacy: "Política de privacidade",
+    settingsRateApp: "Avaliar o Growra no Google Play",
+    settingsConfirmExit: "Perguntar antes de sair da app",
+    settingsOn: "Ligado",
+    settingsOff: "Desligado",
+    exitTitle: "Sair do Growra?",
+    exitMessage: "As tuas tarefas e o teu progresso ficam guardados.",
+    exitLeave: "Sair",
+    exitStay: "Ficar",
     settingsAdConsent: "Escolhas de privacidade dos anúncios",
     roomButton: "Quarto",
     roomDefaultName: "Quarto de {name}",
     plusRoomName: "Quarto Plus {number}",
     plusRoomsTitle: "Quartos Plus",
+    plusRoomsUnlock: "Desbloquear com o Growra Plus",
     roomDone: "Concluído",
     roomShare: "Partilhar",
     roomRename: "Mudar nome do quarto",
@@ -1053,6 +1172,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "pastel-cafe": "Café pastel",
       "spring-garden": "Jardim de primavera",
     },
+    timerLabel: "Temporizador",
+    taskStatusPending: "Pendente",
+    taskStatusCompleted: "Concluída",
     timerStart: "Começar",
     timerPause: "Pausa",
     timerResume: "Retomar",

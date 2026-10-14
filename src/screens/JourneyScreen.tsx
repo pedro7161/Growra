@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { formatCount } from "../utils/formatCount";
 import {
   Image,
   ImageBackground,
@@ -662,7 +663,7 @@ function DecorationsModal({
   return (
     <SheetModal
       visible
-      title={`${copy.journeyDecorations} • ${gameState.coins} 🪙`}
+      title={`${copy.journeyDecorations} • ${formatCount(gameState.coins, getLocaleFromSettings(settings))} 🪙`}
       settings={settings}
       onClose={onClose}
     >

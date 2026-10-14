@@ -7,6 +7,7 @@ import { AppSettings, Task, TaskPriority, TaskStatus } from "../types";
 import { getStartOfDay } from "../utils/taskSchedule";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import { getLocaleFromSettings } from "../utils/settings";
+import { taskFrequencyLabel, taskStatusLabel } from "../utils/taskLabels";
 
 interface TaskCalendarScreenProps {
   settings: AppSettings;
@@ -314,11 +315,11 @@ export default function TaskCalendarScreen({
                         { color: task.status === TaskStatus.COMPLETED ? theme.success : theme.accent },
                       ]}
                     >
-                      {task.status}
+                      {taskStatusLabel(copy, task.status)}
                     </Text>
                   </View>
                   <Text style={[styles.dayTaskMeta, { color: theme.mutedText }]}>
-                    {predefinedTask ? predefinedTask.category : task.category} • {task.frequency}
+                    {predefinedTask ? predefinedTask.category : task.category} • {taskFrequencyLabel(copy, task.frequency)}
                   </Text>
                 </View>
               );
