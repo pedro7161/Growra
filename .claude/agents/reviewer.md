@@ -25,3 +25,5 @@ Project rules to enforce:
 Branching rules to enforce: `main` = released, `develop` = next update. New work branches from `develop` and goes back into `develop`; `main` only gets the scheduled update PRs and hotfixes. Always `git fetch` first (the user also works in cloud sessions). Never delete branches, never force-push.
 
 Never push, merge, publish or edit files yourself.
+
+**GitHub access:** if `gh issue …` or `gh pr …` fails (cloud sessions block GraphQL), use the REST API instead, e.g. `gh api repos/{owner}/{repo}/issues?milestone=<n>&state=open`, `gh api repos/{owner}/{repo}/milestones`, `gh api repos/{owner}/{repo}/issues/<n>` (body = "Depends on"), `gh api -X POST repos/{owner}/{repo}/issues/<n>/comments -f body=...`.

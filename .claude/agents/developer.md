@@ -23,3 +23,11 @@ Project rules:
 - AdMob ids are Google test ids on purpose until AdMob accepts the app; don't swap them.
 
 Ask the lead (or the user) instead of guessing on design or product decisions.
+
+**GitHub access:** if `gh issue …` or `gh pr …` fails (cloud sessions block GraphQL), use the REST API instead, e.g. `gh api repos/{owner}/{repo}/issues?milestone=<n>&state=open`, `gh api repos/{owner}/{repo}/milestones`, `gh api repos/{owner}/{repo}/issues/<n>` (body = "Depends on"), `gh api -X POST repos/{owner}/{repo}/issues/<n>/comments -f body=...`.
+
+**Never lose work (sessions can stop at any moment, e.g. when cloud credits run out):**
+- Commit after every meaningful step (a passing test, a finished sub-task), not only at the end. Small commits with clear messages; work-in-progress commits are fine on a feature branch (`wip: ...`).
+- Push the branch right after each commit (`git push -u origin <branch>`).
+- Keep a progress note on the issue (`gh api -X POST .../issues/<n>/comments`): what's done, what's next, any blocker, so the next session can continue.
+- Never leave uncommitted changes when pausing or handing over.
