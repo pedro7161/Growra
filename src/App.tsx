@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, AppState, StyleSheet, View } from "react-native";
+import { Alert, AppState, BackHandler, StyleSheet, useColorScheme, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import SettingsModal from "./components/SettingsModal";
@@ -25,15 +26,17 @@ import CompanionRevealModal from "./components/CompanionRevealModal";
 import { reachedStreakMilestone } from "./utils/streakMilestones";
 import TutorialOverlay, { TutorialStep } from "./components/TutorialOverlay";
 import { getAppCopy } from "./constants/appCopy";
-import { getAppTheme } from "./constants/appTheme";
+import { getAppTheme, resolveDarkAppearance, setDarkAppearance } from "./constants/appTheme";
 import DashboardScreen from "./screens/DashboardScreen";
 import CompanionsScreen from "./screens/CompanionsScreen";
 import JourneyScreen from "./screens/JourneyScreen";
 import TaskCalendarScreen from "./screens/TaskCalendarScreen";
 import TasksScreen from "./screens/TasksScreen";
 import { gameStateService } from "./services/gameStateService";
+import { maybeAskForReview, reachedCamp } from "./services/reviewService";
 import {
   AppLanguage,
+  AppAppearance,
   AppThemeId,
   CustomTaskTemplate,
   GameState,
@@ -187,6 +190,10 @@ function newCompanionAudioCue(before: GameState, after: GameState): CompanionAud
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<Screen>("dashboard");
   const [gameState, setGameState] = useState<GameState | null>(null);
+  // Dark mode: resolved here, before any screen renders, so every getAppTheme() call agrees.
+  const systemScheme = useColorScheme();
+  const darkMode = resolveDarkAppearance(gameState?.settings.appearance ?? "system", systemScheme);
+  setDarkAppearance(darkMode);
   // Latest state for event handlers. Reading `gameState` from the render closure lets two
   // quick taps both act on the same old state (e.g. completing one task twice).
   const gameStateRef = useRef<GameState | null>(null);
@@ -206,6 +213,30 @@ export default function App() {
   const [roomEditorId, setRoomEditorId] = useState<string | null>(null);
   const [appActive, setAppActive] = useState(true);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
+
+  // Android Back: close the room editor, then return to the dashboard, then (optionally) ask
+  // before leaving. Open modals handle Back themselves (onRequestClose) and never reach this.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (roomEditorId) {
+        setRoomEditorId(null);
+        return true;
+      }
+      if (activeScreen !== "dashboard") {
+        setActiveScreen("dashboard");
+        return true;
+      }
+      const current = gameStateRef.current;
+      if (!current?.settings.confirmExit) return false;
+      const copy = getAppCopy(current.settings.language);
+      Alert.alert(copy.exitTitle, copy.exitMessage, [
+        { text: copy.exitStay, style: "cancel" },
+        { text: copy.exitLeave, style: "destructive", onPress: () => BackHandler.exitApp() },
+      ]);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [activeScreen, roomEditorId]);
 
   const playUiTap = () => {
     void playGrowraCue("ui-tap", gameStateRef.current?.settings.sfxEnabled ?? false);
@@ -385,6 +416,9 @@ export default function App() {
               : "task-complete"
     );
     void playGrowraCue(cue, gameState.settings.sfxEnabled);
+    // A camp is a natural, happy moment: offer Play's review popup there (once per install),
+    // after the camp cue has had a moment to play.
+    if (reachedCamp(tilesBefore, tilesAfter)) setTimeout(() => void maybeAskForReview(), 1500);
   };
 
   const handleUpdateTask = async (updatedTask: Task) => {
@@ -535,6 +569,18 @@ export default function App() {
       },
     });
     void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
+  };
+
+  const handleConfirmExitChange = async (confirmExit: boolean) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, confirmExit } });
+  };
+
+  const handleAppearanceChange = async (appearance: AppAppearance) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, appearance } });
   };
 
   const handleThemeChange = async (theme: AppThemeId) => {
@@ -832,6 +878,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      <StatusBar style={darkMode ? "light" : "dark"} />
       <View
         className="flex-1"
         style={[styles.container, { backgroundColor: appTheme.background }]}
@@ -866,6 +913,8 @@ export default function App() {
           }}
           onLanguageChange={handleLanguageChange}
           onThemeChange={handleThemeChange}
+          onAppearanceChange={handleAppearanceChange}
+          onConfirmExitChange={handleConfirmExitChange}
           onAudioPreferenceChange={handleAudioPreferenceChange}
           onTimerAlertModeChange={handleTimerAlertModeChange}
           onPickTimerAlertSound={handlePickTimerAlertSound}
