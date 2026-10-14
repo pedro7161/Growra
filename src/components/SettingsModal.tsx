@@ -489,11 +489,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     paddingVertical: 12,
+    paddingHorizontal: 8,
     alignItems: "center",
+    // Buttons in a row stretch to the tallest one (a two-line label); keep every label centered.
+    justifyContent: "center",
   },
   optionButtonText: {
     fontSize: 14,
     fontWeight: "600",
+    textAlign: "center",
   },
   helpText: {
     fontSize: 13,
