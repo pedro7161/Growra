@@ -19,6 +19,7 @@ import { taskPriorityOptions } from "../constants/taskConfig";
 import { getStartOfDay } from "../utils/taskSchedule";
 import TaskDatePicker from "./TaskDatePicker";
 import { getCustomTaskTemplateGroups } from "../utils/customTaskTemplates";
+import { taskCategoryLabel } from "../utils/taskLabels";
 
 function getPriorityLabel(copy: ReturnType<typeof getAppCopy>, priority: TaskPriority): string {
   if (priority === TaskPriority.HIGH) return copy.tasksPriorityHigh;
@@ -462,7 +463,7 @@ export default function AddTaskModal({
                         disabled={tutorialOn}
                       >
                         <Text style={[styles.groupTitle, { color: theme.mutedText }]}>
-                          {group.category}
+                          {taskCategoryLabel(settings.language, group.category)}
                         </Text>
                         <Text style={[styles.groupToggle, { color: theme.mutedText }]}>
                           {collapsedCategories[group.category] ? "+" : "-"}

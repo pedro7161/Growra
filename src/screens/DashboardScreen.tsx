@@ -29,6 +29,7 @@ import {
 } from "../utils/companions";
 import { getLevelProgress, PLAYER_LEVEL_BASE_COST } from "../utils/gameplay";
 import { getRoadPosition } from "../utils/journey";
+import { taskCategoryLabel } from "../utils/taskLabels";
 import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
 
@@ -218,9 +219,10 @@ export default function DashboardScreen({
                     <Text
                       style={[styles.taskStatus, { color: theme.mutedText }]}
                     >
-                      {task.predefinedTaskId
-                        ? getPredefinedTask(task.predefinedTaskId).category
-                        : task.category}
+                      {taskCategoryLabel(
+                        gameState.settings.language,
+                        task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId).category : task.category,
+                      )}
                     </Text>
                     <TaskTimerControls
                       task={task}

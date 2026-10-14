@@ -17,6 +17,7 @@ import { AppSettings, CustomTaskTemplate, Task, TaskFrequency, TaskPriority, Tas
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import { updateTaskTimerDuration } from "../utils/taskTimer";
 import TaskDatePicker from "./TaskDatePicker";
+import { taskCategoryLabel } from "../utils/taskLabels";
 
 interface TaskDetailsModalProps {
   visible: boolean;
@@ -285,7 +286,7 @@ export default function TaskDetailsModal({
 
             <View style={styles.metaList}>
               <Text style={[styles.metaText, { color: theme.mutedText }]}>
-                {copy.tasksCategory}: {predefinedTask ? predefinedTask.category : draftTask.category}
+                {copy.tasksCategory}: {taskCategoryLabel(settings.language, predefinedTask ? predefinedTask.category : draftTask.category)}
               </Text>
             </View>
           </View>
@@ -303,7 +304,7 @@ export default function TaskDetailsModal({
                 style={[styles.confirmButton, { backgroundColor: theme.surfaceMuted }]}
                 onPress={() => setConfirmingDelete(false)}
               >
-                <Text style={[styles.confirmButtonText, { color: theme.mutedText }]}>Cancel</Text>
+                <Text style={[styles.confirmButtonText, { color: theme.mutedText }]}>{copy.addTaskCancel}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.deleteButton, { backgroundColor: theme.danger }]}
@@ -312,7 +313,7 @@ export default function TaskDetailsModal({
                   setConfirmingDelete(false);
                 }}
               >
-                <Text style={styles.deleteButtonText}>Confirm Delete</Text>
+                <Text style={styles.deleteButtonText}>{copy.tasksConfirmDelete}</Text>
               </TouchableOpacity>
             </View>
           )}

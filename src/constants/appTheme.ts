@@ -1,4 +1,4 @@
-import { AppAppearance, AppThemeId } from "../types";
+import { AppAppearance, AppLanguage, AppThemeId } from "../types";
 
 export interface AppTheme {
   id: AppThemeId;
@@ -288,4 +288,18 @@ export function resolveDarkAppearance(appearance: AppAppearance, systemScheme: s
 
 export function getAppTheme(themeId: AppThemeId): AppTheme {
   return darkActive ? appDarkThemes[themeId] : appThemes[themeId];
+}
+
+/** Theme names as shown in Settings (English names live in appThemes). */
+const THEME_NAMES_PT: Record<AppThemeId, string> = {
+  mint: "Menta",
+  sunset: "Pôr do sol",
+  ocean: "Oceano",
+  dusk: "Crepúsculo",
+  blossom: "Flor",
+  forest: "Floresta",
+};
+
+export function themeName(themeId: AppThemeId, language: AppLanguage): string {
+  return language === "pt" ? THEME_NAMES_PT[themeId] : appThemes[themeId].name;
 }

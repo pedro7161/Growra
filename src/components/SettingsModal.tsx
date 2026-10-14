@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
-import { appThemes, getAppTheme } from "../constants/appTheme";
+import { appThemes, getAppTheme, themeName } from "../constants/appTheme";
 import { getChangelog } from "../constants/changelog";
 import { AppAppearance, AppLanguage, AppThemeId, GameState, TimerAlertMode } from "../types";
 import { getGameStatsSummary } from "../utils/settings";
@@ -165,7 +165,7 @@ export default function SettingsModal({
                   }
                 >
                   <View style={[styles.themePreview, { backgroundColor: themeOption.accent }]} />
-                  <Text style={[styles.themeName, { color: themeOption.text }]}>{themeOption.name}</Text>
+                  <Text style={[styles.themeName, { color: themeOption.text }]}>{themeName(themeOption.id, gameState.settings.language)}</Text>
                   {isPlusTheme(themeOption.id) && !isPlus && (
                     <Text style={[styles.themeName, { color: theme.accent }]}>{copy.plusBadge}</Text>
                   )}
@@ -203,17 +203,17 @@ export default function SettingsModal({
 
           <View style={[styles.section, { backgroundColor: theme.surface }]}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              {gameState.settings.language === "pt" ? "Áudio opcional" : "Optional audio"}
+              {copy.settingsOptionalAudio}
             </Text>
             <View style={styles.optionRow}>
               <OptionButton
-                label={gameState.settings.language === "pt" ? "Ambiente" : "Ambient music"}
+                label={copy.settingsAmbientMusic}
                 active={gameState.settings.musicEnabled}
                 onPress={() => onAudioPreferenceChange("musicEnabled", !gameState.settings.musicEnabled)}
                 themeId={theme.id}
               />
               <OptionButton
-                label={gameState.settings.language === "pt" ? "Sons da aplicação" : "App sounds"}
+                label={copy.settingsAppSounds}
                 active={gameState.settings.sfxEnabled}
                 onPress={() => onAudioPreferenceChange("sfxEnabled", !gameState.settings.sfxEnabled)}
                 themeId={theme.id}

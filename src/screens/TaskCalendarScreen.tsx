@@ -7,7 +7,7 @@ import { AppSettings, Task, TaskPriority, TaskStatus } from "../types";
 import { getStartOfDay } from "../utils/taskSchedule";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import { getLocaleFromSettings } from "../utils/settings";
-import { taskFrequencyLabel, taskStatusLabel } from "../utils/taskLabels";
+import { taskCategoryLabel, taskFrequencyLabel, taskStatusLabel } from "../utils/taskLabels";
 
 interface TaskCalendarScreenProps {
   settings: AppSettings;
@@ -30,19 +30,23 @@ function getMonthStart(date: Date): Date {
 }
 
 function getMonthLabel(date: Date, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
+  const label = new Intl.DateTimeFormat(locale, {
     month: "long",
     year: "numeric",
   }).format(date);
+  // Capitalize only the first letter: CSS-style capitalize gave "Outubro De 2026".
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 function getWeekdayLabels(locale: string): string[] {
   const mondayReference = new Date(2024, 0, 1);
 
   return Array.from({ length: 7 }, (_, index) =>
-    new Intl.DateTimeFormat(locale, { weekday: "short" }).format(
-      new Date(mondayReference.getFullYear(), mondayReference.getMonth(), mondayReference.getDate() + index)
-    )
+    // Three letters fit the 7 columns in every language ("segunda" wrapped as "SEGUN / DA").
+    new Intl.DateTimeFormat(locale, { weekday: "short" })
+      .format(new Date(mondayReference.getFullYear(), mondayReference.getMonth(), mondayReference.getDate() + index))
+      .replace(".", "")
+      .slice(0, 3)
   );
 }
 
@@ -319,7 +323,7 @@ export default function TaskCalendarScreen({
                     </Text>
                   </View>
                   <Text style={[styles.dayTaskMeta, { color: theme.mutedText }]}>
-                    {predefinedTask ? predefinedTask.category : task.category} • {taskFrequencyLabel(copy, task.frequency)}
+                    {taskCategoryLabel(settings.language, predefinedTask ? predefinedTask.category : task.category)} • {taskFrequencyLabel(copy, task.frequency)}
                   </Text>
                 </View>
               );
@@ -400,7 +404,6 @@ const styles = StyleSheet.create({
   monthTitle: {
     fontSize: 18,
     fontWeight: "700",
-    textTransform: "capitalize",
   },
   weekdayRow: {
     flexDirection: "row",

@@ -264,6 +264,10 @@ interface AppCopy {
   settingsAdConsent: string;
   settingsPrivacy: string;
   settingsRateApp: string;
+  settingsOptionalAudio: string;
+  settingsAmbientMusic: string;
+  settingsAppSounds: string;
+  tasksConfirmDelete: string;
   settingsConfirmExit: string;
   settingsOn: string;
   settingsOff: string;
@@ -618,6 +622,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     journeyLookBackLocked: "See this week with Plus",
     settingsPrivacy: "Privacy policy",
     settingsRateApp: "Rate Growra on Google Play",
+    settingsOptionalAudio: "Optional audio",
+    settingsAmbientMusic: "Ambient music",
+    settingsAppSounds: "App sounds",
+    tasksConfirmDelete: "Confirm delete",
     settingsConfirmExit: "Ask before leaving the app",
     settingsOn: "On",
     settingsOff: "Off",
@@ -1054,6 +1062,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     journeyLookBackLocked: "Vê esta semana com o Plus",
     settingsPrivacy: "Política de privacidade",
     settingsRateApp: "Avaliar o Growra no Google Play",
+    settingsOptionalAudio: "Áudio opcional",
+    settingsAmbientMusic: "Ambiente",
+    settingsAppSounds: "Sons da aplicação",
+    tasksConfirmDelete: "Confirmar eliminação",
     settingsConfirmExit: "Perguntar antes de sair da app",
     settingsOn: "Ligado",
     settingsOff: "Desligado",
