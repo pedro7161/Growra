@@ -8,6 +8,18 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "Version 1.8.4 · October 15, 2026",
+      items: [
+        "New: dark mode. Choose Light, Dark or Follow phone in Settings > Appearance; every color theme has a dark version.",
+        "A new welcome tour: four quick steps with a +100 coin reward for your first task and a +100 welcome gift at the end. You can see it again from Settings.",
+        "Pressing Back on the dashboard now asks before leaving (you can turn this off in Settings).",
+        "Rate Growra on Google Play from Settings.",
+        "Task cards give the task name the full width, and labels like frequency and status are translated.",
+        "Big numbers are easier to read (1,234 instead of 1234).",
+        "Add Task suggests the categories you already use.",
+      ],
+    },
+    {
       dateLabel: "Version 1.8.3 · October 13, 2026",
       items: [
         "Growra now tells you when a new version is ready on Google Play, and can download it in the background while you use the app.",
@@ -105,6 +117,18 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "Versão 1.8.4 · 15 de outubro de 2026",
+      items: [
+        "Novo: modo escuro. Escolhe Claro, Escuro ou Seguir o telemóvel em Definições > Aparência; todos os temas têm uma versão escura.",
+        "Uma nova visita de boas-vindas: quatro passos rápidos, com +100 moedas pela primeira tarefa e +100 de boas-vindas no fim. Podes vê-la outra vez nas Definições.",
+        "Carregar em Voltar no painel pergunta antes de sair (podes desligar isto nas Definições).",
+        "Avalia o Growra no Google Play a partir das Definições.",
+        "Os cartões de tarefa dão a largura toda ao nome, e etiquetas como frequência e estado estão traduzidas.",
+        "Os números grandes são mais fáceis de ler (1 234 em vez de 1234).",
+        "Adicionar tarefa sugere as categorias que já usas, e as tarefas prontas e as descrições dos companheiros estão em português.",
+      ],
+    },
     {
       dateLabel: "Versão 1.8.3 · 13 de outubro de 2026",
       items: [
