@@ -304,6 +304,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
         storedSettings.appearance === "light" || storedSettings.appearance === "dark"
           ? storedSettings.appearance
           : "system",
+      confirmExit: storedSettings.confirmExit !== false,
       musicEnabled: storedSettings.musicEnabled === true,
       sfxEnabled: storedSettings.sfxEnabled === true,
       timerAlert,

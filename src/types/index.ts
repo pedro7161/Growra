@@ -40,6 +40,8 @@ export interface AppSettings {
   language: AppLanguage;
   theme: AppThemeId;
   appearance: AppAppearance;
+  /** Ask "Leave Growra?" when Back is pressed on the dashboard. */
+  confirmExit: boolean;
   musicEnabled: boolean;
   sfxEnabled: boolean;
   timerAlert: TimerAlertSettings;

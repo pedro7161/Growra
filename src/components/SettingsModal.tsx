@@ -17,6 +17,7 @@ import { getChangelog } from "../constants/changelog";
 import { AppAppearance, AppLanguage, AppThemeId, GameState, TimerAlertMode } from "../types";
 import { getGameStatsSummary } from "../utils/settings";
 import { isPlusTheme } from "../utils/plus";
+import { openStoreListing } from "../services/reviewService";
 
 const PRIVACY_POLICY_URL = "https://pedro7161.github.io/growra-website/privacy-policy.html";
 
@@ -28,6 +29,7 @@ interface SettingsModalProps {
   onThemeChange: (theme: AppThemeId) => void;
   onAppearanceChange: (appearance: AppAppearance) => void;
   onAudioPreferenceChange: (key: "musicEnabled" | "sfxEnabled", enabled: boolean) => void;
+  onConfirmExitChange: (enabled: boolean) => void;
   onTimerAlertModeChange: (mode: TimerAlertMode) => void;
   onPickTimerAlertSound: () => Promise<void>;
   onClearTimerAlertSound: () => Promise<void>;
@@ -47,6 +49,7 @@ export default function SettingsModal({
   onLanguageChange,
   onThemeChange,
   onAppearanceChange,
+  onConfirmExitChange,
   onAudioPreferenceChange,
   onTimerAlertModeChange,
   onPickTimerAlertSound,
@@ -180,6 +183,9 @@ export default function SettingsModal({
                 themeId={theme.id}
               />
             </View>
+            <TouchableOpacity onPress={() => void openStoreListing()}>
+              <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsRateApp}</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}>
               <Text style={[styles.privacyLink, { color: theme.accent }]}>{copy.settingsPrivacy}</Text>
             </TouchableOpacity>
@@ -205,6 +211,24 @@ export default function SettingsModal({
                 label={gameState.settings.language === "pt" ? "Sons da aplicação" : "App sounds"}
                 active={gameState.settings.sfxEnabled}
                 onPress={() => onAudioPreferenceChange("sfxEnabled", !gameState.settings.sfxEnabled)}
+                themeId={theme.id}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsConfirmExit}</Text>
+            <View style={styles.optionRow}>
+              <OptionButton
+                label={copy.settingsOn}
+                active={gameState.settings.confirmExit}
+                onPress={() => onConfirmExitChange(true)}
+                themeId={theme.id}
+              />
+              <OptionButton
+                label={copy.settingsOff}
+                active={!gameState.settings.confirmExit}
+                onPress={() => onConfirmExitChange(false)}
                 themeId={theme.id}
               />
             </View>

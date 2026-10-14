@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, AppState, StyleSheet, useColorScheme, View } from "react-native";
+import { Alert, AppState, BackHandler, StyleSheet, useColorScheme, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
@@ -33,6 +33,7 @@ import JourneyScreen from "./screens/JourneyScreen";
 import TaskCalendarScreen from "./screens/TaskCalendarScreen";
 import TasksScreen from "./screens/TasksScreen";
 import { gameStateService } from "./services/gameStateService";
+import { maybeAskForReview, reachedCamp } from "./services/reviewService";
 import {
   AppLanguage,
   AppAppearance,
@@ -213,6 +214,30 @@ export default function App() {
   const [appActive, setAppActive] = useState(true);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
 
+  // Android Back: close the room editor, then return to the dashboard, then (optionally) ask
+  // before leaving. Open modals handle Back themselves (onRequestClose) and never reach this.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (roomEditorId) {
+        setRoomEditorId(null);
+        return true;
+      }
+      if (activeScreen !== "dashboard") {
+        setActiveScreen("dashboard");
+        return true;
+      }
+      const current = gameStateRef.current;
+      if (!current?.settings.confirmExit) return false;
+      const copy = getAppCopy(current.settings.language);
+      Alert.alert(copy.exitTitle, copy.exitMessage, [
+        { text: copy.exitStay, style: "cancel" },
+        { text: copy.exitLeave, style: "destructive", onPress: () => BackHandler.exitApp() },
+      ]);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [activeScreen, roomEditorId]);
+
   const playUiTap = () => {
     void playGrowraCue("ui-tap", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
@@ -391,6 +416,9 @@ export default function App() {
               : "task-complete"
     );
     void playGrowraCue(cue, gameState.settings.sfxEnabled);
+    // A camp is a natural, happy moment: offer Play's review popup there (once per install),
+    // after the camp cue has had a moment to play.
+    if (reachedCamp(tilesBefore, tilesAfter)) setTimeout(() => void maybeAskForReview(), 1500);
   };
 
   const handleUpdateTask = async (updatedTask: Task) => {
@@ -541,6 +569,12 @@ export default function App() {
       },
     });
     void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
+  };
+
+  const handleConfirmExitChange = async (confirmExit: boolean) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, confirmExit } });
   };
 
   const handleAppearanceChange = async (appearance: AppAppearance) => {
@@ -880,6 +914,7 @@ export default function App() {
           onLanguageChange={handleLanguageChange}
           onThemeChange={handleThemeChange}
           onAppearanceChange={handleAppearanceChange}
+          onConfirmExitChange={handleConfirmExitChange}
           onAudioPreferenceChange={handleAudioPreferenceChange}
           onTimerAlertModeChange={handleTimerAlertModeChange}
           onPickTimerAlertSound={handlePickTimerAlertSound}
