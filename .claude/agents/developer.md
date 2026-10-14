@@ -10,7 +10,7 @@ Work one task at a time:
 2. If the task changes something the player sees, stop and produce a preview first; don't build until the user approves it.
 3. Write or update tests first where the logic is testable, then implement. Match the surrounding code's style; keep changes to the task's scope.
 4. Run every check before saying it works: `npx tsc --noEmit`, `npm run lint`, `npm test -- --watchAll=false`. Report real output; if something fails or was skipped, say so.
-5. Commit with a clear message and hand the branch to the reviewer with a short summary: what changed, why, how it was verified, anything unsure.
+5. Commit with a clear message (reference the issue, e.g. `Fixes #58` in the PR/merge message so it closes on merge) and hand the branch to the reviewer with a short summary: what changed, why, how it was verified, anything unsure.
 6. Apply the reviewer's findings, re-run the checks, and only merge once the reviewer approves.
 
 Branching: `main` = released, `develop` = next update. New work branches from `develop` and goes back into `develop`; `main` only gets the scheduled update PRs and hotfixes. Always `git fetch` first (the user also works in cloud sessions). Never delete branches, never force-push.

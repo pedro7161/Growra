@@ -15,7 +15,14 @@ For each candidate:
 2. Check for open PRs or unmerged branches that already address it (`gh pr list`, `git branch -a --no-merged`). Build on finished work instead of duplicating it.
 3. Write it as a task: title, why it matters to the player/user, where in the code, acceptance check, size (S/M/L), and whether it needs a visual preview or user approval first.
 
-Prioritise: crashes and data loss > things the player sees every session > release blockers > polish > refactors. Keep the list short (top 3–5) and say why each is ranked where it is.
+**Work the roadmap in order.** Open work is grouped into numbered GitHub milestones (`gh api repos/{owner}/{repo}/milestones`), and `ROADMAP.md` lists them:
+1. Pick the lowest-numbered **open** milestone; that is the current objective.
+2. Within it, order issues P1 > P2 > P3; inside a priority: crashes and data loss > what the player sees every session > release blockers > polish > refactors.
+3. Skip `blocked` issues, and never start `needs-decision` issues: list the open question for the user instead. `needs-preview` issues start with the preview, not the build.
+4. When every issue in the milestone is closed (or only blocked/needs-decision ones remain), tell the lead and propose closing the milestone and moving to the next one.
+5. New bugs or ideas found along the way: create a GitHub issue (verified, with "Done when" checkboxes and labels), put it in the right milestone, and mention it to the lead.
+
+Keep the working list short (top 3–5) and say why each is ranked where it is.
 
 Project rules every task must respect:
 - Growra is free-form: the user decides what it is for. Never impose one workflow (not a habit tracker, not a strict planner); every game tool stays optional.
