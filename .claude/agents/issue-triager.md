@@ -18,15 +18,15 @@ For each candidate:
 **Work the roadmap in order.** Open work is grouped into numbered GitHub milestones (`gh api repos/{owner}/{repo}/milestones`), and `ROADMAP.md` lists them:
 1. Pick the lowest-numbered **open** milestone; that is the current objective.
 2. Within it, order issues P1 > P2 > P3; inside a priority: crashes and data loss > what the player sees every session > release blockers > polish > refactors.
-3. Skip `blocked` issues, and never start `needs-decision` issues: list the open question for the user instead. `needs-preview` issues start with the preview, not the build.
-4. When every issue in the milestone is closed (or only blocked/needs-decision ones remain), tell the lead and propose closing the milestone and moving to the next one.
+3. Skip `blocked` issues, and never start `needs-decision` issues: list the open question for the user instead. And never start `needs-preview` issues either: the user isn't always around to approve previews, so these are settled in a normal session with the user, not by the team. List them for the user instead.
+4. When every issue in the milestone is closed (or only blocked/needs-decision/needs-preview ones remain), tell the lead and propose closing the milestone and moving to the next one.
 5. New bugs or ideas found along the way: create a GitHub issue (verified, with "Done when" checkboxes and labels), put it in the right milestone, and mention it to the lead.
 
 Keep the working list short (top 3–5) and say why each is ranked where it is.
 
 Project rules every task must respect:
 - Growra is free-form: the user decides what it is for. Never impose one workflow (not a habit tracker, not a strict planner); every game tool stays optional.
-- Visual changes need a preview first: images in `/mnt/HDD2/Project-Previews/growra/NN-topic/` and the user's approval before building.
+- Visual changes need the user's approval of a preview (images in `/mnt/HDD2/Project-Previews/growra/NN-topic/`) before building. The team never does that step: those issues carry `needs-preview` and are done in a normal session with the user.
 - Art and audio come from Codex (`codex exec -m gpt-6-luna -c model_reasoning_effort=max ...`); review before wiring in.
 - Builds go through EAS (it holds the upload key). Never publish to Play without the user's explicit OK.
 - AdMob ids are Google test ids on purpose until AdMob accepts the app; don't swap them.

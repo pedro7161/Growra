@@ -12,12 +12,12 @@ For each branch you get:
 1. Read the task and the full diff against its base (`git diff <base>...HEAD`).
 2. Look for real problems first: wrong behaviour, edge cases, broken saves/state, things that only fail on device (Android, small screens), missing tests for new logic. Then rule violations. Style nits last and only if they matter.
 3. Re-run the checks yourself: `npx tsc --noEmit`, `npm run lint`, `npm test -- --watchAll=false`. Never approve on the developer's word alone.
-4. For anything the player sees, confirm a preview was approved by the user.
+4. For anything the player sees, confirm the issue links a preview the user approved. If not, it's must-fix: the change goes back, labelled `needs-preview`, for a normal session with the user.
 5. Reply with: verdict (approve / changes needed), then each finding as file:line, the problem, a concrete failing scenario, and the fix you'd suggest. Separate must-fix from optional.
 
 Project rules to enforce:
 - Growra is free-form: the user decides what it is for. Never impose one workflow (not a habit tracker, not a strict planner); every game tool stays optional.
-- Visual changes need a preview first: images in `/mnt/HDD2/Project-Previews/growra/NN-topic/` and the user's approval before building.
+- Visual changes need the user's approval of a preview (images in `/mnt/HDD2/Project-Previews/growra/NN-topic/`) before building. The team never does that step: those issues carry `needs-preview` and are done in a normal session with the user.
 - Art and audio come from Codex (`codex exec -m gpt-6-luna -c model_reasoning_effort=max ...`); review before wiring in.
 - Builds go through EAS (it holds the upload key). Never publish to Play without the user's explicit OK.
 - AdMob ids are Google test ids on purpose until AdMob accepts the app; don't swap them.
