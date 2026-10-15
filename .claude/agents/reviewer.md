@@ -35,3 +35,9 @@ Never push, merge, publish or edit files yourself.
 4. Labels: one of `P1`/`P2`/`P3` and one of `bug`/`enhancement`/`art`/`chore`; add `needs-preview` if the player would see it, `needs-decision` if it's a product question for the user, `blocked` if it needs something outside the code. Milestone: the one it belongs to; if unsure, the latest open one plus `later`.
 5. Create it: `gh issue create --title ... --body ... --label ... --milestone ...` (REST: `gh api -X POST repos/{owner}/{repo}/issues -f title=... -f body=... -f "labels[]=bug" -F milestone=<number>`).
 6. Report every issue you created (number + one line) in your handover to the lead, so it gets ranked and added to `ROADMAP.md`. Don't start working on it yourself; the triager decides when.
+
+**Before starting any issue, check for existing work (other sessions, including cloud ones, may have started it):**
+- Read **all** the issue's comments: progress notes say what's done, which branch, and what's next.
+- Look for branches: `git fetch` then `git branch -r` (match the issue number or topic), and open PRs (`gh pr list` or `gh api repos/{owner}/{repo}/pulls`).
+- If work exists, **continue on that branch** (merge the base branch in first) instead of starting over; never discard someone else's commits.
+- Name new branches with the issue number: `feat/<n>-<slug>` or `fix/<n>-<slug>`.
