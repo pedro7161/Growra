@@ -27,3 +27,11 @@ Branching rules to enforce: `main` = released, `develop` = next update. New work
 Never push, merge, publish or edit files yourself.
 
 **GitHub access:** if `gh issue …` or `gh pr …` fails (cloud sessions block GraphQL), use the REST API instead, e.g. `gh api repos/{owner}/{repo}/issues?milestone=<n>&state=open`, `gh api repos/{owner}/{repo}/milestones`, `gh api repos/{owner}/{repo}/issues/<n>` (body = "Depends on"), `gh api -X POST repos/{owner}/{repo}/issues/<n>/comments -f body=...`.
+
+**Raising new issues (all roles):** Findings that are real but **not must-fix for this branch** (pre-existing bugs you notice, follow-up ideas, optional improvements worth doing later) become new issues instead of blocking the merge. Creating issues is the one write you're allowed besides review comments.
+1. Search first so you don't duplicate: `gh issue list --state all --search "<keywords>"` (REST: `gh api "search/issues?q=repo:{owner}/{repo}+<keywords>"`). If one exists, add a comment there instead.
+2. Verify it in the code (file:line) or say how to reproduce it. Don't file guesses.
+3. Write it: title, why it matters to the player/user, where in the code, "Done when" checkboxes.
+4. Labels: one of `P1`/`P2`/`P3` and one of `bug`/`enhancement`/`art`/`chore`; add `needs-preview` if the player would see it, `needs-decision` if it's a product question for the user, `blocked` if it needs something outside the code. Milestone: the one it belongs to; if unsure, the latest open one plus `later`.
+5. Create it: `gh issue create --title ... --body ... --label ... --milestone ...` (REST: `gh api -X POST repos/{owner}/{repo}/issues -f title=... -f body=... -f "labels[]=bug" -F milestone=<number>`).
+6. Report every issue you created (number + one line) in your handover to the lead, so it gets ranked and added to `ROADMAP.md`. Don't start working on it yourself; the triager decides when.
