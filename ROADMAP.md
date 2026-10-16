@@ -47,15 +47,15 @@ Public listing, real AdMob ids, Plus perks.
 - [ ] #44 Switch AdMob to real ids once the app has a public listing (P2, chore, blocked)
 - [ ] #45 Growra Plus later perks (enhancement, needs-decision, later)
 
-### Awaiting owner decision
+### 5 - Retention features (post-launch)
 
-Not in a milestone yet — the owner approves, drops, or reorders these.
+Owner approved building these; team decides freely which to pick up and in what order.
 
-- [ ] #55 Decision table: next steps to production (2026-10-16) — full recommendation, needs owner sign-off
-- [ ] #52 Quick-add task row (name only, lands today) (enhancement, needs-decision)
-- [ ] #53 Passive return experience: look-back recap + companion welcome-back line (enhancement, needs-decision)
-- [ ] #54 One-time backup reminder nudge (enhancement, needs-decision)
+- [ ] #52 Quick-add task row (name only, lands today) (enhancement, P2)
+- [ ] #53 Passive return experience: look-back recap + companion welcome-back line (enhancement, P2)
+- [ ] #54 One-time backup reminder nudge (enhancement, P2)
 
 ## Notes
 
 Design detail for each item: `Documents/ROADMAP.md`, `Documents/GAME_REDESIGN.md`, `docs/superpowers/`.
+Decision-table session recap: #55.
