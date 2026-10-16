@@ -20,6 +20,12 @@ Small fixes from review before the next tester update.
 - [ ] #40 Streak and recurring tasks look stale while the app sits in the background (bug, P3)
 - [ ] #42 Companion rooms: small fixes from review (bug, P3)
 - [ ] #43 Growra Plus and ads: small fixes from review (bug, P2)
+- [ ] #46 Error boundary + corrupt-save recovery hardening (bug, P1)
+- [ ] #47 Custom task with empty category silently fails to save (bug, P1)
+- [ ] #48 Accessibility pass: labels, hitSlop, text wrap at large font scale (enhancement, P2)
+- [ ] #49 Backup code export/import: copy/share button, import confirmation (enhancement, P2)
+- [ ] #50 Save schema versioning: read version, refuse newer saves, snapshot before overwrite (chore, P2)
+- [ ] #51 Verify AdMob rewarded-ad fill before/during closed testing (chore, P1)
 
 ### 2 - Notifications
 
@@ -40,6 +46,15 @@ Public listing, real AdMob ids, Plus perks.
 
 - [ ] #44 Switch AdMob to real ids once the app has a public listing (P2, chore, blocked)
 - [ ] #45 Growra Plus later perks (enhancement, needs-decision, later)
+
+### Awaiting owner decision
+
+Not in a milestone yet — the owner approves, drops, or reorders these.
+
+- [ ] #55 Decision table: next steps to production (2026-10-16) — full recommendation, needs owner sign-off
+- [ ] #52 Quick-add task row (name only, lands today) (enhancement, needs-decision)
+- [ ] #53 Passive return experience: look-back recap + companion welcome-back line (enhancement, needs-decision)
+- [ ] #54 One-time backup reminder nudge (enhancement, needs-decision)
 
 ## Notes
 
