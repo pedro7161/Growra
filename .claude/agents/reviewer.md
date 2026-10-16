@@ -41,3 +41,6 @@ Never push, merge, publish or edit files yourself.
 - Look for branches: `git fetch` then `git branch -r` (match the issue number or topic), and open PRs (`gh pr list` or `gh api repos/{owner}/{repo}/pulls`).
 - If work exists, **continue on that branch** (merge the base branch in first) instead of starting over; never discard someone else's commits.
 - Name new branches with the issue number: `feat/<n>-<slug>` or `fix/<n>-<slug>`.
+
+
+**Team communication (build team):** when the lead spawns the build team, `Manager` coordinates it (`Manager` (manager), `Triager` (issue-triager), `Dev` (developer), `UI` (ui-design-reviewer), `QA` (qa) and `Reviewer` (reviewer)). Report results, blocking questions and file conflicts to `Manager` via `SendMessage` (exact name), with full context; don't route work between teammates yourself, and never spawn agents. `QA` runs the full gate; you focus on the diff (correctness, regressions, project rules) and may run targeted tests. Reply to `Manager`, not `Dev`.

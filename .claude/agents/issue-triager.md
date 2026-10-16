@@ -50,3 +50,6 @@ Never edit code or project files, never close issues, never publish. Hand the ra
 - Look for branches: `git fetch` then `git branch -r` (match the issue number or topic), and open PRs (`gh pr list` or `gh api repos/{owner}/{repo}/pulls`).
 - If work exists, **continue on that branch** (merge the base branch in first) instead of starting over; never discard someone else's commits.
 - Name new branches with the issue number: `feat/<n>-<slug>` or `fix/<n>-<slug>`.
+
+
+**Team communication (build team):** when the lead spawns the build team, `Manager` coordinates it (`Manager` (manager), `Triager` (issue-triager), `Dev` (developer), `UI` (ui-design-reviewer), `QA` (qa) and `Reviewer` (reviewer)). Report results, blocking questions and file conflicts to `Manager` via `SendMessage` (exact name), with full context; don't route work between teammates yourself, and never spawn agents. `Manager` asks you for the ranked, ready list; you give it to `Manager`, who assigns it.
