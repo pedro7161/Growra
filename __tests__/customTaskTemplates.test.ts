@@ -1,5 +1,5 @@
 import { CustomTaskTemplate } from "../src/types";
-import { categorySuggestions } from "../src/utils/categorySuggestions";
+import { categorySuggestions, matchExistingCategory } from "../src/utils/categorySuggestions";
 import { getCustomTaskTemplateGroups } from "../src/utils/customTaskTemplates";
 import { taskCategoryLabel } from "../src/utils/taskLabels";
 
@@ -35,6 +35,23 @@ describe("custom task template groups", () => {
     // still be shown as selected.
     expect(chips).toEqual(["finance"]);
     expect(chips).not.toContain("");
+  });
+
+  // The chip list keeps one spelling per category, so the task details modal resolves the
+  // task's own category to that spelling before deciding which chip is selected. Comparing
+  // raw would leave a task filed under "Work" with no chip highlighted at all.
+  it("highlights the surviving chip for a task whose category differs only in case", () => {
+    const templates = [template("Report", "Work"), template("Email", "Work"), template("Tidy", "work")];
+    const chips = categorySuggestions(
+      templates.map((item) => item.category),
+      Number.MAX_SAFE_INTEGER,
+    );
+
+    expect(chips).toEqual(["Work"]);
+    expect(matchExistingCategory("work", chips)).toBe("Work");
+    expect(matchExistingCategory("Work", chips)).toBe("Work");
+    // A task with no category still highlights nothing.
+    expect(chips).not.toContain(matchExistingCategory("", chips));
   });
 
   // The task details modal has never capped its chips: truncating them could hide the
