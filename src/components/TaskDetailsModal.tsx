@@ -18,6 +18,7 @@ import { getPredefinedTask } from "../constants/predefinedTasks";
 import { updateTaskTimerDuration } from "../utils/taskTimer";
 import TaskDatePicker from "./TaskDatePicker";
 import { taskCategoryLabel } from "../utils/taskLabels";
+import { categorySuggestions } from "../utils/categorySuggestions";
 
 interface TaskDetailsModalProps {
   visible: boolean;
@@ -40,7 +41,9 @@ export default function TaskDetailsModal({
 }: TaskDetailsModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
-  const customCategories = [...new Set(customTaskTemplates.map((template) => template.category))];
+  // Same path as AddTaskModal's chips: categorySuggestions drops blank categories, so a
+  // template saved without one can't render an empty chip (#47).
+  const customCategories = categorySuggestions(customTaskTemplates.map((template) => template.category));
   const [draftTask, setDraftTask] = useState<Task | null>(task);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
