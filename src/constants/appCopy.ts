@@ -90,8 +90,6 @@ interface AppCopy {
   addTaskSavedCustomTasks: string;
   addTaskNamePlaceholder: string;
   addTaskDescriptionPlaceholder: string;
-  /** Why Add did nothing: the task has no name yet (the only thing still required). */
-  addTaskNameMissing: string;
   petsTitle: string;
   petsCoinsPity: string;
   petsDetailTitle: string;
@@ -382,7 +380,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksCalendarColor: "Calendar Color",
     tasksOpenDetails: "Open Details",
     tasksCategory: "Category",
-    taskCategoryNone: "No category",
+    taskCategoryNone: "Uncategorised",
     tasksSearchPlaceholder: "Search tasks",
     tasksSelectedDay: "Selected Day",
     tasksNoTasksOnDay: "No tasks on this day.",
@@ -413,7 +411,6 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     addTaskSavedCustomTasks: "Saved custom tasks",
     addTaskNamePlaceholder: "Enter task name",
     addTaskDescriptionPlaceholder: "Enter task description (optional)",
-    addTaskNameMissing: "Give the task a name first. Everything else is optional.",
     petsTitle: "Companions",
     petsCoinsPity: "coins",
     petsDetailTitle: "Companion",
@@ -842,7 +839,6 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     addTaskSavedCustomTasks: "Tarefas personalizadas guardadas",
     addTaskNamePlaceholder: "Escreve o nome da tarefa",
     addTaskDescriptionPlaceholder: "Escreve a descrição da tarefa (opcional)",
-    addTaskNameMissing: "Dá primeiro um nome à tarefa. O resto é opcional.",
     petsTitle: "Companheiros",
     petsCoinsPity: "moedas",
     petsDetailTitle: "Companheiro",

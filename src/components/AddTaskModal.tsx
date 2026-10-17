@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { categorySuggestions, matchExistingCategory } from "../utils/categorySuggestions";
 import {
-  Alert,
   View,
   StyleSheet,
   TouchableOpacity,
@@ -142,14 +141,9 @@ export default function AddTaskModal({
       return;
     }
 
-    if (type === TaskType.CUSTOM) {
-      // Category is optional: only a missing name still refuses, and it says so instead of
-      // leaving Add doing nothing (#47).
-      if (customTaskDraftProblem({ name, category })) {
-        Alert.alert(copy.addTaskTitle, copy.addTaskNameMissing);
-        return;
-      }
-
+    // Category is optional (#47): a custom task saves with a blank one and shows as
+    // uncategorised. Only a missing name still holds the task back.
+    if (type === TaskType.CUSTOM && !customTaskDraftProblem({ name, category })) {
       onSubmit({
         name,
         description,

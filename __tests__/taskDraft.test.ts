@@ -10,7 +10,7 @@ describe("custom task draft", () => {
     expect(customTaskDraftProblem({ name: "Buy milk", category: "home" })).toBeNull();
   });
 
-  it("refuses a task without a name and says why, with or without a category", () => {
+  it("still refuses a task without a name, with or without a category", () => {
     expect(customTaskDraftProblem({ name: "", category: "" })).toBe("name-missing");
     expect(customTaskDraftProblem({ name: "   ", category: "" })).toBe("name-missing");
     expect(customTaskDraftProblem({ name: "", category: "home" })).toBe("name-missing");

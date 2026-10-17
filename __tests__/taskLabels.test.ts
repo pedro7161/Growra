@@ -24,7 +24,7 @@ describe("task labels", () => {
     expect(taskCategoryLabel("en", "")).toBe(getAppCopy("en").taskCategoryNone);
     expect(taskCategoryLabel("pt", "")).toBe(getAppCopy("pt").taskCategoryNone);
     expect(taskCategoryLabel("en", "   ")).toBe(getAppCopy("en").taskCategoryNone);
-    expect(getAppCopy("en").taskCategoryNone).toBe("No category");
+    expect(getAppCopy("en").taskCategoryNone).toBe("Uncategorised");
     expect(getAppCopy("pt").taskCategoryNone).toBe("Sem categoria");
   });
 
