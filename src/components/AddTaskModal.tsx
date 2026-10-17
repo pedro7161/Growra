@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { categorySuggestions, matchExistingCategory } from "../utils/categorySuggestions";
 import {
+  Alert,
   View,
   StyleSheet,
   TouchableOpacity,
@@ -20,6 +21,7 @@ import { getStartOfDay } from "../utils/taskSchedule";
 import TaskDatePicker from "./TaskDatePicker";
 import { getCustomTaskTemplateGroups } from "../utils/customTaskTemplates";
 import { taskCategoryLabel } from "../utils/taskLabels";
+import { customTaskDraftProblem } from "../utils/taskDraft";
 
 function getPriorityLabel(copy: ReturnType<typeof getAppCopy>, priority: TaskPriority): string {
   if (priority === TaskPriority.HIGH) return copy.tasksPriorityHigh;
@@ -140,7 +142,14 @@ export default function AddTaskModal({
       return;
     }
 
-    if (type === TaskType.CUSTOM && name.trim() && category.trim()) {
+    if (type === TaskType.CUSTOM) {
+      // Category is optional: only a missing name still refuses, and it says so instead of
+      // leaving Add doing nothing (#47).
+      if (customTaskDraftProblem({ name, category })) {
+        Alert.alert(copy.addTaskTitle, copy.addTaskNameMissing);
+        return;
+      }
+
       onSubmit({
         name,
         description,

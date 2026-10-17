@@ -26,8 +26,13 @@ const CATEGORY_PT: Record<string, string> = {
   study: "estudo",
 };
 
-/** A task's category as shown: built-in categories are translated, the player's own stay as typed. */
+/**
+ * A task's category as shown: built-in categories are translated, the player's own stay as
+ * typed, and a task saved without a category shows the translated "no category" label.
+ */
 export function taskCategoryLabel(language: AppLanguage, category: string): string {
-  if (language !== "pt") return category;
-  return CATEGORY_PT[category.toLowerCase()] ?? category;
+  const name = category.trim();
+  if (!name) return getAppCopy(language).taskCategoryNone;
+  if (language !== "pt") return name;
+  return CATEGORY_PT[name.toLowerCase()] ?? name;
 }

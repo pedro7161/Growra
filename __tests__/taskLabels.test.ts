@@ -1,6 +1,6 @@
 import { getAppCopy } from "../src/constants/appCopy";
 import { TaskFrequency, TaskStatus } from "../src/types";
-import { taskFrequencyLabel, taskStatusLabel } from "../src/utils/taskLabels";
+import { taskCategoryLabel, taskFrequencyLabel, taskStatusLabel } from "../src/utils/taskLabels";
 
 describe("task labels", () => {
   it("translates the frequency instead of showing the raw value", () => {
@@ -16,6 +16,21 @@ describe("task labels", () => {
     expect(taskStatusLabel(pt, TaskStatus.PENDING)).toBe("Pendente");
     expect(taskStatusLabel(pt, TaskStatus.COMPLETED)).toBe("Concluída");
     expect(taskStatusLabel(getAppCopy("en"), TaskStatus.COMPLETED)).toBe("Completed");
+  });
+
+  // #47: category is optional, so a task can have none. It shows a translated
+  // "uncategorised" label instead of an empty gap.
+  it("shows a translated uncategorised label when a task has no category", () => {
+    expect(taskCategoryLabel("en", "")).toBe(getAppCopy("en").taskCategoryNone);
+    expect(taskCategoryLabel("pt", "")).toBe(getAppCopy("pt").taskCategoryNone);
+    expect(taskCategoryLabel("en", "   ")).toBe(getAppCopy("en").taskCategoryNone);
+    expect(getAppCopy("en").taskCategoryNone).toBe("No category");
+    expect(getAppCopy("pt").taskCategoryNone).toBe("Sem categoria");
+  });
+
+  it("still shows a real category as it is", () => {
+    expect(taskCategoryLabel("en", "home")).toBe("home");
+    expect(taskCategoryLabel("pt", "health")).toBe("saúde");
   });
 
   it("has a timer label in every language", () => {
