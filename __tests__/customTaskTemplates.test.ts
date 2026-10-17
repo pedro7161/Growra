@@ -26,9 +26,30 @@ describe("custom task template groups", () => {
   // chip - which would also render as "selected" while the field is blank.
   it("offers no chip for a template saved without a category", () => {
     const templates = [template("Buy milk", ""), template("Pay rent", "finance")];
+    const chips = categorySuggestions(
+      templates.map((item) => item.category),
+      Number.MAX_SAFE_INTEGER,
+    );
 
-    expect(categorySuggestions(templates.map((item) => item.category))).toEqual(["finance"]);
-    expect(categorySuggestions([template("Buy milk", "").category])).toEqual([]);
+    // The blank is gone, so no empty chip - and the real category survives, so it can
+    // still be shown as selected.
+    expect(chips).toEqual(["finance"]);
+    expect(chips).not.toContain("");
+  });
+
+  // The task details modal has never capped its chips: truncating them could hide the
+  // category the task being edited is actually using.
+  it("keeps every category a player has, past the default suggestion limit", () => {
+    const templates = Array.from({ length: 12 }, (_unused, index) =>
+      template(`Task ${index}`, `category-${index}`),
+    );
+    const chips = categorySuggestions(
+      templates.map((item) => item.category),
+      Number.MAX_SAFE_INTEGER,
+    );
+
+    expect(chips).toHaveLength(12);
+    expect(chips).toContain("category-11");
   });
 
   it("shows the uncategorised label for a template saved without a category", () => {

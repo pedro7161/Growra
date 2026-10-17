@@ -41,9 +41,13 @@ export default function TaskDetailsModal({
 }: TaskDetailsModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
-  // Same path as AddTaskModal's chips: categorySuggestions drops blank categories, so a
-  // template saved without one can't render an empty chip (#47).
-  const customCategories = categorySuggestions(customTaskTemplates.map((template) => template.category));
+  // categorySuggestions drops blank categories, so a template saved without one can't
+  // render an empty chip (#47). Unbounded on purpose: this modal has never capped its
+  // chips, and truncating them could hide the category the task being edited is using.
+  const customCategories = categorySuggestions(
+    customTaskTemplates.map((template) => template.category),
+    Number.MAX_SAFE_INTEGER,
+  );
   const [draftTask, setDraftTask] = useState<Task | null>(task);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
