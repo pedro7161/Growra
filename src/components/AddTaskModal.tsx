@@ -407,7 +407,9 @@ export default function AddTaskModal({
                             onPress={() => handleToggleCustomCategory(group.category)}
                             disabled={tutorialOn}
                           >
-                            <Text style={[styles.groupTitle, { color: theme.mutedText }]}>{group.category}</Text>
+                            <Text style={[styles.groupTitle, { color: theme.mutedText }]}>
+                              {taskCategoryLabel(settings.language, group.category)}
+                            </Text>
                             <Text style={[styles.groupToggle, { color: theme.mutedText }]}>
                               {collapsedCustomCategories[group.category] ? "+" : "-"}
                             </Text>
