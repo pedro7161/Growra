@@ -18,6 +18,7 @@ import { getPredefinedTask } from "../constants/predefinedTasks";
 import { updateTaskTimerDuration } from "../utils/taskTimer";
 import TaskDatePicker from "./TaskDatePicker";
 import { taskCategoryLabel } from "../utils/taskLabels";
+import { categorySuggestions, matchExistingCategory } from "../utils/categorySuggestions";
 
 interface TaskDetailsModalProps {
   visible: boolean;
@@ -40,7 +41,13 @@ export default function TaskDetailsModal({
 }: TaskDetailsModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
-  const customCategories = [...new Set(customTaskTemplates.map((template) => template.category))];
+  // categorySuggestions drops blank categories, so a template saved without one can't
+  // render an empty chip (#47). Unbounded on purpose: this modal has never capped its
+  // chips, and truncating them could hide the category the task being edited is using.
+  const customCategories = categorySuggestions(
+    customTaskTemplates.map((template) => template.category),
+    Number.MAX_SAFE_INTEGER,
+  );
   const [draftTask, setDraftTask] = useState<Task | null>(task);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -54,6 +61,10 @@ export default function TaskDetailsModal({
   }
 
   const predefinedTask = draftTask.predefinedTaskId ? getPredefinedTask(draftTask.predefinedTaskId) : null;
+  // The chip list keeps one spelling per category, so compare against that spelling rather
+  // than the raw draft: a task filed under "Work" still highlights the "work" chip. A blank
+  // category matches nothing, so no chip shows as selected.
+  const selectedCategory = matchExistingCategory(draftTask.category, customCategories);
 
   const getPriorityLabel = (priority: TaskPriority) => {
     if (priority === TaskPriority.HIGH) {
@@ -165,9 +176,9 @@ export default function TaskDetailsModal({
                             styles.categoryChip,
                             {
                               backgroundColor:
-                                draftTask.category === customCategory ? theme.accent : theme.surfaceMuted,
+                                selectedCategory === customCategory ? theme.accent : theme.surfaceMuted,
                               borderColor:
-                                draftTask.category === customCategory ? theme.accent : theme.border,
+                                selectedCategory === customCategory ? theme.accent : theme.border,
                             },
                           ]}
                           onPress={() => setDraftTask({ ...draftTask, category: customCategory })}
@@ -177,7 +188,7 @@ export default function TaskDetailsModal({
                               styles.categoryChipText,
                               {
                                 color:
-                                  draftTask.category === customCategory ? theme.accentText : theme.mutedText,
+                                  selectedCategory === customCategory ? theme.accentText : theme.mutedText,
                               },
                             ]}
                           >
