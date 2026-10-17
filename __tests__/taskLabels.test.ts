@@ -28,6 +28,15 @@ describe("task labels", () => {
     expect(getAppCopy("pt").taskCategoryNone).toBe("Sem categoria");
   });
 
+  // The task search (TasksScreen.tsx:107-113) matches the query against this label as well
+  // as the raw category, so uncategorised tasks are findable by typing "uncategorised" only
+  // because the blank -> label mapping lives in here. Moving that mapping into a screen's
+  // render would silently stop search finding them; this pins it.
+  it("keeps uncategorised tasks findable by search", () => {
+    expect(taskCategoryLabel("en", "").toLowerCase()).toContain("uncategorised");
+    expect(taskCategoryLabel("pt", "").toLowerCase()).toContain("sem categoria");
+  });
+
   it("still shows a real category as it is", () => {
     expect(taskCategoryLabel("en", "home")).toBe("home");
     expect(taskCategoryLabel("pt", "health")).toBe("saúde");
