@@ -8,6 +8,16 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "Version 1.8.5 · October 20, 2026",
+      items: [
+        "New: quick add. Type a task at the top of Tasks and press Add: it lands on today, no extra steps.",
+        "Category is now optional. Tasks without one show as Uncategorised, and Add always tells you if something is missing.",
+        "Growra Plus is restored reliably when the app starts, and when Google Play says you already own it.",
+        "Explore: a fast double tap no longer starts two ads.",
+        "More of the app is in Portuguese: categories, regions, theme names and calendar labels.",
+      ],
+    },
+    {
       dateLabel: "Version 1.8.4 · October 15, 2026",
       items: [
         "New: dark mode. Choose Light, Dark or Follow phone in Settings > Appearance; every color theme has a dark version.",
@@ -117,6 +127,16 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "Versão 1.8.5 · 20 de outubro de 2026",
+      items: [
+        "Novo: adicionar rápido. Escreve uma tarefa no topo das Tarefas e carrega em Adicionar: fica para hoje, sem passos extra.",
+        "A categoria passa a ser opcional. As tarefas sem categoria aparecem como Sem categoria, e Adicionar diz-te sempre se falta alguma coisa.",
+        "O Growra Plus é reposto de forma fiável quando a app arranca e quando o Google Play diz que já o tens.",
+        "Explorar: um toque duplo rápido já não abre dois anúncios.",
+        "Mais partes da app em português: categorias, regiões, nomes dos temas e o calendário, com acentos corrigidos.",
+      ],
+    },
     {
       dateLabel: "Versão 1.8.4 · 15 de outubro de 2026",
       items: [

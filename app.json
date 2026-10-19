@@ -2,7 +2,7 @@
   "expo": {
     "name": "Growra",
     "slug": "growra",
-    "version": "1.8.4",
+    "version": "1.8.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "growra",
@@ -17,7 +17,7 @@
     },
     "android": {
       "package": "com.growra.app",
-      "versionCode": 13,
+      "versionCode": 14,
       "adaptiveIcon": {
         "backgroundColor": "#DDF3EC",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
