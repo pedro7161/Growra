@@ -9,6 +9,7 @@ import {
   TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import {
@@ -50,6 +51,7 @@ interface TasksScreenProps {
   onUpdateTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onOpenCalendar: () => void;
+  onTaskToolsOpenChange: (open: boolean) => void;
   onUiTap: () => void;
   onStartTimer: (taskId: string) => void;
   onPauseTimer: (taskId: string) => void;
@@ -68,6 +70,7 @@ export default function TasksScreen({
   onUpdateTask,
   onDeleteTask,
   onOpenCalendar,
+  onTaskToolsOpenChange,
   onUiTap,
   onStartTimer,
   onPauseTimer,
@@ -88,6 +91,7 @@ export default function TasksScreen({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [quickAddName, setQuickAddName] = useState("");
+  const toolsOpen = settings.taskToolsOpen;
   const todayTasks = getTodayTasks(tasks, now);
   const upcomingTasks = tasks.filter((task) => task.status === TaskStatus.PENDING && task.dueDate > now);
   const completedTasks = tasks.filter((task) => task.status === TaskStatus.COMPLETED);
@@ -239,80 +243,100 @@ export default function TasksScreen({
           settings={settings}
           disabled={tutorialOn}
         />
-      </View>
-
-      <View style={[styles.searchContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <TextInput
+        <TouchableOpacity
           style={[
-            styles.searchInput,
+            styles.toolsToggle,
             {
-              backgroundColor: theme.surfaceMuted,
-              borderColor: theme.border,
-              color: theme.text,
+              backgroundColor: toolsOpen ? theme.accentSoft : theme.surfaceMuted,
+              borderColor: toolsOpen ? theme.accent : theme.border,
             },
             tutorialOn && styles.tutorialDisabled,
           ]}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder={copy.tasksSearchPlaceholder}
-          placeholderTextColor={theme.mutedText}
-          editable={!tutorialOn}
-        />
+          onPress={() => {
+            onTaskToolsOpenChange(!toolsOpen);
+            onUiTap();
+          }}
+          disabled={tutorialOn}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={toolsOpen ? copy.tasksToolsHide : copy.tasksToolsShow}
+          accessibilityState={{ expanded: toolsOpen }}
+        >
+          <Ionicons name={toolsOpen ? "chevron-up" : "search"} size={16} color={toolsOpen ? theme.accent : theme.mutedText} />
+        </TouchableOpacity>
       </View>
 
-      <View
-        style={[
-          styles.quickAddContainer,
-          { backgroundColor: theme.surface, borderBottomColor: theme.border },
-        ]}
-      >
-        <View style={[styles.quickAddRow, tutorialOn && styles.tutorialDisabled]}>
-          <TextInput
-            style={[
-              styles.quickAddInput,
-              {
-                backgroundColor: theme.surfaceMuted,
-                borderColor: theme.border,
-                color: theme.text,
-              },
-            ]}
-            value={quickAddName}
-            onChangeText={setQuickAddName}
-            onSubmitEditing={handleQuickAdd}
-            placeholder={copy.tasksQuickAddPlaceholder}
-            placeholderTextColor={theme.mutedText}
-            returnKeyType="done"
-            blurOnSubmit={false}
-            editable={!tutorialOn}
-            accessibilityLabel={copy.tasksQuickAddPlaceholder}
-          />
-          <TouchableOpacity
-            style={[
-              styles.quickAddButton,
-              { backgroundColor: quickAddName.trim() ? theme.accent : theme.surfaceMuted },
-              !quickAddName.trim() && {
-                borderColor: theme.border,
-                borderWidth: 1,
-              },
-            ]}
-            onPress={handleQuickAdd}
-            disabled={tutorialOn}
-            accessibilityRole="button"
-            accessibilityLabel={copy.tasksQuickAddAccessibilityLabel}
-            accessibilityState={{ disabled: tutorialOn }}
-          >
-            <Text
+      {toolsOpen && (
+        <View style={[styles.toolsContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+          <View>
+            <TextInput
               style={[
-                styles.quickAddButtonText,
-                { color: quickAddName.trim() ? theme.accentText : theme.mutedText },
+                styles.searchInput,
+                {
+                  backgroundColor: theme.surfaceMuted,
+                  borderColor: theme.border,
+                  color: theme.text,
+                },
+                tutorialOn && styles.tutorialDisabled,
               ]}
-              numberOfLines={1}
-            >
-              {copy.tasksQuickAddSubmit}
-            </Text>
-          </TouchableOpacity>
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={copy.tasksSearchPlaceholder}
+              placeholderTextColor={theme.mutedText}
+              editable={!tutorialOn}
+            />
+          </View>
+
+          <View>
+            <View style={[styles.quickAddRow, tutorialOn && styles.tutorialDisabled]}>
+              <TextInput
+                style={[
+                  styles.quickAddInput,
+                  {
+                    backgroundColor: theme.surfaceMuted,
+                    borderColor: theme.border,
+                    color: theme.text,
+                  },
+                ]}
+                value={quickAddName}
+                onChangeText={setQuickAddName}
+                onSubmitEditing={handleQuickAdd}
+                placeholder={copy.tasksQuickAddPlaceholder}
+                placeholderTextColor={theme.mutedText}
+                returnKeyType="done"
+                blurOnSubmit={false}
+                editable={!tutorialOn}
+                accessibilityLabel={copy.tasksQuickAddPlaceholder}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.quickAddButton,
+                  { backgroundColor: quickAddName.trim() ? theme.accent : theme.surfaceMuted },
+                  !quickAddName.trim() && {
+                    borderColor: theme.border,
+                    borderWidth: 1,
+                  },
+                ]}
+                onPress={handleQuickAdd}
+                disabled={tutorialOn}
+                accessibilityRole="button"
+                accessibilityLabel={copy.tasksQuickAddAccessibilityLabel}
+                accessibilityState={{ disabled: tutorialOn }}
+              >
+                <Text
+                  style={[
+                    styles.quickAddButtonText,
+                    { color: quickAddName.trim() ? theme.accentText : theme.mutedText },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {copy.tasksQuickAddSubmit}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Tasks List */}
       <ScrollView style={styles.content}>
@@ -601,28 +625,27 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
   },
-  searchContainer: {
+  // Search and quick add share one block: even space above, between and below the two rows.
+  toolsContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingVertical: 12,
+    gap: 10,
     borderBottomWidth: 1,
   },
   searchInput: {
+    textAlignVertical: "center",
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-  },
-  quickAddContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
   },
   quickAddRow: {
     flexDirection: "row",
@@ -630,6 +653,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   quickAddInput: {
+    textAlignVertical: "center",
     flex: 1,
     minWidth: 0,
     minHeight: 44,
@@ -651,10 +675,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+  // Folds the search and quick add rows away; sits at the end of the filter row.
+  toolsToggle: {
+    marginLeft: "auto",
+    flexShrink: 0,
+    width: 32,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   filterTab: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    marginRight: 8,
+    marginRight: 6,
     borderRadius: 20,
     backgroundColor: "#f0f0f0",
   },

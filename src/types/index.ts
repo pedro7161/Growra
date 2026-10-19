@@ -42,6 +42,8 @@ export interface AppSettings {
   appearance: AppAppearance;
   /** Ask "Leave Growra?" when Back is pressed on the dashboard. */
   confirmExit: boolean;
+  /** Search and quick add rows on the Tasks screen are shown (the player can fold them away). */
+  taskToolsOpen: boolean;
   musicEnabled: boolean;
   sfxEnabled: boolean;
   timerAlert: TimerAlertSettings;

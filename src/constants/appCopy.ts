@@ -64,6 +64,8 @@ interface AppCopy {
   /** Shown in place of a category when a task was saved without one (category is optional). */
   taskCategoryNone: string;
   tasksSearchPlaceholder: string;
+  tasksToolsShow: string;
+  tasksToolsHide: string;
   tasksSelectedDay: string;
   tasksNoTasksOnDay: string;
   tasksStartsOn: string;
@@ -391,6 +393,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksCategory: "Category",
     taskCategoryNone: "Uncategorised",
     tasksSearchPlaceholder: "Search tasks",
+    tasksToolsShow: "Show search and quick add",
+    tasksToolsHide: "Hide search and quick add",
     tasksSelectedDay: "Selected Day",
     tasksNoTasksOnDay: "No tasks on this day.",
     tasksStartsOn: "Starts",
@@ -824,6 +828,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksCategory: "Categoria",
     taskCategoryNone: "Sem categoria",
     tasksSearchPlaceholder: "Pesquisar tarefas",
+    tasksToolsShow: "Mostrar pesquisa e adicionar rápido",
+    tasksToolsHide: "Esconder pesquisa e adicionar rápido",
     tasksSelectedDay: "Dia selecionado",
     tasksNoTasksOnDay: "Sem tarefas neste dia.",
     tasksStartsOn: "Começa",

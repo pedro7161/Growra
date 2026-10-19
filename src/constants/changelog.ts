@@ -8,13 +8,21 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
-      dateLabel: "Version 1.8.5 · October 20, 2026",
+      dateLabel: "Version 1.8.6 · October 19, 2026",
+      items: [
+        "Tasks: search and quick add have even spacing, and a button at the end of the filters hides or shows them.",
+        "Rooms show the whole background picture instead of a zoomed-in corner.",
+      ],
+    },
+    {
+      dateLabel: "Version 1.8.5 · October 19, 2026",
       items: [
         "New: quick add. Type a task at the top of Tasks and press Add: it lands on today, no extra steps.",
         "Category is now optional. Tasks without one show as Uncategorised, and Add always tells you if something is missing.",
         "Growra Plus is restored reliably when the app starts, and when Google Play says you already own it.",
         "Explore: a fast double tap no longer starts two ads.",
         "More of the app is in Portuguese: categories, regions, theme names and calendar labels.",
+        "The update download bar sits at the top and can be hidden.",
       ],
     },
     {
@@ -128,13 +136,21 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   ],
   pt: [
     {
-      dateLabel: "Versão 1.8.5 · 20 de outubro de 2026",
+      dateLabel: "Versão 1.8.6 · 19 de outubro de 2026",
+      items: [
+        "Tarefas: a pesquisa e o adicionar rápido têm espaçamento certo, e um botão no fim dos filtros esconde-os ou mostra-os.",
+        "Os quartos mostram a imagem de fundo inteira em vez de um canto ampliado.",
+      ],
+    },
+    {
+      dateLabel: "Versão 1.8.5 · 19 de outubro de 2026",
       items: [
         "Novo: adicionar rápido. Escreve uma tarefa no topo das Tarefas e carrega em Adicionar: fica para hoje, sem passos extra.",
         "A categoria passa a ser opcional. As tarefas sem categoria aparecem como Sem categoria, e Adicionar diz-te sempre se falta alguma coisa.",
         "O Growra Plus é reposto de forma fiável quando a app arranca e quando o Google Play diz que já o tens.",
         "Explorar: um toque duplo rápido já não abre dois anúncios.",
         "Mais partes da app em português: categorias, regiões, nomes dos temas e o calendário, com acentos corrigidos.",
+        "A barra de transferência da atualização fica no topo e pode ser escondida.",
       ],
     },
     {
