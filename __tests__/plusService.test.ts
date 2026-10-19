@@ -41,6 +41,47 @@ describe('plusService', () => {
     expect(await createPlusService(client).buy()).toBe('cancelled');
   });
 
+  it('treats "already owned" as a restore, not a failed purchase', async () => {
+    // A user who paid and reinstalled: Play refuses the second purchase, but they do own Plus.
+    const client = fakeClient({
+      purchase: async () => ({ kind: 'already-owned' }),
+      ownedPurchases: async () => [purchase('purchased', false)],
+    });
+    expect(await createPlusService(client).buy()).toBe('purchased');
+    expect(client.acks).toBe(1); // the restored purchase is acknowledged
+  });
+
+  it('reports an error when Play says "already owned" but has no purchase to restore', async () => {
+    const client = fakeClient({ purchase: async () => ({ kind: 'already-owned' }) });
+    expect(await createPlusService(client).buy()).toBe('error');
+  });
+
+  it('does not restore on an ordinary purchase error', async () => {
+    let restores = 0;
+    const client = fakeClient({
+      purchase: async () => ({ kind: 'error' }),
+      ownedPurchases: async () => {
+        restores += 1;
+        return [purchase('purchased')];
+      },
+    });
+    expect(await createPlusService(client).buy()).toBe('error');
+    expect(restores).toBe(0);
+  });
+
+  it('does not restore when the user cancels the sheet', async () => {
+    let restores = 0;
+    const client = fakeClient({
+      purchase: async () => ({ kind: 'cancelled' }),
+      ownedPurchases: async () => {
+        restores += 1;
+        return [purchase('purchased')];
+      },
+    });
+    expect(await createPlusService(client).buy()).toBe('cancelled');
+    expect(restores).toBe(0);
+  });
+
   it('reports unavailable when the store cannot connect', async () => {
     const client = fakeClient({ connect: async () => false });
     const service = createPlusService(client);

@@ -8,7 +8,7 @@ import GrowraPlusModal from "./components/GrowraPlusModal";
 import UpdatePrompt from "./components/UpdatePrompt";
 import { useAppUpdate } from "./hooks/useAppUpdate";
 import RoomEditorScreen from "./screens/RoomEditorScreen";
-import { applyPlusOwnership, keepPlusOnImport, usePlusController } from "./hooks/usePlusController";
+import { createPlusOwnershipGate, keepPlusOnImport, usePlusController } from "./hooks/usePlusController";
 import { createPlusService } from "./services/plusService";
 import { expoIapClient } from "./services/expoIapClient";
 import { createAdsService } from "./services/adsService";
@@ -133,6 +133,7 @@ export default function App() {
     : "done";
   const [plusVisible, setPlusVisible] = useState(false);
   const [exploreBusy, setExploreBusy] = useState(false);
+  const exploreBusyRef = useRef(false);
   const [roomEditorId, setRoomEditorId] = useState<string | null>(null);
   const [appActive, setAppActive] = useState(true);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
@@ -180,10 +181,11 @@ export default function App() {
     void plus.refreshPrice();
   };
   const appUpdate = useAppUpdate();
+  // Play's answer can beat loadGame(); the gate holds it so the load applies it instead of dropping it.
+  const plusOwnershipGate = useRef(createPlusOwnershipGate(() => gameStateRef.current));
   const plus = usePlusController(plusService, (owned) => {
-    const current = gameStateRef.current;
-    if (!current || current.plus.owned === owned) return;
-    void persistGameState(applyPlusOwnership(current, owned, Date.now()));
+    const next = plusOwnershipGate.current.answer(owned, Date.now());
+    if (next) void persistGameState(next);
   });
 
   useEffect(() => {
@@ -259,6 +261,13 @@ export default function App() {
         Alert.alert(title, body.replace("{coins}", String(notice.coins)));
       });
       resolvedGameState = { ...resolvedGameState, notices: [] };
+      await gameStateService.saveGame(createSaveData(resolvedGameState));
+    }
+
+    // An ownership answer that arrived while the save was loading is applied here, not lost.
+    const adoptedGameState = plusOwnershipGate.current.adopt(resolvedGameState, Date.now());
+    if (adoptedGameState !== resolvedGameState) {
+      resolvedGameState = adoptedGameState;
       await gameStateService.saveGame(createSaveData(resolvedGameState));
     }
 
@@ -613,9 +622,12 @@ export default function App() {
 
   const handleExplore = async () => {
     const before = gameStateRef.current;
-    if (!before || exploreBusy || getExploreLeft(before.explore, Date.now()) === 0) return;
+    // The ref, not exploreBusy, is the guard: state updates are async within a frame, so two taps
+    // in the same batch both passed it. A Plus owner sees no ad, so without this they got two finds.
+    if (!before || exploreBusyRef.current || getExploreLeft(before.explore, Date.now()) === 0) return;
     const copy = getAppCopy(before.settings.language);
-    setExploreBusy(true);
+    exploreBusyRef.current = true;
+    setExploreBusy(true); // state only drives the button's busy look
     try {
       if (!before.plus.owned) {
         const result = await adsService.watchForReward();
@@ -639,6 +651,7 @@ export default function App() {
           .replace("{find}", copy.decorationNames[find.id] ?? find.id),
       );
     } finally {
+      exploreBusyRef.current = false;
       setExploreBusy(false);
     }
   };

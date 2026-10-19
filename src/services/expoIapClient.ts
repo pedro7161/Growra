@@ -45,7 +45,10 @@ export const expoIapClient: BillingClient = {
         if (purchase.productId === productId) settle({ kind: "purchase", purchase: toStorePurchase(purchase) });
       });
       const failed = purchaseErrorListener((error) => {
-        settle(error.code === ErrorCode.UserCancelled ? { kind: "cancelled" } : { kind: "error" });
+        if (error.code === ErrorCode.UserCancelled) return settle({ kind: "cancelled" });
+        // Play already sold this account Plus; plusService restores it instead of erroring.
+        if (error.code === ErrorCode.AlreadyOwned) return settle({ kind: "already-owned" });
+        settle({ kind: "error" });
       });
       requestPurchase({ request: { google: { skus: [productId] } }, type: "in-app" }).then(
         (result) => {

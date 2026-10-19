@@ -17,6 +17,8 @@ export interface StorePurchase {
 export type PurchaseOutcome =
   | { kind: "purchase"; purchase: StorePurchase }
   | { kind: "cancelled" }
+  /** Play refuses to sell something this account already owns; it is a restore, not a failure. */
+  | { kind: "already-owned" }
   | { kind: "error" };
 
 export interface BillingClient {
@@ -79,6 +81,21 @@ export function createPlusService(
     }
   }
 
+  /** Shared by restore() and the "already owned" branch of buy(). */
+  async function restorePurchases(): Promise<RestoreResult> {
+    try {
+      const owned = (await client.ownedPurchases()).filter(
+        (purchase) => purchase.productId === PLUS_PRODUCT_ID && purchase.state === "purchased",
+      );
+      for (const purchase of owned) {
+        await acknowledgeIfNeeded(purchase);
+      }
+      return owned.length > 0 ? "owned" : "not-owned";
+    } catch {
+      return "unavailable";
+    }
+  }
+
   return {
     async getPrice() {
       if (!(await connect())) return null;
@@ -94,6 +111,12 @@ export function createPlusService(
       try {
         const outcome = await withTimeout<PurchaseOutcome>(client.purchase(PLUS_PRODUCT_ID), buyTimeoutMs, { kind: "error" });
         if (outcome.kind === "cancelled") return "cancelled";
+        // Reinstall case: the account owns Plus, so recover it instead of reporting a failure.
+        // Only this one error restores; anything else stays an error, so no failure silently
+        // turns into "you own it".
+        if (outcome.kind === "already-owned") {
+          return (await restorePurchases()) === "owned" ? "purchased" : "error";
+        }
         if (outcome.kind === "error") return "error";
         if (outcome.purchase.state === "pending") return "pending";
         if (outcome.purchase.state !== "purchased") return "error";
@@ -106,17 +129,7 @@ export function createPlusService(
 
     async restore() {
       if (!(await connect())) return "unavailable";
-      try {
-        const owned = (await client.ownedPurchases()).filter(
-          (purchase) => purchase.productId === PLUS_PRODUCT_ID && purchase.state === "purchased",
-        );
-        for (const purchase of owned) {
-          await acknowledgeIfNeeded(purchase);
-        }
-        return owned.length > 0 ? "owned" : "not-owned";
-      } catch {
-        return "unavailable";
-      }
+      return restorePurchases();
     },
   };
 }
