@@ -48,6 +48,9 @@ interface AppCopy {
   tasksCalendarScheduled: string;
   tasksCalendarCompletedLegend: string;
   tasksCalendarMixed: string;
+  tasksQuickAddPlaceholder: string;
+  tasksQuickAddSubmit: string;
+  tasksQuickAddAccessibilityLabel: string;
   tasksDetails: string;
   tasksSave: string;
   tasksDelete: string;
@@ -58,6 +61,8 @@ interface AppCopy {
   tasksCalendarColor: string;
   tasksOpenDetails: string;
   tasksCategory: string;
+  /** Shown in place of a category when a task was saved without one (category is optional). */
+  taskCategoryNone: string;
   tasksSearchPlaceholder: string;
   tasksSelectedDay: string;
   tasksNoTasksOnDay: string;
@@ -88,6 +93,8 @@ interface AppCopy {
   addTaskSavedCustomTasks: string;
   addTaskNamePlaceholder: string;
   addTaskDescriptionPlaceholder: string;
+  /** Why Add did nothing: the task has no name yet (the only thing still required). */
+  addTaskNameMissing: string;
   petsTitle: string;
   petsCoinsPity: string;
   petsDetailTitle: string;
@@ -264,6 +271,10 @@ interface AppCopy {
   settingsAdConsent: string;
   settingsPrivacy: string;
   settingsRateApp: string;
+  settingsOptionalAudio: string;
+  settingsAmbientMusic: string;
+  settingsAppSounds: string;
+  tasksConfirmDelete: string;
   settingsConfirmExit: string;
   settingsOn: string;
   settingsOff: string;
@@ -283,6 +294,7 @@ interface AppCopy {
   updateAvailableTitle: string;
   updateAvailableBody: string;
   updateDownloading: string;
+  updateHideBanner: string;
   updateReadyTag: string;
   updateReadyTitle: string;
   updateReadyBody: string;
@@ -364,6 +376,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksCalendarScheduled: "Scheduled",
     tasksCalendarCompletedLegend: "Completed",
     tasksCalendarMixed: "Scheduled + done",
+    tasksQuickAddPlaceholder: "Add a task for today",
+    tasksQuickAddSubmit: "Add",
+    tasksQuickAddAccessibilityLabel: "Add task for today",
     tasksDetails: "Task Details",
     tasksSave: "Save",
     tasksDelete: "Delete",
@@ -374,6 +389,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksCalendarColor: "Calendar Color",
     tasksOpenDetails: "Open Details",
     tasksCategory: "Category",
+    taskCategoryNone: "Uncategorised",
     tasksSearchPlaceholder: "Search tasks",
     tasksSelectedDay: "Selected Day",
     tasksNoTasksOnDay: "No tasks on this day.",
@@ -404,6 +420,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     addTaskSavedCustomTasks: "Saved custom tasks",
     addTaskNamePlaceholder: "Enter task name",
     addTaskDescriptionPlaceholder: "Enter task description (optional)",
+    addTaskNameMissing: "Give the task a name first. Everything else is optional.",
     petsTitle: "Companions",
     petsCoinsPity: "coins",
     petsDetailTitle: "Companion",
@@ -581,6 +598,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     updateAvailableTitle: "Update available",
     updateAvailableBody: "A new version of Growra is out. It downloads in the background while you use the app.",
     updateDownloading: "Downloading update…",
+    updateHideBanner: "Hide the download bar",
     updateReadyTag: "Downloaded",
     updateReadyTitle: "Restart to finish",
     updateReadyBody: "Growra will close and reopen in a few seconds. Your tasks and pets are kept.",
@@ -618,6 +636,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     journeyLookBackLocked: "See this week with Plus",
     settingsPrivacy: "Privacy policy",
     settingsRateApp: "Rate Growra on Google Play",
+    settingsOptionalAudio: "Optional audio",
+    settingsAmbientMusic: "Ambient music",
+    settingsAppSounds: "App sounds",
+    tasksConfirmDelete: "Confirm delete",
     settingsConfirmExit: "Ask before leaving the app",
     settingsOn: "On",
     settingsOff: "Off",
@@ -787,6 +809,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksCalendarScheduled: "Planeadas",
     tasksCalendarCompletedLegend: "Concluídas",
     tasksCalendarMixed: "Planeadas + feitas",
+    tasksQuickAddPlaceholder: "Nova tarefa para hoje",
+    tasksQuickAddSubmit: "Adicionar",
+    tasksQuickAddAccessibilityLabel: "Adicionar tarefa para hoje",
     tasksDetails: "Detalhes da tarefa",
     tasksSave: "Guardar",
     tasksDelete: "Eliminar",
@@ -797,10 +822,11 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksCalendarColor: "Cor no calendário",
     tasksOpenDetails: "Abrir detalhes",
     tasksCategory: "Categoria",
+    taskCategoryNone: "Sem categoria",
     tasksSearchPlaceholder: "Pesquisar tarefas",
     tasksSelectedDay: "Dia selecionado",
     tasksNoTasksOnDay: "Sem tarefas neste dia.",
-    tasksStartsOn: "Comeca",
+    tasksStartsOn: "Começa",
     tasksEmptyTitle: "Sem tarefas para mostrar",
     tasksEmptySubtitle: "Cria a tua primeira tarefa para começar",
     addTaskTitle: "Adicionar tarefa",
@@ -823,10 +849,11 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     addTaskCategoryPlaceholder: "Escreve a categoria",
     addTaskSavedCategories: "Categorias guardadas",
     addTaskSaveTemplate: "Guardar para depois",
-    addTaskSaveTemplateHelp: "Guarda esta tarefa personalizada e categoria como modelo reutilizavel para escolher novamente mais tarde.",
+    addTaskSaveTemplateHelp: "Guarda esta tarefa personalizada e categoria como modelo reutilizável para escolher novamente mais tarde.",
     addTaskSavedCustomTasks: "Tarefas personalizadas guardadas",
     addTaskNamePlaceholder: "Escreve o nome da tarefa",
     addTaskDescriptionPlaceholder: "Escreve a descrição da tarefa (opcional)",
+    addTaskNameMissing: "Dá primeiro um nome à tarefa. O resto é opcional.",
     petsTitle: "Companheiros",
     petsCoinsPity: "moedas",
     petsDetailTitle: "Companheiro",
@@ -1017,6 +1044,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     updateAvailableTitle: "Há uma atualização",
     updateAvailableBody: "Saiu uma nova versão do Growra. É transferida em segundo plano enquanto usas a app.",
     updateDownloading: "A transferir atualização…",
+    updateHideBanner: "Ocultar a barra de transferência",
     updateReadyTag: "Transferida",
     updateReadyTitle: "Reinicia para terminar",
     updateReadyBody: "O Growra fecha e volta a abrir em poucos segundos. As tuas tarefas e companheiros ficam guardados.",
@@ -1054,6 +1082,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     journeyLookBackLocked: "Vê esta semana com o Plus",
     settingsPrivacy: "Política de privacidade",
     settingsRateApp: "Avaliar o Growra no Google Play",
+    settingsOptionalAudio: "Áudio opcional",
+    settingsAmbientMusic: "Ambiente",
+    settingsAppSounds: "Sons da aplicação",
+    tasksConfirmDelete: "Confirmar eliminação",
     settingsConfirmExit: "Perguntar antes de sair da app",
     settingsOn: "Ligado",
     settingsOff: "Desligado",

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { categorySuggestions, matchExistingCategory } from "../utils/categorySuggestions";
 import {
+  Alert,
   View,
   StyleSheet,
   TouchableOpacity,
@@ -19,6 +20,8 @@ import { taskPriorityOptions } from "../constants/taskConfig";
 import { getStartOfDay } from "../utils/taskSchedule";
 import TaskDatePicker from "./TaskDatePicker";
 import { getCustomTaskTemplateGroups } from "../utils/customTaskTemplates";
+import { taskCategoryLabel } from "../utils/taskLabels";
+import { customTaskDraftProblem } from "../utils/taskDraft";
 
 function getPriorityLabel(copy: ReturnType<typeof getAppCopy>, priority: TaskPriority): string {
   if (priority === TaskPriority.HIGH) return copy.tasksPriorityHigh;
@@ -107,6 +110,7 @@ export default function AddTaskModal({
   const [tutorialSelectedPredefinedTaskId, setTutorialSelectedPredefinedTaskId] =
     useState("");
   const selectedPredefinedTask = localizePredefinedTask(getPredefinedTask(predefinedTaskId), settings.language);
+  const nameMissing = type === TaskType.CUSTOM && !name.trim();
   const predefinedTutorialTarget = tutorialTarget === "modal-type-predefined";
   const waterTutorialTarget = tutorialTarget === "modal-task-drink-water";
   const submitTutorialTarget = tutorialTarget === "modal-submit";
@@ -139,7 +143,15 @@ export default function AddTaskModal({
       return;
     }
 
-    if (type === TaskType.CUSTOM && name.trim() && category.trim()) {
+    // Category is optional (#47): a custom task saves with a blank one and shows as
+    // uncategorised. Only a missing name still holds the task back, and it says so
+    // instead of leaving Add doing nothing.
+    if (type === TaskType.CUSTOM) {
+      if (customTaskDraftProblem({ name, category })) {
+        Alert.alert(copy.addTaskTitle, copy.addTaskNameMissing);
+        return;
+      }
+
       onSubmit({
         name,
         description,
@@ -256,7 +268,9 @@ export default function AddTaskModal({
                 tutorialOn && !submitTutorialTarget && styles.tutorialDisabled,
               ]}
             >
-              <Text style={[styles.submitButton, { color: theme.accent }]}>{copy.addTaskConfirm}</Text>
+              <Text style={[styles.submitButton, { color: nameMissing ? theme.mutedText : theme.accent }]}>
+                {copy.addTaskConfirm}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -396,7 +410,9 @@ export default function AddTaskModal({
                             onPress={() => handleToggleCustomCategory(group.category)}
                             disabled={tutorialOn}
                           >
-                            <Text style={[styles.groupTitle, { color: theme.mutedText }]}>{group.category}</Text>
+                            <Text style={[styles.groupTitle, { color: theme.mutedText }]}>
+                              {taskCategoryLabel(settings.language, group.category)}
+                            </Text>
                             <Text style={[styles.groupToggle, { color: theme.mutedText }]}>
                               {collapsedCustomCategories[group.category] ? "+" : "-"}
                             </Text>
@@ -462,7 +478,7 @@ export default function AddTaskModal({
                         disabled={tutorialOn}
                       >
                         <Text style={[styles.groupTitle, { color: theme.mutedText }]}>
-                          {group.category}
+                          {taskCategoryLabel(settings.language, group.category)}
                         </Text>
                         <Text style={[styles.groupToggle, { color: theme.mutedText }]}>
                           {collapsedCategories[group.category] ? "+" : "-"}

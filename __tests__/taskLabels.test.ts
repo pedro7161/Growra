@@ -1,6 +1,6 @@
 import { getAppCopy } from "../src/constants/appCopy";
 import { TaskFrequency, TaskStatus } from "../src/types";
-import { taskFrequencyLabel, taskStatusLabel } from "../src/utils/taskLabels";
+import { taskCategoryLabel, taskFrequencyLabel, taskStatusLabel } from "../src/utils/taskLabels";
 
 describe("task labels", () => {
   it("translates the frequency instead of showing the raw value", () => {
@@ -16,6 +16,30 @@ describe("task labels", () => {
     expect(taskStatusLabel(pt, TaskStatus.PENDING)).toBe("Pendente");
     expect(taskStatusLabel(pt, TaskStatus.COMPLETED)).toBe("Concluída");
     expect(taskStatusLabel(getAppCopy("en"), TaskStatus.COMPLETED)).toBe("Completed");
+  });
+
+  // #47: category is optional, so a task can have none. It shows a translated
+  // "uncategorised" label instead of an empty gap.
+  it("shows a translated uncategorised label when a task has no category", () => {
+    expect(taskCategoryLabel("en", "")).toBe(getAppCopy("en").taskCategoryNone);
+    expect(taskCategoryLabel("pt", "")).toBe(getAppCopy("pt").taskCategoryNone);
+    expect(taskCategoryLabel("en", "   ")).toBe(getAppCopy("en").taskCategoryNone);
+    expect(getAppCopy("en").taskCategoryNone).toBe("Uncategorised");
+    expect(getAppCopy("pt").taskCategoryNone).toBe("Sem categoria");
+  });
+
+  // The task search (TasksScreen.tsx:107-113) matches the query against this label as well
+  // as the raw category, so uncategorised tasks are findable by typing "uncategorised" only
+  // because the blank -> label mapping lives in here. Moving that mapping into a screen's
+  // render would silently stop search finding them; this pins it.
+  it("keeps uncategorised tasks findable by search", () => {
+    expect(taskCategoryLabel("en", "").toLowerCase()).toContain("uncategorised");
+    expect(taskCategoryLabel("pt", "").toLowerCase()).toContain("sem categoria");
+  });
+
+  it("still shows a real category as it is", () => {
+    expect(taskCategoryLabel("en", "home")).toBe("home");
+    expect(taskCategoryLabel("pt", "health")).toBe("saúde");
   });
 
   it("has a timer label in every language", () => {
