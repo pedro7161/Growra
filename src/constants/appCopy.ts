@@ -294,6 +294,7 @@ interface AppCopy {
   updateAvailableTitle: string;
   updateAvailableBody: string;
   updateDownloading: string;
+  updateHideBanner: string;
   updateReadyTag: string;
   updateReadyTitle: string;
   updateReadyBody: string;
@@ -597,6 +598,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     updateAvailableTitle: "Update available",
     updateAvailableBody: "A new version of Growra is out. It downloads in the background while you use the app.",
     updateDownloading: "Downloading update…",
+    updateHideBanner: "Hide the download bar",
     updateReadyTag: "Downloaded",
     updateReadyTitle: "Restart to finish",
     updateReadyBody: "Growra will close and reopen in a few seconds. Your tasks and pets are kept.",
@@ -1042,6 +1044,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     updateAvailableTitle: "Há uma atualização",
     updateAvailableBody: "Saiu uma nova versão do Growra. É transferida em segundo plano enquanto usas a app.",
     updateDownloading: "A transferir atualização…",
+    updateHideBanner: "Ocultar a barra de transferência",
     updateReadyTag: "Transferida",
     updateReadyTitle: "Reinicia para terminar",
     updateReadyBody: "O Growra fecha e volta a abrir em poucos segundos. As tuas tarefas e companheiros ficam guardados.",
