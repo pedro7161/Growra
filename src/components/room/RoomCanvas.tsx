@@ -27,7 +27,8 @@ const RoomCanvas = React.forwardRef<View, RoomCanvasProps>(function RoomCanvas(p
 
   return (
     <View ref={ref} collapsable={false} style={{ width, height, overflow: "hidden", backgroundColor: ROOM_STYLE_FALLBACK_COLORS[room.styleId] ?? "#d9b48f" }}>
-      {background && <Image source={background} style={StyleSheet.absoluteFillObject} resizeMode="cover" />}
+      {/* Explicit size: a bundled image's own 1080x1350 size would otherwise beat the fill edges and show only its corner. */}
+      {background && <Image source={background} style={{ position: "absolute", left: 0, top: 0, width, height }} resizeMode="cover" />}
       <Pressable style={StyleSheet.absoluteFillObject} onPress={() => props.onSelect(null)} />
       {room.items.map((item) => {
         let source;
