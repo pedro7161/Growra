@@ -1,6 +1,9 @@
 /** Rewarded ads (spec §2). The SDK sits behind AdsClient; googleAdsClient.ts is the only importer. */
 export type AdResult = "earned" | "dismissed" | "unavailable";
 
+/** What a caller gets back: an ad result, or "busy" when one ad is already in flight. */
+export type WatchResult = AdResult | "busy";
+
 export interface AdsClient {
   /** Shows the UMP consent form if required; true when ads may be requested. */
   ensureConsent(): Promise<boolean>;
@@ -21,20 +24,30 @@ export function createAdsService(client: AdsClient, adUnitId: string, options: {
     return client.showRewarded(adUnitId);
   }
 
+  let inFlight = false;
+
   return {
-    watchForReward(): Promise<AdResult> {
-      return new Promise<AdResult>((resolve) => {
-        const timer = setTimeout(() => resolve("unavailable"), timeoutMs);
-        run().then(
-          (result) => {
-            clearTimeout(timer);
-            resolve(result);
-          },
-          () => {
-            clearTimeout(timer);
-            resolve("unavailable");
-          },
-        );
+    /**
+     * One ad at a time: a fast double tap used to pass a React state guard twice in a frame and
+     * start two ads, so the guard lives here and is a plain variable, not state. "busy" is a
+     * no-op answer - the second tap must not show a message or spend the reward.
+     */
+    watchForReward(): Promise<WatchResult> {
+      if (inFlight) return Promise.resolve("busy");
+      inFlight = true;
+      return new Promise<WatchResult>((resolve) => {
+        let settled = false;
+        // Released on every exit - earned, dismissed, unavailable, a throw, and the watchdog -
+        // because a guard that leaks turns a double-ad bug into a button that never works again.
+        const settle = (result: AdResult) => {
+          if (settled) return;
+          settled = true;
+          inFlight = false;
+          clearTimeout(timer);
+          resolve(result);
+        };
+        const timer = setTimeout(() => settle("unavailable"), timeoutMs);
+        run().then(settle, () => settle("unavailable"));
       });
     },
 

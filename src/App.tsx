@@ -133,6 +133,7 @@ export default function App() {
     : "done";
   const [plusVisible, setPlusVisible] = useState(false);
   const [exploreBusy, setExploreBusy] = useState(false);
+  const exploreBusyRef = useRef(false);
   const [roomEditorId, setRoomEditorId] = useState<string | null>(null);
   const [appActive, setAppActive] = useState(true);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
@@ -621,9 +622,12 @@ export default function App() {
 
   const handleExplore = async () => {
     const before = gameStateRef.current;
-    if (!before || exploreBusy || getExploreLeft(before.explore, Date.now()) === 0) return;
+    // The ref, not exploreBusy, is the guard: state updates are async within a frame, so two taps
+    // in the same batch both passed it. A Plus owner sees no ad, so without this they got two finds.
+    if (!before || exploreBusyRef.current || getExploreLeft(before.explore, Date.now()) === 0) return;
     const copy = getAppCopy(before.settings.language);
-    setExploreBusy(true);
+    exploreBusyRef.current = true;
+    setExploreBusy(true); // state only drives the button's busy look
     try {
       if (!before.plus.owned) {
         const result = await adsService.watchForReward();
@@ -647,6 +651,7 @@ export default function App() {
           .replace("{find}", copy.decorationNames[find.id] ?? find.id),
       );
     } finally {
+      exploreBusyRef.current = false;
       setExploreBusy(false);
     }
   };
