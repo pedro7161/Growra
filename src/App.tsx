@@ -520,6 +520,12 @@ export default function App() {
     await persistGameState({ ...gameState, settings: { ...gameState.settings, confirmExit } });
   };
 
+  const handleTaskToolsOpenChange = async (taskToolsOpen: boolean) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, taskToolsOpen } });
+  };
+
   const handleAppearanceChange = async (appearance: AppAppearance) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
@@ -769,6 +775,7 @@ export default function App() {
             onUpdateTask={handleUpdateTask}
             onDeleteTask={handleDeleteTask}
             onOpenCalendar={() => handleNavigate("task-calendar")}
+            onTaskToolsOpenChange={(open) => void handleTaskToolsOpenChange(open)}
             onUiTap={playUiTap}
             onStartTimer={handleStartTimer}
             onPauseTimer={handlePauseTimer}

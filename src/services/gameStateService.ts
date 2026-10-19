@@ -305,6 +305,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
           ? storedSettings.appearance
           : "system",
       confirmExit: storedSettings.confirmExit !== false,
+      taskToolsOpen: storedSettings.taskToolsOpen !== false,
       musicEnabled: storedSettings.musicEnabled === true,
       sfxEnabled: storedSettings.sfxEnabled === true,
       timerAlert,
