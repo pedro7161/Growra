@@ -29,6 +29,24 @@ export interface TaskFormValues {
   saveAsTemplate: boolean;
 }
 
+/** Build the full Add form's default values for a name-only task due today. */
+export function createQuickAddTaskFormValues(name: string, now = Date.now()): TaskFormValues {
+  return {
+    name,
+    description: "",
+    predefinedTaskId: "",
+    customTemplateId: "",
+    category: "",
+    type: TaskType.CUSTOM,
+    frequency: TaskFrequency.ONCE,
+    priority: TaskPriority.MEDIUM,
+    dueDate: getStartOfDay(now),
+    timerEnabled: false,
+    timerDurationMinutes: 5,
+    saveAsTemplate: false,
+  };
+}
+
 export function buildTaskFromFormValues(values: TaskFormValues): {
   task: Task;
   customTemplate?: CustomTaskTemplate;
