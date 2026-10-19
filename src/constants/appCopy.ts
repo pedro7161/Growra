@@ -48,6 +48,9 @@ interface AppCopy {
   tasksCalendarScheduled: string;
   tasksCalendarCompletedLegend: string;
   tasksCalendarMixed: string;
+  tasksQuickAddPlaceholder: string;
+  tasksQuickAddSubmit: string;
+  tasksQuickAddAccessibilityLabel: string;
   tasksDetails: string;
   tasksSave: string;
   tasksDelete: string;
@@ -372,6 +375,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksCalendarScheduled: "Scheduled",
     tasksCalendarCompletedLegend: "Completed",
     tasksCalendarMixed: "Scheduled + done",
+    tasksQuickAddPlaceholder: "Add a task for today",
+    tasksQuickAddSubmit: "Add",
+    tasksQuickAddAccessibilityLabel: "Add task for today",
     tasksDetails: "Task Details",
     tasksSave: "Save",
     tasksDelete: "Delete",
@@ -801,6 +807,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksCalendarScheduled: "Planeadas",
     tasksCalendarCompletedLegend: "Concluídas",
     tasksCalendarMixed: "Planeadas + feitas",
+    tasksQuickAddPlaceholder: "Nova tarefa para hoje",
+    tasksQuickAddSubmit: "Adicionar",
+    tasksQuickAddAccessibilityLabel: "Adicionar tarefa para hoje",
     tasksDetails: "Detalhes da tarefa",
     tasksSave: "Guardar",
     tasksDelete: "Eliminar",

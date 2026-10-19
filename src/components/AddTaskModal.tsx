@@ -110,6 +110,7 @@ export default function AddTaskModal({
   const [tutorialSelectedPredefinedTaskId, setTutorialSelectedPredefinedTaskId] =
     useState("");
   const selectedPredefinedTask = localizePredefinedTask(getPredefinedTask(predefinedTaskId), settings.language);
+  const nameMissing = type === TaskType.CUSTOM && !name.trim();
   const predefinedTutorialTarget = tutorialTarget === "modal-type-predefined";
   const waterTutorialTarget = tutorialTarget === "modal-task-drink-water";
   const submitTutorialTarget = tutorialTarget === "modal-submit";
@@ -267,7 +268,9 @@ export default function AddTaskModal({
                 tutorialOn && !submitTutorialTarget && styles.tutorialDisabled,
               ]}
             >
-              <Text style={[styles.submitButton, { color: theme.accent }]}>{copy.addTaskConfirm}</Text>
+              <Text style={[styles.submitButton, { color: nameMissing ? theme.mutedText : theme.accent }]}>
+                {copy.addTaskConfirm}
+              </Text>
             </TouchableOpacity>
           </View>
 

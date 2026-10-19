@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -21,11 +22,12 @@ import {
 import AddTaskModal from "../components/AddTaskModal";
 import TaskDetailsModal from "../components/TaskDetailsModal";
 import { getPredefinedTask } from "../constants/predefinedTasks";
-import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
+import { buildTaskFromFormValues, createQuickAddTaskFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
 import TaskTimerControls from "../components/TaskTimerControls";
 import { getLocaleFromSettings } from "../utils/settings";
 import { taskCategoryLabel, taskFrequencyLabel } from "../utils/taskLabels";
+import { customTaskDraftProblem } from "../utils/taskDraft";
 
 interface TasksScreenProps {
   settings: AppSettings;
@@ -85,6 +87,7 @@ export default function TasksScreen({
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [quickAddName, setQuickAddName] = useState("");
   const todayTasks = getTodayTasks(tasks, now);
   const upcomingTasks = tasks.filter((task) => task.status === TaskStatus.PENDING && task.dueDate > now);
   const completedTasks = tasks.filter((task) => task.status === TaskStatus.COMPLETED);
@@ -138,6 +141,21 @@ export default function TasksScreen({
   const handleAddTask = (values: TaskFormValues) => {
     const { task, customTemplate } = buildTaskFromFormValues(values);
     onAddTask(task, customTemplate);
+  };
+  const handleQuickAdd = () => {
+    if (tutorialOn) {
+      return;
+    }
+
+    if (customTaskDraftProblem({ name: quickAddName, category: "" })) {
+      Alert.alert(copy.addTaskTitle, copy.addTaskNameMissing);
+      return;
+    }
+
+    const { task } = buildTaskFromFormValues(createQuickAddTaskFormValues(quickAddName));
+    onAddTask(task);
+    setQuickAddName("");
+    onUiTap();
   };
   const tutorialTargetTaskId =
     tutorialTarget === "task-complete" && tasks.length > 0 ? tasks[0].id : "";
@@ -240,6 +258,60 @@ export default function TasksScreen({
           placeholderTextColor={theme.mutedText}
           editable={!tutorialOn}
         />
+      </View>
+
+      <View
+        style={[
+          styles.quickAddContainer,
+          { backgroundColor: theme.surface, borderBottomColor: theme.border },
+        ]}
+      >
+        <View style={[styles.quickAddRow, tutorialOn && styles.tutorialDisabled]}>
+          <TextInput
+            style={[
+              styles.quickAddInput,
+              {
+                backgroundColor: theme.surfaceMuted,
+                borderColor: theme.border,
+                color: theme.text,
+              },
+            ]}
+            value={quickAddName}
+            onChangeText={setQuickAddName}
+            onSubmitEditing={handleQuickAdd}
+            placeholder={copy.tasksQuickAddPlaceholder}
+            placeholderTextColor={theme.mutedText}
+            returnKeyType="done"
+            blurOnSubmit={false}
+            editable={!tutorialOn}
+            accessibilityLabel={copy.tasksQuickAddPlaceholder}
+          />
+          <TouchableOpacity
+            style={[
+              styles.quickAddButton,
+              { backgroundColor: quickAddName.trim() ? theme.accent : theme.surfaceMuted },
+              !quickAddName.trim() && {
+                borderColor: theme.border,
+                borderWidth: 1,
+              },
+            ]}
+            onPress={handleQuickAdd}
+            disabled={tutorialOn}
+            accessibilityRole="button"
+            accessibilityLabel={copy.tasksQuickAddAccessibilityLabel}
+            accessibilityState={{ disabled: tutorialOn }}
+          >
+            <Text
+              style={[
+                styles.quickAddButtonText,
+                { color: quickAddName.trim() ? theme.accentText : theme.mutedText },
+              ]}
+              numberOfLines={1}
+            >
+              {copy.tasksQuickAddSubmit}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Tasks List */}
@@ -546,6 +618,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
+  },
+  quickAddContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  quickAddRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  quickAddInput: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  quickAddButton: {
+    minWidth: 44,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickAddButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   filterTab: {
     paddingHorizontal: 12,
