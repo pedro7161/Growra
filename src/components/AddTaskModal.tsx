@@ -411,6 +411,8 @@ export default function AddTaskModal({
                             style={[styles.groupHeader, { borderBottomColor: theme.border }]}
                             onPress={() => handleToggleCustomCategory(group.category)}
                             disabled={tutorialOn}
+                            accessibilityRole="button"
+                            accessibilityState={{ expanded: !collapsedCustomCategories[group.category] }}
                           >
                             <Text style={[styles.groupTitle, { color: theme.mutedText }]}>
                               {taskCategoryLabel(settings.language, group.category)}
@@ -478,6 +480,8 @@ export default function AddTaskModal({
                         style={[styles.groupHeader, { borderBottomColor: theme.border }]}
                         onPress={() => handleToggleCategory(group.category)}
                         disabled={tutorialOn}
+                        accessibilityRole="button"
+                        accessibilityState={{ expanded: !collapsedCategories[group.category] }}
                       >
                         <Text style={[styles.groupTitle, { color: theme.mutedText }]}>
                           {taskCategoryLabel(settings.language, group.category)}

@@ -173,6 +173,8 @@ export default function TasksScreen({
             ]}
             onPress={onOpenCalendar}
             disabled={tutorialOn}
+            hitSlop={{ top: 8, bottom: 8 }}
+            accessibilityRole="button"
           >
             <Text style={[styles.calendarButtonText, { color: theme.text }]}>{copy.tasksCalendar}</Text>
           </TouchableOpacity>
@@ -188,6 +190,8 @@ export default function TasksScreen({
               onUiTap();
             }}
             disabled={tutorialOn && tutorialTarget !== "add-button"}
+            hitSlop={{ top: 8, bottom: 8 }}
+            accessibilityRole="button"
           >
             <Text style={[styles.addButtonText, { color: theme.accentText }]}>{copy.tasksAdd}</Text>
           </TouchableOpacity>
@@ -451,6 +455,13 @@ function TaskItem({
         ]}
         onPress={onComplete}
         disabled={isCompleted || isScheduled || (tutorialEnabled && !tutorialTarget)}
+        hitSlop={10}
+        accessibilityRole="checkbox"
+        accessibilityLabel={task.name}
+        accessibilityState={{
+          checked: isCompleted,
+          disabled: isCompleted || isScheduled || (tutorialEnabled && !tutorialTarget),
+        }}
       >
         {isCompleted && <Text style={styles.checkmark}>✓</Text>}
       </TouchableOpacity>
@@ -527,6 +538,9 @@ function FilterTab({
       ]}
       onPress={onPress}
       disabled={disabled}
+      hitSlop={{ top: 8, bottom: 8 }}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active, disabled }}
     >
       <Text style={[styles.filterText, { color: active ? theme.accentText : theme.mutedText }]}>
         {label}
@@ -542,6 +556,8 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -604,8 +620,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#fff",
   },
+  // Wraps at large font sizes instead of pushing the last chips off screen (#51).
   filterContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    rowGap: 8,
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,

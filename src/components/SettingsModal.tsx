@@ -607,10 +607,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
   },
+  // Label and value share the row and wrap at large font sizes instead of clipping (#51).
   statLabel: {
+    flex: 1,
     fontSize: 13,
+    marginRight: 12,
   },
   statValue: {
+    flexShrink: 1,
+    maxWidth: "50%",
+    textAlign: "right",
     fontSize: 14,
     fontWeight: "700",
   },
