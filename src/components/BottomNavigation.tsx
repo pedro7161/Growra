@@ -162,6 +162,9 @@ function NavSlot({
         ]}
         onPress={onPress}
         disabled={disabled}
+        accessibilityRole="tab"
+        accessibilityLabel={label}
+        accessibilityState={{ selected: active, disabled }}
       >
         <Ionicons
           name={active ? icon.active : icon.idle}

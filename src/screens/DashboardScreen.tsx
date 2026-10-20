@@ -211,6 +211,10 @@ export default function DashboardScreen({
                     style={[styles.checkbox, { borderColor: theme.border }]}
                     onPress={() => onCompleteTask(task.id)}
                     disabled={tutorialLocked}
+                    hitSlop={10}
+                    accessibilityRole="checkbox"
+                    accessibilityLabel={task.name}
+                    accessibilityState={{ checked: false, disabled: tutorialLocked }}
                   />
                   <View style={styles.todayTaskContent}>
                     <Text style={[styles.taskName, { color: theme.text }]}>

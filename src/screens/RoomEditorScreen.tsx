@@ -192,7 +192,13 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
 
         <View style={styles.toolbar}>
           {toolbar.map((action) => (
-            <TouchableOpacity key={action.label} style={[styles.tool, { backgroundColor: theme.surface }]} onPress={action.onPress}>
+            <TouchableOpacity
+              key={action.label}
+              style={[styles.tool, { backgroundColor: theme.surface }]}
+              onPress={action.onPress}
+              hitSlop={6}
+              accessibilityRole="button"
+            >
               <Text style={[styles.toolText, { color: theme.text }]}>{action.label}</Text>
             </TouchableOpacity>
           ))}
