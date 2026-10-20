@@ -221,3 +221,68 @@ describe('review fixes', () => {
     expect(getRoomBag(undone)).toHaveLength(0);
   });
 });
+
+describe('room small fixes (#42)', () => {
+  const rooms = require('../src/utils/rooms');
+  const journey = require('../src/utils/journey');
+  const { getNextSeasonStartMonth } = require('../src/utils/roomCatalog');
+  const { createInitialGameState } = require('../src/utils/initialState');
+  const { createCompanion } = require('../src/utils/gameplay');
+
+  const withRoom = () => {
+    const pet = { ...createCompanion('sprout'), id: 'pet1' };
+    const base = createInitialGameState();
+    return rooms.syncRooms({ ...base, pets: [pet], equippedPetId: 'pet1' });
+  };
+
+  it('a move to the same spot, a same-name rename or the same style changes nothing', () => {
+    let state = withRoom();
+    const room = state.rooms[0];
+    state = rooms.addCompanionToRoom(state, room.id, 'pet1');
+    const item = state.rooms[0].items[0];
+    expect(rooms.moveRoomItem(state, room.id, item.id, item.x, item.y)).toBe(state);
+    expect(rooms.resizeRoomItem(state, room.id, item.id, item.scale)).toBe(state);
+    expect(rooms.renameRoom(state, room.id, state.rooms[0].name)).toBe(state);
+    expect(rooms.setRoomStyle(state, room.id, state.rooms[0].styleId)).toBe(state);
+    expect(rooms.moveRoomItem(state, room.id, item.id, 0.2, 0.3)).not.toBe(state);
+  });
+
+  it('placeDecoration refuses furniture and an item that sits in a room', () => {
+    const base = createInitialGameState();
+    const state = {
+      ...base,
+      days: Array.from({ length: 8 }, (_, index) => ({ ...journey.createDayRecord(new Date(2026, 0, index + 1).getTime()), done: 1 })),
+      decorations: [
+        { id: 'bed1', typeId: 'bed', camp: -1, spot: -1 },
+        { id: 'roomed', typeId: 'flower-pot', camp: -1, spot: -1, roomId: 'r1' },
+        { id: 'free', typeId: 'flower-pot', camp: -1, spot: -1 },
+      ],
+    };
+    expect(journey.getRoadPosition(state.days).campsReached).toBeGreaterThan(0);
+    expect(journey.placeDecoration(state, 'free', 0, 0)).not.toBe(state);
+    expect(journey.placeDecoration(state, 'bed1', 0, 0)).toBe(state);
+    expect(journey.placeDecoration(state, 'roomed', 0, 0)).toBe(state);
+  });
+
+  it('drops a second item for the same decoration in a broken save', () => {
+    const state = withRoom();
+    const room = state.rooms[0];
+    const decoration = { id: 'd1', typeId: 'bed', camp: -1, spot: -1, roomId: room.id };
+    const twice = {
+      ...state,
+      decorations: [decoration],
+      rooms: [{ ...room, items: [
+        { id: 'a', kind: 'decoration', ref: 'd1', x: 0.5, y: 0.5, scale: 1, flip: false },
+        { id: 'b', kind: 'decoration', ref: 'd1', x: 0.4, y: 0.5, scale: 1, flip: false },
+      ] }],
+    };
+    expect(rooms.syncRooms(twice).rooms[0].items.map((item: { id: string }) => item.id)).toEqual(['a']);
+  });
+
+  it("'Returns in' uses next year's Easter once this year's window is over", () => {
+    // Easter 2027 is 28 March (window from 21 March); Easter 2028 is 16 April (window from 9 April).
+    expect(getNextSeasonStartMonth('easter', new Date(2027, 1, 1).getTime())).toBe(2);
+    expect(getNextSeasonStartMonth('easter', new Date(2027, 9, 20).getTime())).toBe(3);
+    expect(getNextSeasonStartMonth('halloween', new Date(2026, 11, 1).getTime())).toBe(9);
+  });
+});
