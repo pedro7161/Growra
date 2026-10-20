@@ -153,3 +153,32 @@ describe('companions', () => {
     expect(next.pets.map((pet) => pet.templateId)).toContain('ripple');
   });
 });
+
+describe('getEffectiveStreak (#40)', () => {
+  const { getEffectiveStreak, calculateUpdatedStreak } = require('../src/utils/gameplay');
+  const day = 24 * 60 * 60 * 1000;
+  const start = new Date(2026, 9, 10, 12).getTime();
+  const streak = { level: 5, bonus: 0.25, lastCompletedDate: new Date(2026, 9, 10).getTime(), consecutiveMisses: 0 };
+
+  it('is unchanged on the day of the last completion and the day after', () => {
+    expect(getEffectiveStreak(streak, start)).toBe(streak);
+    expect(getEffectiveStreak(streak, start + day)).toBe(streak);
+  });
+
+  it('drops for a missed day without waiting for the next completion', () => {
+    const effective = getEffectiveStreak(streak, start + 2 * day);
+    expect(effective.level).toBe(4);
+    expect(effective.bonus).toBeLessThan(streak.bonus);
+  });
+
+  it('agrees with the completion path after a gap, minus the completion itself', () => {
+    for (const gap of [2, 3, 4, 6]) {
+      const now = start + gap * day;
+      expect(getEffectiveStreak(streak, now).level).toBe(calculateUpdatedStreak(streak, now).level);
+    }
+  });
+
+  it('resets to level 1 after three or more missed days', () => {
+    expect(getEffectiveStreak(streak, start + 4 * day).level).toBe(1);
+  });
+});

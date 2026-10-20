@@ -27,7 +27,7 @@ import {
     getCompanionMood,
     getPerkStreakBonus,
 } from "../utils/companions";
-import { getLevelProgress, PLAYER_LEVEL_BASE_COST } from "../utils/gameplay";
+import { getEffectiveStreak, getLevelProgress, PLAYER_LEVEL_BASE_COST } from "../utils/gameplay";
 import { getRoadPosition } from "../utils/journey";
 import { taskCategoryLabel } from "../utils/taskLabels";
 import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
@@ -75,7 +75,7 @@ export default function DashboardScreen({
     (task) => task.predefinedTaskId,
   ).length;
   const streakBonus =
-    gameState.streak.bonus + getPerkStreakBonus(getActiveStyle(gameState));
+    getEffectiveStreak(gameState.streak, Date.now()).bonus + getPerkStreakBonus(getActiveStyle(gameState));
   const activeMultiplier = equippedPet
     ? (1 + streakBonus) * (1 + equippedPet.taskMultiplier)
     : 1 + streakBonus;
