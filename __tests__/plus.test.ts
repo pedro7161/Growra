@@ -46,3 +46,16 @@ describe('journey look-back gate', () => {
     expect(isLookBackVisible(0, 20, true)).toBe(true);
   });
 });
+
+describe('withResolvedTheme (#43)', () => {
+  const { withResolvedTheme } = require('../src/utils/plus');
+  const { createInitialGameState } = require('../src/utils/initialState');
+
+  it('gives child screens Mint when a Plus theme is saved without Plus', () => {
+    const base = createInitialGameState();
+    const saved = { ...base, settings: { ...base.settings, theme: 'dusk' }, plus: { ...base.plus, owned: false } };
+    expect(withResolvedTheme(saved).settings.theme).toBe('mint');
+    const owned = { ...saved, plus: { ...saved.plus, owned: true } };
+    expect(withResolvedTheme(owned)).toBe(owned);
+  });
+});
