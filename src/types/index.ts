@@ -36,6 +36,12 @@ export interface TimerAlertSettings {
   soundUri: string;
 }
 
+export interface DailyReminderSettings {
+  enabled: boolean;
+  hour: number; // 0-23, local time
+  minute: number; // 0 or 30
+}
+
 export interface AppSettings {
   language: AppLanguage;
   theme: AppThemeId;
@@ -44,6 +50,8 @@ export interface AppSettings {
   confirmExit: boolean;
   /** Search and quick add rows on the Tasks screen are shown (the player can fold them away). */
   taskToolsOpen: boolean;
+  /** One optional reminder a day (#39); off unless the player turns it on. */
+  dailyReminder: DailyReminderSettings;
   musicEnabled: boolean;
   sfxEnabled: boolean;
   timerAlert: TimerAlertSettings;

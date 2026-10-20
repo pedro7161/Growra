@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { appThemes, getAppTheme, themeName } from "../constants/appTheme";
 import { getChangelog } from "../constants/changelog";
-import { AppAppearance, AppLanguage, AppThemeId, GameState, TimerAlertMode } from "../types";
+import { AppAppearance, AppLanguage, AppThemeId, DailyReminderSettings, GameState, TimerAlertMode } from "../types";
 import { getGameStatsSummary } from "../utils/settings";
 import { isPlusTheme } from "../utils/plus";
 import { openStoreListing } from "../services/reviewService";
@@ -33,6 +33,7 @@ interface SettingsModalProps {
   onAppearanceChange: (appearance: AppAppearance) => void;
   onAudioPreferenceChange: (key: "musicEnabled" | "sfxEnabled", enabled: boolean) => void;
   onConfirmExitChange: (enabled: boolean) => void;
+  onDailyReminderChange: (reminder: DailyReminderSettings) => void;
   onReplayTutorial: () => void;
   onTimerAlertModeChange: (mode: TimerAlertMode) => void;
   onPickTimerAlertSound: () => Promise<void>;
@@ -55,6 +56,7 @@ export default function SettingsModal({
   onThemeChange,
   onAppearanceChange,
   onConfirmExitChange,
+  onDailyReminderChange,
   onReplayTutorial,
   onAudioPreferenceChange,
   onTimerAlertModeChange,
@@ -72,6 +74,7 @@ export default function SettingsModal({
   const theme = getAppTheme(gameState.settings.theme);
   const changelog = getChangelog(gameState.settings.language);
   const stats = getGameStatsSummary(gameState);
+  const reminder = gameState.settings.dailyReminder;
   const [backupCode, setBackupCode] = useState("");
   const [changelogVisible, setChangelogVisible] = useState(false);
 
@@ -260,6 +263,48 @@ export default function SettingsModal({
           </View>
 
           <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsReminder}</Text>
+            <Text style={[styles.helpText, { color: theme.mutedText }]}>{copy.settingsReminderHelp}</Text>
+            <View style={styles.optionRow}>
+              <OptionButton
+                label={copy.settingsOn}
+                active={reminder.enabled}
+                onPress={() => onDailyReminderChange({ ...reminder, enabled: true })}
+                themeId={theme.id}
+              />
+              <OptionButton
+                label={copy.settingsOff}
+                active={!reminder.enabled}
+                onPress={() => onDailyReminderChange({ ...reminder, enabled: false })}
+                themeId={theme.id}
+              />
+            </View>
+            {reminder.enabled && (
+              <View style={styles.reminderTimeRow}>
+                <TouchableOpacity
+                  style={[styles.reminderStep, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}
+                  onPress={() => onDailyReminderChange(stepReminder(reminder, -30))}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={copy.settingsReminderEarlier}
+                >
+                  <Text style={[styles.reminderStepText, { color: theme.text }]}>−</Text>
+                </TouchableOpacity>
+                <Text style={[styles.reminderTime, { color: theme.text }]}>{formatReminderTime(reminder)}</Text>
+                <TouchableOpacity
+                  style={[styles.reminderStep, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}
+                  onPress={() => onDailyReminderChange(stepReminder(reminder, 30))}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={copy.settingsReminderLater}
+                >
+                  <Text style={[styles.reminderStepText, { color: theme.text }]}>+</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsTimerAlert}</Text>
             <View style={styles.optionRow}>
               <OptionButton
@@ -437,6 +482,16 @@ function OptionButton({
   );
 }
 
+/** Moves the reminder by `deltaMinutes`, wrapping around midnight. */
+function stepReminder(reminder: DailyReminderSettings, deltaMinutes: number): DailyReminderSettings {
+  const total = (((reminder.hour * 60 + reminder.minute + deltaMinutes) % 1440) + 1440) % 1440;
+  return { ...reminder, hour: Math.floor(total / 60), minute: total % 60 };
+}
+
+function formatReminderTime(reminder: DailyReminderSettings): string {
+  return `${String(reminder.hour).padStart(2, "0")}:${String(reminder.minute).padStart(2, "0")}`;
+}
+
 function StatRow({
   label,
   value,
@@ -457,6 +512,10 @@ function StatRow({
 }
 
 const styles = StyleSheet.create({
+  reminderTimeRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 12 },
+  reminderStep: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  reminderStepText: { fontSize: 22, fontWeight: "700" },
+  reminderTime: { fontSize: 22, fontWeight: "700", minWidth: 80, textAlign: "center" },
   privacyLink: {
     fontSize: 14,
     fontWeight: "600",

@@ -61,6 +61,12 @@
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#1f7a73"
+        }
       ]
     ],
     "experiments": {
