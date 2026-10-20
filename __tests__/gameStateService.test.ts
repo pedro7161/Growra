@@ -241,3 +241,22 @@ describe('save versioning (#50)', () => {
     expect(await AsyncStorage.getItem(snapshots[0])).toBe(await AsyncStorage.getItem('growra_save_data'));
   });
 });
+
+describe('daily reminder setting (#39)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('is off at 20:00 for saves from before the reminder, and keeps a valid stored one', async () => {
+    const old = createSaveData(createInitialGameState());
+    const { dailyReminder: _gone, ...settings } = old.gameState.settings;
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify({ ...old, gameState: { ...old.gameState, settings } }));
+    const loaded = await gameStateService.loadGame();
+    expect(loaded.status === 'loaded' && loaded.saveData.gameState.settings.dailyReminder).toEqual({ enabled: false, hour: 20, minute: 0 });
+
+    const stored = { ...old, gameState: { ...old.gameState, settings: { ...old.gameState.settings, dailyReminder: { enabled: true, hour: 7, minute: 30 } } } };
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify(stored));
+    const again = await gameStateService.loadGame();
+    expect(again.status === 'loaded' && again.saveData.gameState.settings.dailyReminder).toEqual({ enabled: true, hour: 7, minute: 30 });
+  });
+});

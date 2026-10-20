@@ -294,6 +294,17 @@ interface AppCopy {
   settingsAppSounds: string;
   tasksConfirmDelete: string;
   settingsConfirmExit: string;
+  notifyTimerTitle: string;
+  notifyTimerBody: string;
+  notifyTimerChannel: string;
+  reminderTitle: string;
+  reminderBody: string;
+  reminderChannel: string;
+  settingsReminder: string;
+  settingsReminderHelp: string;
+  settingsReminderDenied: string;
+  settingsReminderEarlier: string;
+  settingsReminderLater: string;
   settingsOn: string;
   settingsOff: string;
   exitTitle: string;
@@ -685,6 +696,17 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsAppSounds: "App sounds",
     tasksConfirmDelete: "Confirm delete",
     settingsConfirmExit: "Ask before leaving the app",
+    notifyTimerTitle: "Time's up",
+    notifyTimerBody: "The timer for “{task}” has finished.",
+    notifyTimerChannel: "Task timers",
+    reminderTitle: "Growra",
+    reminderBody: "Your tasks are waiting whenever you're ready.",
+    reminderChannel: "Daily reminder",
+    settingsReminder: "Daily reminder",
+    settingsReminderHelp: "One gentle reminder a day, at the time you pick. Off unless you turn it on.",
+    settingsReminderDenied: "Notifications are turned off for Growra. Turn them on in your phone's settings to get the reminder.",
+    settingsReminderEarlier: "Earlier",
+    settingsReminderLater: "Later",
     settingsOn: "On",
     settingsOff: "Off",
     exitTitle: "Leave Growra?",
@@ -1153,6 +1175,17 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsAppSounds: "Sons da aplicação",
     tasksConfirmDelete: "Confirmar eliminação",
     settingsConfirmExit: "Perguntar antes de sair da app",
+    notifyTimerTitle: "Tempo esgotado",
+    notifyTimerBody: "O temporizador de “{task}” terminou.",
+    notifyTimerChannel: "Temporizadores das tarefas",
+    reminderTitle: "Growra",
+    reminderBody: "As tuas tarefas estão à tua espera quando quiseres.",
+    reminderChannel: "Lembrete diário",
+    settingsReminder: "Lembrete diário",
+    settingsReminderHelp: "Um lembrete suave por dia, à hora que escolheres. Desligado a não ser que o ligues.",
+    settingsReminderDenied: "As notificações do Growra estão desligadas. Liga-as nas definições do telemóvel para receberes o lembrete.",
+    settingsReminderEarlier: "Mais cedo",
+    settingsReminderLater: "Mais tarde",
     settingsOn: "Ligado",
     settingsOff: "Desligado",
     exitTitle: "Sair do Growra?",

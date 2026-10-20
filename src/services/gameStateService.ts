@@ -55,6 +55,17 @@ export class NewerSaveError extends Error {
   }
 }
 
+function normalizeDailyReminder(value: unknown): AppSettings["dailyReminder"] {
+  const stored = isObject(value) ? value : {};
+  const hour = Number(stored.hour);
+  const minute = Number(stored.minute);
+  return {
+    enabled: stored.enabled === true,
+    hour: Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : defaultSettings.dailyReminder.hour,
+    minute: minute === 30 ? 30 : 0,
+  };
+}
+
 function savedVersion(data: unknown): number {
   const version = isObject(data) ? data.version : undefined;
   return typeof version === "number" && Number.isFinite(version) ? version : 0;
@@ -367,6 +378,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
           : "system",
       confirmExit: storedSettings.confirmExit !== false,
       taskToolsOpen: storedSettings.taskToolsOpen !== false,
+      dailyReminder: normalizeDailyReminder(storedSettings.dailyReminder),
       musicEnabled: storedSettings.musicEnabled === true,
       sfxEnabled: storedSettings.sfxEnabled === true,
       timerAlert,

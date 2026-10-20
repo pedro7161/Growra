@@ -23,6 +23,7 @@ export const defaultSettings: AppSettings = {
   appearance: "system",
   confirmExit: true,
   taskToolsOpen: true,
+  dailyReminder: { enabled: false, hour: 20, minute: 0 },
   musicEnabled: false,
   sfxEnabled: false,
   timerAlert: defaultTimerAlertSettings,

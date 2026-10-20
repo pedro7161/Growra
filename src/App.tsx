@@ -42,6 +42,7 @@ import TaskCalendarScreen from "./screens/TaskCalendarScreen";
 import TasksScreen from "./screens/TasksScreen";
 import { gameStateService } from "./services/gameStateService";
 import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/reviewService";
+import { ensureNotificationPermission, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
 import {
   AppLanguage,
   AppAppearance,
@@ -107,6 +108,23 @@ function companionAudioCueFor(events: GameState["companionEvents"]): CompanionAu
 
 function newCompanionAudioCue(before: GameState, after: GameState): CompanionAudioCue | null {
   return companionAudioCueFor(after.companionEvents.slice(before.companionEvents.length));
+}
+
+/** Keeps scheduled notifications in line with the state: running timers (#38), the daily reminder (#39). */
+function syncNotifications(state: GameState, reminderToo = false) {
+  const copy = getAppCopy(state.settings.language);
+  void syncTimerNotifications(
+    state.tasks,
+    { title: copy.notifyTimerTitle, body: copy.notifyTimerBody, channelName: copy.notifyTimerChannel },
+    copy.reminderChannel,
+  );
+  if (reminderToo) {
+    void syncDailyReminder(
+      state.settings.dailyReminder,
+      { title: copy.reminderTitle, body: copy.reminderBody, channelName: copy.reminderChannel },
+      copy.notifyTimerChannel,
+    );
+  }
 }
 
 export default function App() {
@@ -288,6 +306,7 @@ export default function App() {
 
     gameStateRef.current = resolvedGameState;
     setGameState(resolvedGameState);
+    syncNotifications(resolvedGameState, true);
     if (!resolvedGameState.tutorialCompleted) {
       // Brand-new players get the welcome card first; anyone mid-tutorial goes straight back to it.
       if (resolvedGameState.tasks.length === 0) setTutorialCard("welcome");
@@ -303,6 +322,7 @@ export default function App() {
     gameStateRef.current = syncedGameState;
     setGameState(syncedGameState);
     const saved = await gameStateService.saveGame(createSaveData(syncedGameState));
+    syncNotifications(syncedGameState);
     // One warning per minute: a full phone fails every write, and an alert per tap would be worse.
     if (!saved && Date.now() - lastSaveWarningRef.current > 60_000) {
       lastSaveWarningRef.current = Date.now();
@@ -428,6 +448,8 @@ export default function App() {
   };
 
   const handleStartTimer = async (taskId: string) => {
+    // The first timer start is the moment to ask; a refusal only means no background alert.
+    await ensureNotificationPermission();
     await applyTimerUpdate(taskId, startTaskTimer);
     void playGrowraCue("timer-start", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
@@ -516,6 +538,8 @@ export default function App() {
         language,
       },
     });
+    // The reminder's text is written in the language at scheduling time.
+    if (gameStateRef.current) syncNotifications(gameStateRef.current, true);
     void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
   };
 
@@ -536,6 +560,21 @@ export default function App() {
     void persistGameState(finishTutorial(current));
     void playGrowraCue("camp-milestone", current.settings.sfxEnabled);
   }, [activeScreen, gameState, tutorialVisible]);
+
+  const handleDailyReminderChange = async (dailyReminder: GameState["settings"]["dailyReminder"]) => {
+    const current = gameStateRef.current;
+    if (!current) return;
+    // Permission is asked only when the player turns the reminder on (owner decision, #39).
+    if (dailyReminder.enabled && !current.settings.dailyReminder.enabled && !(await ensureNotificationPermission())) {
+      const copy = getAppCopy(current.settings.language);
+      Alert.alert(copy.settingsReminder, copy.settingsReminderDenied);
+      return;
+    }
+    const latest = gameStateRef.current ?? current;
+    const next = { ...latest, settings: { ...latest.settings, dailyReminder } };
+    await persistGameState(next);
+    syncNotifications(next, true);
+  };
 
   const handleConfirmExitChange = async (confirmExit: boolean) => {
     const gameState = gameStateRef.current;
@@ -930,6 +969,7 @@ export default function App() {
           onThemeChange={handleThemeChange}
           onAppearanceChange={handleAppearanceChange}
           onConfirmExitChange={handleConfirmExitChange}
+          onDailyReminderChange={(reminder) => void handleDailyReminderChange(reminder)}
           onReplayTutorial={() => {
             setSettingsVisible(false);
             setTutorialCard("tour");
