@@ -491,6 +491,19 @@ export function getPetProgressionSnapshot(
   };
 }
 
+/**
+ * The streak as of `now`, before any completion today. The stored streak only changes when a task
+ * is completed, so after missed days it still shows the old bonus; screens read this instead (#40).
+ * Matches calculateUpdatedStreak's penalty for the same gap, without the completion's +1.
+ */
+export function getEffectiveStreak(streak: Streak, now: number): Streak {
+  if (streak.lastCompletedDate === 0) return streak;
+  const missedDays = getCalendarDayDifference(streak.lastCompletedDate, now) - 1;
+  if (missedDays <= 0) return streak;
+  const level = missedDays >= 3 ? 1 : Math.max(streak.level - missedDays, 1);
+  return level === streak.level ? streak : { ...streak, level, bonus: getBonusFromLevel(level) };
+}
+
 export function calculateUpdatedStreak(
   streak: Streak,
   completedAt: number,
