@@ -312,7 +312,14 @@ export function placeDecoration(
     camp >= campsReached ||
     spot < 0 ||
     spot >= SPOTS_PER_CAMP ||
-    !gameState.decorations.some((decoration) => decoration.id === decorationId)
+    // Furniture only goes in rooms, and an item in a room stays there until it's taken out (#42);
+    // the screens filter these too, but the rule lives here so no caller can break it.
+    !gameState.decorations.some(
+      (decoration) =>
+        decoration.id === decorationId &&
+        decoration.roomId === undefined &&
+        getDecorationType(decoration.typeId)?.category !== "furniture",
+    )
   ) {
     return gameState;
   }
