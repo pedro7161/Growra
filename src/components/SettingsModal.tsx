@@ -35,7 +35,8 @@ interface SettingsModalProps {
   onPickTimerAlertSound: () => Promise<void>;
   onClearTimerAlertSound: () => Promise<void>;
   onExportData: () => Promise<string>;
-  onImportData: (backupCode: string) => Promise<void>;
+  /** Resolves false when the imported save couldn't be written (the app has already said so). */
+  onImportData: (backupCode: string) => Promise<boolean>;
   isPlus: boolean;
   onOpenPlus: () => void;
   onExportCsv: () => Promise<void>;
@@ -79,8 +80,9 @@ export default function SettingsModal({
 
   const handleImport = async () => {
     try {
-      await onImportData(backupCode);
-      Alert.alert(copy.settingsTitle, copy.settingsBackupImported);
+      if (await onImportData(backupCode)) {
+        Alert.alert(copy.settingsTitle, copy.settingsBackupImported);
+      }
     } catch {
       Alert.alert(copy.settingsTitle, copy.settingsBackupInvalid);
     }

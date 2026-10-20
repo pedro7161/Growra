@@ -41,6 +41,50 @@ const CONSUMABLE_TO_COINS = 10;
 
 const SAVE_KEY = "growra_save_data";
 const CORRUPT_SAVE_KEY_PREFIX = "growra_save_data_corrupt_";
+/** Unreadable saves kept for recovery; older copies are dropped so they don't pile up. */
+const MAX_CORRUPT_SAVES = 2;
+
+const ARRAY_FIELDS = [
+  "tasks",
+  "customTaskTemplates",
+  "pets",
+  "companionEvents",
+  "notices",
+  "days",
+  "decorations",
+  "rooms",
+  "ownedRoomStyles",
+] as const;
+const NUMBER_FIELDS = ["level", "coins", "totalExperience", "totalTasksCompleted", "createdAt", "lastPlayedAt"] as const;
+const OBJECT_FIELDS = ["settings", "usage", "streak", "plus", "explore"] as const;
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/**
+ * True when a (migrated) save has the shape the app renders from. A checksum only proves a backup
+ * code wasn't truncated; this keeps a structurally broken payload from becoming live state.
+ */
+export function isValidSaveShape(saveData: unknown): saveData is SaveData {
+  if (!isObject(saveData) || !isObject(saveData.gameState)) return false;
+  const gameState = saveData.gameState;
+  return (
+    ARRAY_FIELDS.every((field) => Array.isArray(gameState[field])) &&
+    NUMBER_FIELDS.every((field) => typeof gameState[field] === "number" && Number.isFinite(gameState[field])) &&
+    OBJECT_FIELDS.every((field) => isObject(gameState[field])) &&
+    typeof (gameState.settings as Record<string, unknown>).language === "string"
+  );
+}
+
+/** Keeps only the newest MAX_CORRUPT_SAVES copies (the key suffix is the time it was stashed). */
+async function pruneCorruptSaves(): Promise<void> {
+  const keys = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith(CORRUPT_SAVE_KEY_PREFIX));
+  const newestFirst = [...keys].sort(
+    (left, right) => Number(right.slice(CORRUPT_SAVE_KEY_PREFIX.length)) - Number(left.slice(CORRUPT_SAVE_KEY_PREFIX.length)),
+  );
+  const stale = newestFirst.slice(MAX_CORRUPT_SAVES);
+  if (stale.length > 0) await AsyncStorage.multiRemove(stale);
+}
 
 export type LoadResult =
   | { status: "empty" }
@@ -395,7 +439,13 @@ function parseBackupCode(backupCode: string): SaveData {
   }
 
   const parsedSaveData: PersistedSaveData = JSON.parse(serializedSaveData);
-  return migrateSaveData(parsedSaveData);
+  const saveData = migrateSaveData(parsedSaveData);
+
+  if (!isValidSaveShape(saveData)) {
+    throw new Error("Invalid backup contents");
+  }
+
+  return saveData;
 }
 
 export const gameStateService = {
@@ -407,22 +457,61 @@ export const gameStateService = {
 
     try {
       const parsedData: PersistedSaveData = JSON.parse(data);
-      return { status: "loaded", saveData: migrateSaveData(parsedData) };
+      const saveData = migrateSaveData(parsedData);
+      if (!isValidSaveShape(saveData)) {
+        throw new Error("Save has an invalid shape");
+      }
+      return { status: "loaded", saveData };
     } catch (error) {
       // Keep the unreadable save under its own key before anything can overwrite SAVE_KEY,
       // so a later version (or a manual fix) can still recover the player's progress.
       console.error("Failed to load game:", error);
       const backupKey = `${CORRUPT_SAVE_KEY_PREFIX}${Date.now()}`;
       await AsyncStorage.setItem(backupKey, data);
+      await pruneCorruptSaves();
       return { status: "corrupt", backupKey };
     }
   },
 
-  async saveGame(saveData: SaveData): Promise<void> {
+  /** Writes the save; resolves false (instead of failing silently) when the write didn't happen. */
+  async saveGame(saveData: SaveData): Promise<boolean> {
     try {
       await AsyncStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+      return true;
     } catch (error) {
       console.error("Failed to save game:", error);
+      return false;
+    }
+  },
+
+  /** The raw text of a stashed unreadable save, so the player can send it for recovery. */
+  async readCorruptSave(backupKey: string): Promise<string | null> {
+    return AsyncStorage.getItem(backupKey);
+  },
+
+  /**
+   * What the crash screen offers to share: a backup code when the stored save still reads,
+   * otherwise its raw text. Null when there is nothing stored.
+   */
+  async readStoredSaveForSharing(): Promise<string | null> {
+    const data = await AsyncStorage.getItem(SAVE_KEY);
+    if (!data) return null;
+    try {
+      const saveData = migrateSaveData(JSON.parse(data) as PersistedSaveData);
+      return isValidSaveShape(saveData) ? createBackupCode(saveData) : data;
+    } catch {
+      return data;
+    }
+  },
+
+  /** The language stored in the save, for screens shown before (or without) the game state. */
+  async readStoredLanguage(): Promise<string | null> {
+    try {
+      const data = await AsyncStorage.getItem(SAVE_KEY);
+      const language = data ? (JSON.parse(data) as { gameState?: { settings?: { language?: unknown } } }).gameState?.settings?.language : null;
+      return typeof language === "string" ? language : null;
+    } catch {
+      return null;
     }
   },
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, AppState, BackHandler, StyleSheet, useColorScheme, View } from "react-native";
+import { Alert, AppState, BackHandler, Share, StyleSheet, useColorScheme, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
@@ -119,6 +119,7 @@ export default function App() {
   // Latest state for event handlers. Reading `gameState` from the render closure lets two
   // quick taps both act on the same old state (e.g. completing one task twice).
   const gameStateRef = useRef<GameState | null>(null);
+  const lastSaveWarningRef = useRef(0);
   const [loading, setLoading] = useState(true);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [tutorialVisible, setTutorialVisible] = useState(false);
@@ -239,14 +240,21 @@ export default function App() {
       await gameStateService.saveGame(createSaveData(syncedGameState));
       resolvedGameState = syncedGameState;
     } else {
-      if (loadResult.status === "corrupt") {
-        Alert.alert(
-          "Save could not be loaded",
-          "Your previous progress couldn't be read, so a new game was started. " +
-            "A copy of the old save was kept on this device and can still be recovered.",
-        );
-      }
       const newGameState = createInitialGameState();
+      if (loadResult.status === "corrupt") {
+        const copy = getAppCopy(newGameState.settings.language);
+        const { backupKey } = loadResult;
+        Alert.alert(copy.saveCorruptTitle, copy.saveCorruptBody, [
+          {
+            text: copy.saveCorruptShare,
+            onPress: () =>
+              void gameStateService.readCorruptSave(backupKey).then((data) => {
+                if (data) void Share.share({ message: data }).catch(() => undefined);
+              }),
+          },
+          { text: "OK" },
+        ]);
+      }
       await gameStateService.saveGame(createSaveData(newGameState));
       resolvedGameState = newGameState;
     }
@@ -282,11 +290,19 @@ export default function App() {
     setLoading(false);
   };
 
-  const persistGameState = async (nextGameState: GameState) => {
+  /** Applies and saves the next state; resolves false (after telling the player) when the write failed. */
+  const persistGameState = async (nextGameState: GameState): Promise<boolean> => {
     const syncedGameState = syncRooms(applyFirstTaskReward(syncRecurringTasks(nextGameState)));
     gameStateRef.current = syncedGameState;
     setGameState(syncedGameState);
-    await gameStateService.saveGame(createSaveData(syncedGameState));
+    const saved = await gameStateService.saveGame(createSaveData(syncedGameState));
+    // One warning per minute: a full phone fails every write, and an alert per tap would be worse.
+    if (!saved && Date.now() - lastSaveWarningRef.current > 60_000) {
+      lastSaveWarningRef.current = Date.now();
+      const copy = getAppCopy(syncedGameState.settings.language);
+      Alert.alert(copy.saveFailedTitle, copy.saveFailedBody);
+    }
+    return saved;
   };
 
   const handleAddTask = async (
@@ -720,9 +736,12 @@ export default function App() {
     const importedSaveData = gameStateService.importSaveCode(backupCode);
     const current = gameStateRef.current;
     // Plus ownership belongs to this device's Play account, never to a backup code.
-    await persistGameState(current ? keepPlusOnImport(importedSaveData.gameState, current) : importedSaveData.gameState);
+    const saved = await persistGameState(
+      current ? keepPlusOnImport(importedSaveData.gameState, current) : importedSaveData.gameState,
+    );
     playUiTap();
     void plus.restore();
+    return saved;
   };
 
   if (loading || !gameState) {
