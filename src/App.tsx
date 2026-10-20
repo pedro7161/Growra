@@ -18,7 +18,7 @@ import { getExploreLeft, grantExploreFind } from "./utils/explore";
 import { getActiveCompanion } from "./utils/companions";
 import { syncRooms } from "./utils/rooms";
 import { buildRoomShareMessage, shareRoomPicture } from "./utils/roomShare";
-import { resolveTheme } from "./utils/plus";
+import { resolveTheme, withResolvedTheme } from "./utils/plus";
 import { buildCompletionsCsv, buildTasksCsv } from "./utils/historyCsv";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
@@ -654,7 +654,7 @@ export default function App() {
       if (!before.plus.owned) {
         const result = await adsService.watchForReward();
         if (result !== "earned") {
-          if (result === "unavailable") Alert.alert(copy.plusTitle, copy.exploreNoAd);
+          if (result === "unavailable") Alert.alert("🧭", copy.exploreNoAd);
           return;
         }
       }
@@ -716,12 +716,27 @@ export default function App() {
   const handleExportCsv = async () => {
     const current = gameStateRef.current;
     if (!current?.plus.owned) return;
-    const tasksFile = new File(Paths.cache, "growra-tasks.csv");
-    const completionsFile = new File(Paths.cache, "growra-completions.csv");
-    tasksFile.write(buildTasksCsv(current.tasks));
-    completionsFile.write(buildCompletionsCsv(current.days));
-    await Sharing.shareAsync(tasksFile.uri, { mimeType: "text/csv", dialogTitle: "growra-tasks.csv" });
-    await Sharing.shareAsync(completionsFile.uri, { mimeType: "text/csv", dialogTitle: "growra-completions.csv" });
+    const copy = getAppCopy(current.settings.language);
+    // One share sheet per tap: the player picks which file, instead of a second sheet
+    // opening as soon as the first closes.
+    const share = async (name: string, contents: string) => {
+      try {
+        const file = new File(Paths.cache, name);
+        file.write(contents);
+        await Sharing.shareAsync(file.uri, { mimeType: "text/csv", dialogTitle: name });
+      } catch (error) {
+        console.error("CSV export failed:", error);
+        Alert.alert(copy.settingsExportCsv, copy.csvExportError);
+      }
+    };
+    Alert.alert(copy.settingsExportCsv, copy.csvExportChoose, [
+      { text: copy.csvExportTasks, onPress: () => void share("growra-tasks.csv", buildTasksCsv(current.tasks)) },
+      {
+        text: copy.csvExportCompletions,
+        onPress: () => void share("growra-completions.csv", buildCompletionsCsv(current.days)),
+      },
+      { text: copy.addTaskCancel, style: "cancel" },
+    ]);
   };
 
   const handleExportData = async (): Promise<string> => {
@@ -750,13 +765,14 @@ export default function App() {
 
   const isPlus = gameState.plus.owned;
   const appTheme = getAppTheme(resolveTheme(gameState.settings.theme, isPlus));
+  const viewState = withResolvedTheme(gameState);
 
   const renderScreen = () => {
     switch (activeScreen) {
       case "dashboard":
         return (
           <DashboardScreen
-            gameState={gameState}
+            gameState={viewState}
             tutorialLocked={tutorialStep !== "done"}
             onAddTask={handleAddTask}
             onCompleteTask={handleCompleteTask}
@@ -774,7 +790,7 @@ export default function App() {
       case "tasks":
         return (
           <TasksScreen
-            settings={gameState.settings}
+            settings={viewState.settings}
             tasks={gameState.tasks}
             customTaskTemplates={gameState.customTaskTemplates}
             tutorialTarget={
@@ -805,7 +821,7 @@ export default function App() {
       case "task-calendar":
         return (
           <TaskCalendarScreen
-            settings={gameState.settings}
+            settings={viewState.settings}
             tasks={gameState.tasks}
             onBack={() => handleNavigate("tasks")}
           />
@@ -813,8 +829,8 @@ export default function App() {
       case "journey":
         return (
           <JourneyScreen
-            gameState={gameState}
-            settings={gameState.settings}
+            gameState={viewState}
+            settings={viewState.settings}
             onBuyDecoration={handleBuyDecoration}
             onPlaceDecoration={handlePlaceDecoration}
             onRemoveDecoration={handleRemoveDecoration}
@@ -828,8 +844,8 @@ export default function App() {
       case "companions":
         return (
           <CompanionsScreen
-            gameState={gameState}
-            settings={gameState.settings}
+            gameState={viewState}
+            settings={viewState.settings}
             tutorialMode={tutorialStep === "choose-companion" ? "choose" : null}
             onChooseStarter={handleChooseStarter}
             onEquipPet={handleEquipPet}
@@ -860,7 +876,7 @@ export default function App() {
             activeScreen === "task-calendar" ? "tasks" : activeScreen
           }
           onNavigate={handleNavigate}
-          settings={gameState.settings}
+          settings={viewState.settings}
           tutorialTarget={
             !tutorialVisible
               ? null
@@ -878,7 +894,7 @@ export default function App() {
         />
         <SettingsModal
           visible={settingsVisible}
-          gameState={gameState}
+          gameState={viewState}
           onClose={() => {
             setSettingsVisible(false);
             playUiTap();
@@ -905,7 +921,7 @@ export default function App() {
         />
         {roomEditorId && (
           <RoomEditorScreen
-            state={gameState}
+            state={viewState}
             roomId={roomEditorId}
             onChange={(update) => {
               const current = gameStateRef.current;
@@ -922,14 +938,14 @@ export default function App() {
           />
         )}
         <UpdatePrompt
-          settings={gameState.settings}
+          settings={viewState.settings}
           state={appUpdate.state}
           progress={appUpdate.progress}
           controller={appUpdate.controller}
         />
         <GrowraPlusModal
           visible={plusVisible}
-          settings={gameState.settings}
+          settings={viewState.settings}
           isPlus={isPlus}
           price={plus.price}
           busy={plus.busy}
@@ -943,12 +959,12 @@ export default function App() {
         <TutorialOverlay
           visible={tutorialVisible && tutorialStep !== "done" && tutorialCard === null}
           step={tutorialStep}
-          settings={gameState.settings}
+          settings={viewState.settings}
           onSkip={handleSkipTutorial}
         />
         <TutorialCards
           mode={tutorialCard}
-          settings={gameState.settings}
+          settings={viewState.settings}
           onStart={() => {
             setTutorialCard(null);
             setTutorialVisible(true);
@@ -962,7 +978,7 @@ export default function App() {
         />
         <CompanionRevealModal
           visible={gameState.companionEvents.length > 0}
-          settings={gameState.settings}
+          settings={viewState.settings}
           events={gameState.companionEvents}
           pets={gameState.pets}
           onClose={handleCloseCompanionReveal}

@@ -333,6 +333,10 @@ interface AppCopy {
   plusBadge: string;
   settingsPlus: string;
   settingsExportCsv: string;
+  csvExportChoose: string;
+  csvExportTasks: string;
+  csvExportCompletions: string;
+  csvExportError: string;
   timerLabel: string;
   taskStatusPending: string;
   taskStatusCompleted: string;
@@ -649,6 +653,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     plusBadge: "Plus",
     settingsPlus: "Growra Plus",
     settingsExportCsv: "Export your history (CSV)",
+    csvExportChoose: "Which file do you want to share?",
+    csvExportTasks: "Tasks",
+    csvExportCompletions: "Completions",
+    csvExportError: "The file couldn't be created or shared. Please try again.",
     exploreButton: "Send {name} exploring",
     exploreAdHint: "Watch a short ad · {left} left today",
     explorePlusHint: "{left} left today",
@@ -1106,6 +1114,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     plusBadge: "Plus",
     settingsPlus: "Growra Plus",
     settingsExportCsv: "Exportar o teu histórico (CSV)",
+    csvExportChoose: "Que ficheiro queres partilhar?",
+    csvExportTasks: "Tarefas",
+    csvExportCompletions: "Conclusões",
+    csvExportError: "Não foi possível criar ou partilhar o ficheiro. Tenta outra vez.",
     exploreButton: "Enviar {name} a explorar",
     exploreAdHint: "Vê um anúncio curto · faltam {left} hoje",
     explorePlusHint: "faltam {left} hoje",
