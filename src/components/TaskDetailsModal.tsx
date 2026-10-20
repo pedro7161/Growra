@@ -130,7 +130,9 @@ export default function TaskDetailsModal({
                 Alert.alert(copy.addTaskTitle, copy.addTaskNameMissing);
                 return;
               }
-              onSave(draftTask);
+              // One spelling per category (#60): "Work" typed while "work" exists saves as "work",
+              // the same way the add form does.
+              onSave({ ...draftTask, category: matchExistingCategory(draftTask.category, customCategories) });
             }}
           >
             <Text style={[styles.headerAction, { color: theme.accent }]}>{copy.tasksSave}</Text>

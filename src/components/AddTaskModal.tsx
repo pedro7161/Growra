@@ -91,6 +91,8 @@ export default function AddTaskModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  // The chip to highlight: typing "Work" lights up the "work" chip, as in the details modal (#60).
+  const selectedCategory = matchExistingCategory(category, customCategories);
   const [predefinedTaskId, setPredefinedTaskId] = useState(predefinedTasks[0].id);
   const [customTemplateId, setCustomTemplateId] = useState("");
   const [type, setType] = useState<TaskType>(TaskType.CUSTOM);
@@ -368,9 +370,9 @@ export default function AddTaskModal({
                               styles.categoryChip,
                               {
                                 backgroundColor:
-                                  category === customCategory ? theme.accent : theme.surfaceMuted,
+                                  selectedCategory === customCategory ? theme.accent : theme.surfaceMuted,
                                 borderColor:
-                                  category === customCategory ? theme.accent : theme.border,
+                                  selectedCategory === customCategory ? theme.accent : theme.border,
                               },
                             ]}
                             onPress={() => {
@@ -382,7 +384,7 @@ export default function AddTaskModal({
                             <Text
                               style={[
                                 styles.categoryChipText,
-                                { color: category === customCategory ? theme.accentText : theme.mutedText },
+                                { color: selectedCategory === customCategory ? theme.accentText : theme.mutedText },
                               ]}
                             >
                               {customCategory}
