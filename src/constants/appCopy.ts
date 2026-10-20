@@ -153,6 +153,14 @@ interface AppCopy {
   saveCorruptShare: string;
   saveFailedTitle: string;
   saveFailedBody: string;
+  saveNewerTitle: string;
+  saveNewerBody: string;
+  saveNewerUpdate: string;
+  settingsBackupNewer: string;
+  importConfirmTitle: string;
+  importConfirmBody: string;
+  importConfirmReplace: string;
+  settingsBackupCopy: string;
   settingsChangelog: string;
   settingsUpdatedOn: string;
   tutorialSkip: string;
@@ -494,6 +502,14 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     saveCorruptShare: "Share old save",
     saveFailedTitle: "Progress not saved",
     saveFailedBody: "Growra couldn't save your latest change. Your phone may be out of storage; free some space so your progress is kept.",
+    saveNewerTitle: "Update Growra",
+    saveNewerBody: "Your progress was saved by a newer version of Growra. Update the app from Google Play to keep playing; nothing has been changed.",
+    saveNewerUpdate: "Open Google Play",
+    settingsBackupNewer: "This backup code comes from a newer version of Growra. Update the app, then import it again.",
+    importConfirmTitle: "Replace your progress?",
+    importConfirmBody: "Importing replaces everything in this app ({tasks} tasks, {companions} companions, {coins} coins) with the backup. Growra Plus stays as it is.",
+    importConfirmReplace: "Replace",
+    settingsBackupCopy: "Share code",
     settingsChangelog: "Changelog",
     settingsUpdatedOn: "Updated on",
     tutorialSkip: "Skip",
@@ -942,6 +958,14 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     saveCorruptShare: "Partilhar progresso antigo",
     saveFailedTitle: "Progresso não guardado",
     saveFailedBody: "O Growra não conseguiu guardar a tua última alteração. O telemóvel pode estar sem espaço; liberta algum espaço para o teu progresso ficar guardado.",
+    saveNewerTitle: "Atualiza o Growra",
+    saveNewerBody: "O teu progresso foi guardado por uma versão mais recente do Growra. Atualiza a app no Google Play para continuares; nada foi alterado.",
+    saveNewerUpdate: "Abrir o Google Play",
+    settingsBackupNewer: "Este código de backup vem de uma versão mais recente do Growra. Atualiza a app e importa-o outra vez.",
+    importConfirmTitle: "Substituir o teu progresso?",
+    importConfirmBody: "Importar substitui tudo nesta app ({tasks} tarefas, {companions} companheiros, {coins} moedas) pelo backup. O Growra Plus fica como está.",
+    importConfirmReplace: "Substituir",
+    settingsBackupCopy: "Partilhar código",
     settingsChangelog: "Registo de alterações",
     settingsUpdatedOn: "Atualizado em",
     tutorialSkip: "Saltar",

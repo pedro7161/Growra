@@ -18,6 +18,7 @@ import { AppAppearance, AppLanguage, AppThemeId, GameState, TimerAlertMode } fro
 import { getGameStatsSummary } from "../utils/settings";
 import { isPlusTheme } from "../utils/plus";
 import { openStoreListing } from "../services/reviewService";
+import { NewerSaveError } from "../services/gameStateService";
 
 const PRIVACY_POLICY_URL = "https://pedro7161.github.io/growra-website/privacy-policy.html";
 
@@ -83,8 +84,11 @@ export default function SettingsModal({
       if (await onImportData(backupCode)) {
         Alert.alert(copy.settingsTitle, copy.settingsBackupImported);
       }
-    } catch {
-      Alert.alert(copy.settingsTitle, copy.settingsBackupInvalid);
+    } catch (error) {
+      Alert.alert(
+        copy.settingsTitle,
+        error instanceof NewerSaveError ? copy.settingsBackupNewer : copy.settingsBackupInvalid,
+      );
     }
   };
 

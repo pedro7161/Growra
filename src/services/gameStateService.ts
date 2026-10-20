@@ -31,6 +31,7 @@ import {
 import { buildDaysFromTasks } from "../utils/journey";
 import { getNextAvailableDate, getStartOfDay } from "../utils/taskSchedule";
 import { defaultSettings, defaultTimerAlertSettings } from "../utils/settings";
+import { SAVE_VERSION } from "../utils/initialState";
 import { createTaskTimer } from "../utils/taskTimer";
 import { BOND_GROWTH_THRESHOLDS, createEmptyUsage } from "../utils/companions";
 
@@ -41,8 +42,23 @@ const CONSUMABLE_TO_COINS = 10;
 
 const SAVE_KEY = "growra_save_data";
 const CORRUPT_SAVE_KEY_PREFIX = "growra_save_data_corrupt_";
-/** Unreadable saves kept for recovery; older copies are dropped so they don't pile up. */
+/** The save as it was just before an import replaced it. */
+const SNAPSHOT_SAVE_KEY_PREFIX = "growra_save_data_snapshot_";
+/** Unreadable saves (and pre-import snapshots) kept for recovery; older copies are dropped. */
 const MAX_CORRUPT_SAVES = 2;
+
+/** Thrown when a save or backup was written by a newer Growra than this one. */
+export class NewerSaveError extends Error {
+  constructor(readonly version: number) {
+    super(`Save version ${version} is newer than this app (${SAVE_VERSION})`);
+    this.name = "NewerSaveError";
+  }
+}
+
+function savedVersion(data: unknown): number {
+  const version = isObject(data) ? data.version : undefined;
+  return typeof version === "number" && Number.isFinite(version) ? version : 0;
+}
 
 const ARRAY_FIELDS = [
   "tasks",
@@ -76,11 +92,11 @@ export function isValidSaveShape(saveData: unknown): saveData is SaveData {
   );
 }
 
-/** Keeps only the newest MAX_CORRUPT_SAVES copies (the key suffix is the time it was stashed). */
-async function pruneCorruptSaves(): Promise<void> {
-  const keys = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith(CORRUPT_SAVE_KEY_PREFIX));
+/** Keeps only the newest MAX_CORRUPT_SAVES copies under a prefix (the key suffix is the time it was stashed). */
+async function pruneCorruptSaves(prefix: string = CORRUPT_SAVE_KEY_PREFIX): Promise<void> {
+  const keys = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith(prefix));
   const newestFirst = [...keys].sort(
-    (left, right) => Number(right.slice(CORRUPT_SAVE_KEY_PREFIX.length)) - Number(left.slice(CORRUPT_SAVE_KEY_PREFIX.length)),
+    (left, right) => Number(right.slice(prefix.length)) - Number(left.slice(prefix.length)),
   );
   const stale = newestFirst.slice(MAX_CORRUPT_SAVES);
   if (stale.length > 0) await AsyncStorage.multiRemove(stale);
@@ -89,7 +105,8 @@ async function pruneCorruptSaves(): Promise<void> {
 export type LoadResult =
   | { status: "empty" }
   | { status: "loaded"; saveData: SaveData }
-  | { status: "corrupt"; backupKey: string };
+  | { status: "corrupt"; backupKey: string }
+  | { status: "newer"; version: number };
 const BACKUP_PREFIX = "growra-backup";
 
 type PersistedGameState = Omit<
@@ -402,7 +419,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
 
   return {
     ...saveData,
-    version: 16,
+    version: SAVE_VERSION,
     gameState: migratedGameState,
   };
 }
@@ -439,6 +456,9 @@ function parseBackupCode(backupCode: string): SaveData {
   }
 
   const parsedSaveData: PersistedSaveData = JSON.parse(serializedSaveData);
+  if (savedVersion(parsedSaveData) > SAVE_VERSION) {
+    throw new NewerSaveError(savedVersion(parsedSaveData));
+  }
   const saveData = migrateSaveData(parsedSaveData);
 
   if (!isValidSaveShape(saveData)) {
@@ -455,8 +475,20 @@ export const gameStateService = {
       return { status: "empty" };
     }
 
+    let parsedData: PersistedSaveData | undefined;
     try {
-      const parsedData: PersistedSaveData = JSON.parse(data);
+      parsedData = JSON.parse(data);
+    } catch {
+      parsedData = undefined;
+    }
+    // A newer build wrote this save: don't migrate it down (that drops what this build doesn't
+    // know) and don't overwrite it. The player updates the app instead (#50).
+    if (parsedData !== undefined && savedVersion(parsedData) > SAVE_VERSION) {
+      return { status: "newer", version: savedVersion(parsedData) };
+    }
+
+    try {
+      if (parsedData === undefined) throw new Error("Save is not valid JSON");
       const saveData = migrateSaveData(parsedData);
       if (!isValidSaveShape(saveData)) {
         throw new Error("Save has an invalid shape");
@@ -482,6 +514,14 @@ export const gameStateService = {
       console.error("Failed to save game:", error);
       return false;
     }
+  },
+
+  /** Copies the current save aside before something replaces it whole (an import). */
+  async snapshotBeforeOverwrite(): Promise<void> {
+    const data = await AsyncStorage.getItem(SAVE_KEY);
+    if (!data) return;
+    await AsyncStorage.setItem(`${SNAPSHOT_SAVE_KEY_PREFIX}${Date.now()}`, data);
+    await pruneCorruptSaves(SNAPSHOT_SAVE_KEY_PREFIX);
   },
 
   /** The raw text of a stashed unreadable save, so the player can send it for recovery. */
