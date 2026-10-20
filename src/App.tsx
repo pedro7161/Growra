@@ -43,6 +43,7 @@ import TasksScreen from "./screens/TasksScreen";
 import { gameStateService } from "./services/gameStateService";
 import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/reviewService";
 import { ensureNotificationPermission, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
+import { getReturnRecap, ReturnRecap, shouldShowBackupNudge } from "./utils/returnRecap";
 import {
   AppLanguage,
   AppAppearance,
@@ -138,6 +139,8 @@ export default function App() {
   // quick taps both act on the same old state (e.g. completing one task twice).
   const gameStateRef = useRef<GameState | null>(null);
   const lastSaveWarningRef = useRef(0);
+  const [returnRecap, setReturnRecap] = useState<ReturnRecap | null>(null);
+  const [backupNudgeVisible, setBackupNudgeVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   /** Set when the save was written by a newer Growra: nothing is loaded or overwritten (#50). */
   const [newerSaveLanguage, setNewerSaveLanguage] = useState<string | null>(null);
@@ -235,7 +238,13 @@ export default function App() {
         }
 
         const currentGameState = gameStateRef.current ?? gameState;
-        const syncedGameState = syncRecurringTasks(currentGameState);
+        // Back after 2+ days with the app still in memory: same welcome as a fresh start (#53).
+        const recap = currentGameState.tutorialCompleted
+          ? getReturnRecap(currentGameState, currentGameState.lastPlayedAt, Date.now())
+          : null;
+        if (recap) setReturnRecap(recap);
+        const seen = recap ? { ...currentGameState, lastPlayedAt: Date.now() } : currentGameState;
+        const syncedGameState = syncRecurringTasks(seen);
 
         if (syncedGameState !== currentGameState) {
           await persistGameState(syncedGameState);
@@ -301,6 +310,23 @@ export default function App() {
     const adoptedGameState = plusOwnershipGate.current.adopt(resolvedGameState, Date.now());
     if (adoptedGameState !== resolvedGameState) {
       resolvedGameState = adoptedGameState;
+      await gameStateService.saveGame(createSaveData(resolvedGameState));
+    }
+
+    if (loadResult.status === "loaded" && resolvedGameState.tutorialCompleted) {
+      // Welcome back after 2+ days away (#53), measured from the last time the player was here;
+      // opening the app counts as being here, so the card doesn't repeat on the next launch.
+      const recap = getReturnRecap(resolvedGameState, loadResult.saveData.gameState.lastPlayedAt, Date.now());
+      if (recap) {
+        setReturnRecap(recap);
+        resolvedGameState = { ...resolvedGameState, lastPlayedAt: Date.now() };
+        await gameStateService.saveGame(createSaveData(resolvedGameState));
+      }
+    }
+    // The backup card shows once (#54): it's marked as shown the moment it appears.
+    if (shouldShowBackupNudge(resolvedGameState)) {
+      setBackupNudgeVisible(true);
+      resolvedGameState = { ...resolvedGameState, backupNudgeShown: true };
       await gameStateService.saveGame(createSaveData(resolvedGameState));
     }
 
@@ -851,6 +877,23 @@ export default function App() {
             onPauseTimer={handlePauseTimer}
             onResetTimer={handleResetTimer}
             onTimerReady={handleTimerReady}
+            returnRecap={returnRecap}
+            onDismissReturnRecap={() => {
+              setReturnRecap(null);
+              playUiTap();
+            }}
+            backupNudgeVisible={backupNudgeVisible}
+            onShareBackup={() => {
+              setBackupNudgeVisible(false);
+              playUiTap();
+              void handleExportData().then((code) => {
+                if (code) void Share.share({ message: code }).catch(() => undefined);
+              });
+            }}
+            onDismissBackupNudge={() => {
+              setBackupNudgeVisible(false);
+              playUiTap();
+            }}
           />
         );
       case "tasks":

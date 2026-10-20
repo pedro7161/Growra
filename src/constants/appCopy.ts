@@ -220,6 +220,15 @@ interface AppCopy {
   /** Companion descriptions by companion id; a missing entry falls back to the English original in utils/gameplay.ts. */
   companionBios: Partial<Record<string, string>>;
   dashboardActiveDays: string;
+  welcomeBackNamed: string;
+  welcomeBack: string;
+  returnRecapLine: string;
+  returnRecapFocus: string;
+  welcomeBackDismiss: string;
+  backupNudgeTitle: string;
+  backupNudgeBody: string;
+  backupNudgeShare: string;
+  backupNudgeDismiss: string;
   tutorialChooseCompanionHint: string;
   companionFoundTitle: string;
   companionFoundSubtitle: string;
@@ -596,6 +605,15 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "big-days": { loves: "big days", perk: "+10 coins on your 5th task of a day", joins: "Joins on your first day with 5 tasks done" },
     },
     dashboardActiveDays: "Active days",
+    welcomeBackNamed: "{name} is happy to see you again.",
+    welcomeBack: "Good to see you again.",
+    returnRecapLine: "Your last {days} active days: {done} tasks done.",
+    returnRecapFocus: "Your last {days} active days: {done} tasks done, {focus} focus sessions.",
+    welcomeBackDismiss: "OK",
+    backupNudgeTitle: "Keep a copy of your progress",
+    backupNudgeBody: "Your tasks and progress live only on this phone. Share a backup code to somewhere safe, like a note or an email to yourself, so you can bring everything back on a new phone.",
+    backupNudgeShare: "Share backup code",
+    backupNudgeDismiss: "No thanks",
     tutorialChooseCompanionHint: "Choose your first companion. The others join as you use Growra.",
     companionFoundTitle: "{name} found something!",
     companionFoundSubtitle: "A {item} from your focus session. It's in your bag on the Journey.",
@@ -1075,6 +1093,15 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "big-days": { loves: "dias em grande", perk: "+10 moedas na 5.ª tarefa do dia", joins: "Junta-se no primeiro dia com 5 tarefas feitas" },
     },
     dashboardActiveDays: "Dias ativos",
+    welcomeBackNamed: "{name} está contente por te ver outra vez.",
+    welcomeBack: "É bom ver-te outra vez.",
+    returnRecapLine: "Os teus últimos {days} dias ativos: {done} tarefas feitas.",
+    returnRecapFocus: "Os teus últimos {days} dias ativos: {done} tarefas feitas, {focus} sessões de foco.",
+    welcomeBackDismiss: "OK",
+    backupNudgeTitle: "Guarda uma cópia do teu progresso",
+    backupNudgeBody: "As tuas tarefas e o teu progresso só existem neste telemóvel. Partilha um código de backup para um sítio seguro, como uma nota ou um email para ti, para recuperares tudo num telemóvel novo.",
+    backupNudgeShare: "Partilhar código de backup",
+    backupNudgeDismiss: "Dispensar",
     tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro. Os outros juntam-se a ti quando usas o Growra.",
     companionFoundTitle: "{name} encontrou uma coisa!",
     companionFoundSubtitle: "Um(a) {item} da tua sessão de foco. Está na tua mochila na Jornada.",

@@ -37,6 +37,7 @@ export function createInitialGameState(): GameState {
     rooms: [],
     ownedRoomStyles: ["wooden-bedroom"],
     roomShareFooter: true,
+    backupNudgeShown: false,
     createdAt: Date.now(),
     lastPlayedAt: Date.now(),
   };
@@ -46,7 +47,7 @@ export function createInitialGameState(): GameState {
  * The save format this build writes. Bump it whenever a build changes the save shape, so an older
  * build refuses that save instead of quietly dropping what it doesn't understand (#50).
  */
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18; // 18: backupNudgeShown (#54)
 
 export function createSaveData(gameState: GameState): SaveData {
   return {

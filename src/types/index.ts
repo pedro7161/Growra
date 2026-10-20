@@ -288,6 +288,8 @@ export interface GameState {
   rooms: Room[];
   ownedRoomStyles: string[];
   roomShareFooter: boolean;
+  /** The one-time "keep a backup" card has been shown (#54); it never comes back. */
+  backupNudgeShown: boolean;
   createdAt: number;
   lastPlayedAt: number;
 }
