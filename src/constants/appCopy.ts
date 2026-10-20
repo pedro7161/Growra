@@ -144,6 +144,15 @@ interface AppCopy {
   settingsBackupExported: string;
   settingsBackupImported: string;
   settingsBackupInvalid: string;
+  crashTitle: string;
+  crashBody: string;
+  crashRestart: string;
+  crashShareBackup: string;
+  saveCorruptTitle: string;
+  saveCorruptBody: string;
+  saveCorruptShare: string;
+  saveFailedTitle: string;
+  saveFailedBody: string;
   settingsChangelog: string;
   settingsUpdatedOn: string;
   tutorialSkip: string;
@@ -472,6 +481,15 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsBackupExported: "Backup code generated.",
     settingsBackupImported: "Backup imported successfully.",
     settingsBackupInvalid: "The backup code is invalid.",
+    crashTitle: "Something went wrong",
+    crashBody: "Growra hit an error. Your tasks and progress are still saved on this phone. Restart to try again, or share your backup code to keep a copy.",
+    crashRestart: "Restart",
+    crashShareBackup: "Share my backup code",
+    saveCorruptTitle: "Save could not be loaded",
+    saveCorruptBody: "Your previous progress couldn't be read, so a new game was started. The old save is still kept on this phone: share it and send it to growra@outlook.pt to get it back.",
+    saveCorruptShare: "Share old save",
+    saveFailedTitle: "Progress not saved",
+    saveFailedBody: "Growra couldn't save your latest change. Your phone may be out of storage; free some space so your progress is kept.",
     settingsChangelog: "Changelog",
     settingsUpdatedOn: "Updated on",
     tutorialSkip: "Skip",
@@ -907,6 +925,15 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsBackupExported: "Código de backup gerado.",
     settingsBackupImported: "Backup importado com sucesso.",
     settingsBackupInvalid: "O código de backup é inválido.",
+    crashTitle: "Algo correu mal",
+    crashBody: "O Growra teve um erro. As tuas tarefas e o teu progresso continuam guardados neste telemóvel. Reinicia para tentar outra vez, ou partilha o teu código de backup para guardares uma cópia.",
+    crashRestart: "Reiniciar",
+    crashShareBackup: "Partilhar o código de backup",
+    saveCorruptTitle: "Não foi possível carregar o progresso",
+    saveCorruptBody: "Não foi possível ler o teu progresso anterior, por isso começou um jogo novo. O progresso antigo continua guardado neste telemóvel: partilha-o e envia-o para growra@outlook.pt para o recuperares.",
+    saveCorruptShare: "Partilhar progresso antigo",
+    saveFailedTitle: "Progresso não guardado",
+    saveFailedBody: "O Growra não conseguiu guardar a tua última alteração. O telemóvel pode estar sem espaço; liberta algum espaço para o teu progresso ficar guardado.",
     settingsChangelog: "Registo de alterações",
     settingsUpdatedOn: "Atualizado em",
     tutorialSkip: "Saltar",
