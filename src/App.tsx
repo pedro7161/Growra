@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, AppState, BackHandler, Share, StyleSheet, useColorScheme, View } from "react-native";
+import { Alert, AppState, BackHandler, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
@@ -41,7 +41,7 @@ import JourneyScreen from "./screens/JourneyScreen";
 import TaskCalendarScreen from "./screens/TaskCalendarScreen";
 import TasksScreen from "./screens/TasksScreen";
 import { gameStateService } from "./services/gameStateService";
-import { maybeAskForReview, reachedCamp } from "./services/reviewService";
+import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/reviewService";
 import {
   AppLanguage,
   AppAppearance,
@@ -121,6 +121,8 @@ export default function App() {
   const gameStateRef = useRef<GameState | null>(null);
   const lastSaveWarningRef = useRef(0);
   const [loading, setLoading] = useState(true);
+  /** Set when the save was written by a newer Growra: nothing is loaded or overwritten (#50). */
+  const [newerSaveLanguage, setNewerSaveLanguage] = useState<string | null>(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [tutorialVisible, setTutorialVisible] = useState(false);
   const [tutorialCard, setTutorialCard] = useState<TutorialCardMode | null>(null);
@@ -230,6 +232,11 @@ export default function App() {
 
   const loadGame = async () => {
     const loadResult = await gameStateService.loadGame();
+    if (loadResult.status === "newer") {
+      setNewerSaveLanguage((await gameStateService.readStoredLanguage()) ?? "en");
+      setLoading(false);
+      return;
+    }
 
     let resolvedGameState: GameState;
 
@@ -750,6 +757,8 @@ export default function App() {
   const handleImportData = async (backupCode: string) => {
     const importedSaveData = gameStateService.importSaveCode(backupCode);
     const current = gameStateRef.current;
+    // The save being replaced stays on the phone, like a corrupt one, so an import can be undone.
+    await gameStateService.snapshotBeforeOverwrite();
     // Plus ownership belongs to this device's Play account, never to a backup code.
     const saved = await persistGameState(
       current ? keepPlusOnImport(importedSaveData.gameState, current) : importedSaveData.gameState,
@@ -758,6 +767,24 @@ export default function App() {
     void plus.restore();
     return saved;
   };
+
+  if (newerSaveLanguage !== null) {
+    const copy = getAppCopy(newerSaveLanguage === "pt" ? "pt" : "en");
+    const theme = getAppTheme("mint");
+    return (
+      <View style={[styles.container, styles.newerSave, { backgroundColor: theme.background }]}>
+        <Text style={[styles.newerSaveTitle, { color: theme.text }]}>{copy.saveNewerTitle}</Text>
+        <Text style={[styles.newerSaveBody, { color: theme.mutedText }]}>{copy.saveNewerBody}</Text>
+        <TouchableOpacity
+          style={[styles.newerSaveButton, { backgroundColor: theme.accent }]}
+          onPress={() => void openStoreListing()}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.newerSaveButtonText, { color: theme.accentText }]}>{copy.saveNewerUpdate}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (loading || !gameState) {
     return <View className="flex-1" style={styles.container} />;
@@ -992,4 +1019,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  newerSave: { justifyContent: "center", padding: 24, gap: 12 },
+  newerSaveTitle: { fontSize: 22, fontWeight: "700", textAlign: "center" },
+  newerSaveBody: { fontSize: 15, lineHeight: 21, textAlign: "center", marginBottom: 8 },
+  newerSaveButton: { minHeight: 48, borderRadius: 12, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
+  newerSaveButtonText: { fontSize: 16, fontWeight: "700" },
 });

@@ -196,3 +196,48 @@ describe('save hardening (#46)', () => {
     expect(await gameStateService.readStoredSaveForSharing()).toBe('{not json');
   });
 });
+
+describe('save versioning (#50)', () => {
+  const { SAVE_VERSION } = require('../src/utils/initialState');
+  const { NewerSaveError } = require('../src/services/gameStateService');
+
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('loads a same-version save unchanged in version', async () => {
+    await gameStateService.saveGame(createSaveData(createInitialGameState()));
+    const result = await gameStateService.loadGame();
+    expect(result.status === 'loaded' && result.saveData.version).toBe(SAVE_VERSION);
+  });
+
+  it('migrates an older save and stamps the current version', async () => {
+    const old = { ...createSaveData(createInitialGameState()), version: 9 };
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify(old));
+    const result = await gameStateService.loadGame();
+    expect(result.status === 'loaded' && result.saveData.version).toBe(SAVE_VERSION);
+  });
+
+  it('refuses a save from a newer build and leaves it untouched', async () => {
+    const newer = JSON.stringify({ ...createSaveData(createInitialGameState()), version: SAVE_VERSION + 1 });
+    await AsyncStorage.setItem('growra_save_data', newer);
+    expect(await gameStateService.loadGame()).toEqual({ status: 'newer', version: SAVE_VERSION + 1 });
+    expect(await AsyncStorage.getItem('growra_save_data')).toBe(newer);
+  });
+
+  it('refuses a backup code from a newer build', () => {
+    const code = gameStateService.exportSaveCode({ ...createSaveData(createInitialGameState()), version: SAVE_VERSION + 1 });
+    expect(() => gameStateService.importSaveCode(code)).toThrow(NewerSaveError);
+  });
+
+  it('snapshots the current save before an overwrite, keeping the newest two', async () => {
+    await gameStateService.saveGame(createSaveData(createInitialGameState()));
+    for (let index = 0; index < 3; index += 1) {
+      await gameStateService.snapshotBeforeOverwrite();
+      await new Promise((resolve) => setTimeout(resolve, 2));
+    }
+    const snapshots = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith('growra_save_data_snapshot_'));
+    expect(snapshots).toHaveLength(2);
+    expect(await AsyncStorage.getItem(snapshots[0])).toBe(await AsyncStorage.getItem('growra_save_data'));
+  });
+});
