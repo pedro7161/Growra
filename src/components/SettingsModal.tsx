@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   Alert,
+  Share,
   Linking,
   Modal,
   ScrollView,
@@ -19,6 +20,7 @@ import { getGameStatsSummary } from "../utils/settings";
 import { isPlusTheme } from "../utils/plus";
 import { openStoreListing } from "../services/reviewService";
 import { NewerSaveError } from "../services/gameStateService";
+import { confirmReplaceSave } from "../utils/importConfirm";
 
 const PRIVACY_POLICY_URL = "https://pedro7161.github.io/growra-website/privacy-policy.html";
 
@@ -73,13 +75,25 @@ export default function SettingsModal({
   const [backupCode, setBackupCode] = useState("");
   const [changelogVisible, setChangelogVisible] = useState(false);
 
+  // Export opens the share sheet straight away (copy, mail, notes...): selecting a long code
+  // by hand in the field was the only way out before (#49). The code still shows in the field.
   const handleExport = async () => {
     const exportedBackupCode = await onExportData();
     setBackupCode(exportedBackupCode);
-    Alert.alert(copy.settingsTitle, copy.settingsBackupExported);
+    if (!exportedBackupCode) return;
+    try {
+      await Share.share({ message: exportedBackupCode });
+    } catch {
+      Alert.alert(copy.settingsTitle, copy.settingsBackupExported);
+    }
   };
 
   const handleImport = async () => {
+    if (!backupCode.trim()) {
+      Alert.alert(copy.settingsTitle, copy.settingsBackupInvalid);
+      return;
+    }
+    if (!(await confirmReplaceSave(copy, gameState, Alert.alert))) return;
     try {
       if (await onImportData(backupCode)) {
         Alert.alert(copy.settingsTitle, copy.settingsBackupImported);

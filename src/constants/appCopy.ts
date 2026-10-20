@@ -160,7 +160,6 @@ interface AppCopy {
   importConfirmTitle: string;
   importConfirmBody: string;
   importConfirmReplace: string;
-  settingsBackupCopy: string;
   settingsChangelog: string;
   settingsUpdatedOn: string;
   tutorialSkip: string;
@@ -509,7 +508,6 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     importConfirmTitle: "Replace your progress?",
     importConfirmBody: "Importing replaces everything in this app ({tasks} tasks, {companions} companions, {coins} coins) with the backup. Growra Plus stays as it is.",
     importConfirmReplace: "Replace",
-    settingsBackupCopy: "Share code",
     settingsChangelog: "Changelog",
     settingsUpdatedOn: "Updated on",
     tutorialSkip: "Skip",
@@ -965,7 +963,6 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     importConfirmTitle: "Substituir o teu progresso?",
     importConfirmBody: "Importar substitui tudo nesta app ({tasks} tarefas, {companions} companheiros, {coins} moedas) pelo backup. O Growra Plus fica como está.",
     importConfirmReplace: "Substituir",
-    settingsBackupCopy: "Partilhar código",
     settingsChangelog: "Registo de alterações",
     settingsUpdatedOn: "Atualizado em",
     tutorialSkip: "Saltar",
