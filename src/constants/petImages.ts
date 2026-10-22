@@ -98,6 +98,14 @@ const PET_IMAGES: Record<string, PetImages<ImageSourcePropType>> = {
       default: require("../../assets/pets/cindra/variants/default.png"),
     },
   },
+  lumen: {
+    base: require("../../assets/pets/lumen/base.png"),
+    evo1: require("../../assets/pets/lumen/evo1.png"),
+    evo2: require("../../assets/pets/lumen/evo2.png"),
+    variants: {
+      default: require("../../assets/pets/lumen/variants/default.png"),
+    },
+  },
 };
 
 export function getPetImage(

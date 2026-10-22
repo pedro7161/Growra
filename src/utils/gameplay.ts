@@ -304,6 +304,25 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
         },
       },
     },
+    {
+      id: "lumen",
+      name: "Lumen",
+      element: "light",
+      description:
+        "A seed-sprite with a little lantern, for the ones who lit the way early.",
+      rarity: PetRarity.LEGENDARY,
+      stats: { attack: 9, defense: 10, speed: 10, luck: 12 },
+      taskMultiplier: 0.2,
+      xpMultiplier: 1.8,
+      images: {
+        base: "assets/pets/lumen/base.png",
+        evo1: "assets/pets/lumen/evo1.png",
+        evo2: "assets/pets/lumen/evo2.png",
+        variants: {
+          default: "assets/pets/lumen/variants/default.png",
+        },
+      },
+    },
   ],
 };
 
@@ -699,7 +718,7 @@ export function addCompanionBond(gameState: GameState, petId: string, amount: nu
 }
 
 /** Adds every companion whose "joins when…" rule is now met (§4.1). */
-export function applyCompanionJoins(gameState: GameState): GameState {
+export function applyCompanionJoins(gameState: GameState, now: number = Date.now()): GameState {
   // Nobody joins before the player has picked a starter in the tutorial.
   if (gameState.pets.length === 0) {
     return gameState;
@@ -707,7 +726,7 @@ export function applyCompanionJoins(gameState: GameState): GameState {
 
   const owned = new Set(gameState.pets.map((pet) => pet.templateId));
   const joining = COMPANIONS.filter(
-    (companion) => !owned.has(companion.templateId) && companion.joinsWhen(gameState.usage),
+    (companion) => !owned.has(companion.templateId) && companion.joinsWhen(gameState.usage, now),
   );
   if (joining.length === 0) {
     return gameState;
