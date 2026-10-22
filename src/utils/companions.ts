@@ -18,19 +18,24 @@ export type CompanionStyle =
   | "own-tasks"
   | "tidying"
   | "long-run"
-  | "big-days";
+  | "big-days"
+  | "founder";
 
 export interface CompanionDefinition {
   templateId: string;
   style: CompanionStyle;
   starter: boolean;
-  /** Returns true once the player's usage qualifies this companion to join. */
-  joinsWhen: (usage: UsageStats) => boolean;
+  /** Returns true once the player's usage (or, for Lumen, the date) qualifies this companion to join. */
+  joinsWhen: (usage: UsageStats, now: number) => boolean;
   /** Target shown on locked cards, e.g. "10 recurring tasks". */
   joinProgress: (usage: UsageStats) => { current: number; target: number };
 }
 
 const count = (current: number, target: number) => ({ current: Math.min(current, target), target });
+
+/** Lumen, the founder companion, joins everyone who uses Growra before 2027 (local date), then never again. */
+export const FOUNDER_JOINS_UNTIL = new Date(2027, 0, 1).getTime();
+export const FOUNDER_TEMPLATE_ID = "lumen";
 
 export const COMPANIONS: CompanionDefinition[] = [
   { templateId: "sprout", style: "getting-started", starter: true, joinsWhen: (u) => u.activeDays >= 3, joinProgress: (u) => count(u.activeDays, 3) },
@@ -45,7 +50,13 @@ export const COMPANIONS: CompanionDefinition[] = [
   { templateId: "umbra", style: "tidying", starter: false, joinsWhen: (u) => u.overdueCleared >= 5, joinProgress: (u) => count(u.overdueCleared, 5) },
   { templateId: "nova", style: "long-run", starter: false, joinsWhen: (u) => u.activeDays >= 30, joinProgress: (u) => count(u.activeDays, 30) },
   { templateId: "cindra", style: "big-days", starter: false, joinsWhen: (u) => u.bigDays >= 1, joinProgress: (u) => count(u.bigDays, 1) },
+  { templateId: FOUNDER_TEMPLATE_ID, style: "founder", starter: false, joinsWhen: (_u, now) => now < FOUNDER_JOINS_UNTIL, joinProgress: () => count(0, 1) },
 ];
+
+/** How many companions a player can collect: Lumen counts only for those who have it (it can't be earned after 2026). */
+export function collectableCompanionCount(ownedTemplateIds: ReadonlySet<string>): number {
+  return COMPANIONS.filter((c) => c.style !== "founder" || ownedTemplateIds.has(c.templateId)).length;
+}
 
 export const STARTER_TEMPLATE_IDS = COMPANIONS.filter((c) => c.starter).map((c) => c.templateId);
 
@@ -169,6 +180,7 @@ function matchesStyle(style: CompanionStyle, facts: CompletionFacts): boolean {
       return facts.bigDayReached;
     case "flow":
     case "long-run":
+    case "founder":
       return false;
   }
 }
@@ -194,6 +206,8 @@ export function getPerkCoins(style: CompanionStyle | undefined, facts: Completio
       return facts.overdue ? 2 : 0;
     case "big-days":
       return facts.bigDayReached ? 10 : 0;
+    case "founder":
+      return 1;
     default:
       return 0;
   }

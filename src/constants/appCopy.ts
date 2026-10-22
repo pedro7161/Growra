@@ -603,6 +603,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       tidying: { loves: "tidying up", perk: "+2 coins for finishing an overdue task", joins: "Joins after you clear {target} overdue tasks (done, moved or deleted)" },
       "long-run": { loves: "the long run", perk: "+10% streak bonus", joins: "Joins after {target} active days" },
       "big-days": { loves: "big days", perk: "+10 coins on your 5th task of a day", joins: "Joins on your first day with 5 tasks done" },
+      founder: { loves: "the early days", perk: "+1 coin for every task", joins: "Joined everyone who used Growra in 2026" },
     },
     dashboardActiveDays: "Active days",
     welcomeBackNamed: "{name} is happy to see you again.",
@@ -1077,6 +1078,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       umbra: "Um espírito de sombra aveludado que brilha suavemente no nevoeiro ao luar, em vez de se esconder nele.",
       nova: "Um companheiro com coração de estrela, cuja aura junta fogo e luz das estrelas.",
       cindra: "Uma fera fofa de lava, com um coração de magma brilhante e o hábito de levantar faíscas.",
+      lumen: "Um pequeno espírito-semente com uma lanterna, para quem iluminou o caminho cedo.",
     },
     companionStyles: {
       "getting-started": { loves: "começar", perk: "+2 moedas na primeira tarefa de cada dia", joins: "Junta-se após {target} dias ativos" },
@@ -1091,6 +1093,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       tidying: { loves: "arrumar", perk: "+2 moedas ao concluir uma tarefa atrasada", joins: "Junta-se depois de resolveres {target} tarefas atrasadas (feitas, adiadas ou apagadas)" },
       "long-run": { loves: "o longo prazo", perk: "+10% de bónus de sequência", joins: "Junta-se após {target} dias ativos" },
       "big-days": { loves: "dias em grande", perk: "+10 moedas na 5.ª tarefa do dia", joins: "Junta-se no primeiro dia com 5 tarefas feitas" },
+      founder: { loves: "os primeiros dias", perk: "+1 moeda em cada tarefa", joins: "Juntou-se a todos os que usaram o Growra em 2026" },
     },
     dashboardActiveDays: "Dias ativos",
     welcomeBackNamed: "{name} está contente por te ver outra vez.",
