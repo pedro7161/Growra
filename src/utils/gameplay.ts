@@ -304,6 +304,25 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
         },
       },
     },
+    {
+      id: "lumen",
+      name: "Lumen",
+      element: "light",
+      description:
+        "A seed-sprite with a little lantern, for the ones who lit the way early.",
+      rarity: PetRarity.LEGENDARY,
+      stats: { attack: 9, defense: 10, speed: 10, luck: 12 },
+      taskMultiplier: 0.2,
+      xpMultiplier: 1.8,
+      images: {
+        base: "assets/pets/lumen/base.png",
+        evo1: "assets/pets/lumen/evo1.png",
+        evo2: "assets/pets/lumen/evo2.png",
+        variants: {
+          default: "assets/pets/lumen/variants/default.png",
+        },
+      },
+    },
   ],
 };
 
@@ -489,6 +508,19 @@ export function getPetProgressionSnapshot(
     combatPower: getCombatPower(stats, evolutionStage),
     explorationPower: getExplorationPower(stats, evolutionStage),
   };
+}
+
+/**
+ * The streak as of `now`, before any completion today. The stored streak only changes when a task
+ * is completed, so after missed days it still shows the old bonus; screens read this instead (#40).
+ * Matches calculateUpdatedStreak's penalty for the same gap, without the completion's +1.
+ */
+export function getEffectiveStreak(streak: Streak, now: number): Streak {
+  if (streak.lastCompletedDate === 0) return streak;
+  const missedDays = getCalendarDayDifference(streak.lastCompletedDate, now) - 1;
+  if (missedDays <= 0) return streak;
+  const level = missedDays >= 3 ? 1 : Math.max(streak.level - missedDays, 1);
+  return level === streak.level ? streak : { ...streak, level, bonus: getBonusFromLevel(level) };
 }
 
 export function calculateUpdatedStreak(
@@ -686,7 +718,7 @@ export function addCompanionBond(gameState: GameState, petId: string, amount: nu
 }
 
 /** Adds every companion whose "joins when…" rule is now met (§4.1). */
-export function applyCompanionJoins(gameState: GameState): GameState {
+export function applyCompanionJoins(gameState: GameState, now: number = Date.now()): GameState {
   // Nobody joins before the player has picked a starter in the tutorial.
   if (gameState.pets.length === 0) {
     return gameState;
@@ -694,7 +726,7 @@ export function applyCompanionJoins(gameState: GameState): GameState {
 
   const owned = new Set(gameState.pets.map((pet) => pet.templateId));
   const joining = COMPANIONS.filter(
-    (companion) => !owned.has(companion.templateId) && companion.joinsWhen(gameState.usage),
+    (companion) => !owned.has(companion.templateId) && companion.joinsWhen(gameState.usage, now),
   );
   if (joining.length === 0) {
     return gameState;

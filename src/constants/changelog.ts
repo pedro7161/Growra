@@ -8,6 +8,19 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      dateLabel: "Version 1.9.0 · October 24, 2026",
+      items: [
+        "New: Lumen, a founder companion, joins everyone who uses Growra in 2026. While it's your active companion, every task gives +1 coin.",
+        "Timer alerts now reach you when Growra is in the background, and you can turn on an optional daily reminder in Settings.",
+        "Back after a few days? Growra welcomes you with a short recap of your last active days.",
+        "Backups: the backup code opens the share sheet, and importing a backup asks before replacing your data.",
+        "Safer saves: Growra keeps a copy before an import and never loads a save from a newer version.",
+        "The dashboard shows your real streak after missed days.",
+        "Accessibility: clearer labels, bigger touch areas and better text wrapping.",
+        "Fixes for task names, task search, companion rooms and CSV export.",
+      ],
+    },
+    {
       dateLabel: "Version 1.8.6 · October 19, 2026",
       items: [
         "Tasks: search and quick add have even spacing, and a button at the end of the filters hides or shows them.",
@@ -135,6 +148,19 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      dateLabel: "Versão 1.9.0 · 24 de outubro de 2026",
+      items: [
+        "Novo: o Lumen, um companheiro fundador, junta-se a todos os que usam o Growra em 2026. Enquanto for o teu companheiro ativo, cada tarefa dá +1 moeda.",
+        "Os alertas do temporizador chegam-te com o Growra em segundo plano, e podes ligar um lembrete diário opcional nas Definições.",
+        "Voltaste ao fim de uns dias? O Growra recebe-te com um pequeno resumo dos teus últimos dias ativos.",
+        "Cópias de segurança: o código abre a partilha, e importar uma cópia pergunta antes de substituir os teus dados.",
+        "Gravações mais seguras: o Growra guarda uma cópia antes de importar e nunca carrega uma gravação de uma versão mais recente.",
+        "O painel mostra a tua sequência real depois de dias falhados.",
+        "Acessibilidade: etiquetas mais claras, áreas de toque maiores e texto que se ajusta melhor.",
+        "Correções nos nomes de tarefas, na pesquisa, nos quartos dos companheiros e na exportação CSV.",
+      ],
+    },
     {
       dateLabel: "Versão 1.8.6 · 19 de outubro de 2026",
       items: [

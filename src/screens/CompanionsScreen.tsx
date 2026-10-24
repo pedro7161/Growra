@@ -21,6 +21,7 @@ import { getPetImage } from "../constants/petImages";
 import { AppSettings, GameState } from "../types";
 import {
   COMPANIONS,
+  collectableCompanionCount,
   getBondProgress,
   getActiveCompanion,
   getCompanionDefinition,
@@ -62,8 +63,9 @@ export default function CompanionsScreen({
   const now = Date.now();
   const [selectedPetId, setSelectedPetId] = useState("");
   const ownedTemplateIds = new Set(gameState.pets.map((pet) => pet.templateId));
+  // Lumen (the founder companion) only ever joins on its own; it never shows as one to unlock.
   const notMetCompanions = COMPANIONS.filter(
-    (companion) => !ownedTemplateIds.has(companion.templateId),
+    (companion) => !ownedTemplateIds.has(companion.templateId) && companion.style !== "founder",
   );
   const needsStarter = gameState.pets.length === 0;
   const activeExplorer = getActiveCompanion(gameState);
@@ -88,7 +90,7 @@ export default function CompanionsScreen({
           {copy.petsTitle}
         </Text>
         <Text style={[styles.subtitle, { color: theme.mutedText }]}>
-          {gameState.pets.length}/{COMPANIONS.length} • {formatCount(gameState.coins, getLocaleFromSettings(settings))}{" "}
+          {gameState.pets.length}/{collectableCompanionCount(ownedTemplateIds)} • {formatCount(gameState.coins, getLocaleFromSettings(settings))}{" "}
           {copy.petsCoinsPity}
         </Text>
       </View>

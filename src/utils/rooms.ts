@@ -61,7 +61,8 @@ export function syncRooms(state: GameState): GameState {
     const items = room.items.filter((item) => {
       if (item.kind === "companion") return petIds.has(item.ref);
       const decoration = decorationsById.get(item.ref);
-      if (!decoration || decoration.roomId !== room.id) return false;
+      // kept.has: a broken save can list one decoration twice; only its first item stays (#42).
+      if (!decoration || decoration.roomId !== room.id || kept.has(decoration.id)) return false;
       if (hiddenPlusRoom || (!plus && isPlusDecoration(decoration))) return false;
       kept.add(decoration.id);
       return true;
@@ -143,10 +144,17 @@ export function addCompanionToRoom(state: GameState, roomId: string, petId: stri
   );
 }
 
+const sameItem = (left: RoomItem, right: RoomItem) =>
+  left.x === right.x && left.y === right.y && left.scale === right.scale && left.flip === right.flip;
+
+/** An edit that leaves the item as it was returns the state unchanged, so it doesn't take the undo step (#42). */
 function updateItem(state: GameState, roomId: string, itemId: string, update: (item: RoomItem) => RoomItem): GameState {
   return updateRoom(state, roomId, (room) => {
-    if (!room.items.some((item) => item.id === itemId)) return null;
-    return { ...room, items: room.items.map((item) => (item.id === itemId ? update(item) : item)) };
+    const item = room.items.find((candidate) => candidate.id === itemId);
+    if (!item) return null;
+    const next = update(item);
+    if (sameItem(item, next)) return null;
+    return { ...room, items: room.items.map((candidate) => (candidate.id === itemId ? next : candidate)) };
   });
 }
 
@@ -197,13 +205,14 @@ export function removeRoomItem(state: GameState, roomId: string, itemId: string)
 }
 
 export function renameRoom(state: GameState, roomId: string, name: string): GameState {
-  return updateRoom(state, roomId, (room) => ({ ...room, name: name.trim().slice(0, 40) }));
+  const next = name.trim().slice(0, 40);
+  return updateRoom(state, roomId, (room) => (room.name === next ? null : { ...room, name: next }));
 }
 
 export function setRoomStyle(state: GameState, roomId: string, styleId: string): GameState {
   const style = getRoomStyle(styleId);
   if (!style || !state.ownedRoomStyles.includes(styleId) || (style.set && !state.plus.owned)) return state;
-  return updateRoom(state, roomId, (room) => ({ ...room, styleId }));
+  return updateRoom(state, roomId, (room) => (room.styleId === styleId ? null : { ...room, styleId }));
 }
 
 /** Undo: put back a room snapshot taken earlier in the same editing session. */

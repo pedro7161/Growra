@@ -6,7 +6,7 @@ import { getDecorationImage } from "../../constants/journeyImages";
 import { ROOM_STYLE_FALLBACK_COLORS, getRoomStyleImage } from "../../constants/roomImages";
 import { GameState } from "../../types";
 import { DECORATION_TYPES } from "../../utils/journey";
-import { ROOM_STYLES, RoomSetId, getSetSeasonStartMonth } from "../../utils/roomCatalog";
+import { ROOM_STYLES, RoomSetId, getNextSeasonStartMonth } from "../../utils/roomCatalog";
 import { ShopStatus, getFurnitureShopStatus, getStyleShopStatus } from "../../utils/roomShop";
 import { getLocaleFromSettings } from "../../utils/settings";
 
@@ -36,8 +36,7 @@ export default function RoomShop({ state, onBuyStyle, onBuyFurniture, onOpenPlus
       label = copy.roomShopNeedsPlus;
       onPress = onOpenPlus;
     } else if (status === "out-of-season" && set) {
-      const year = new Date(now).getFullYear();
-      const month = new Date(year, getSetSeasonStartMonth(set, year), 1).toLocaleDateString(locale, { month: "long" });
+      const month = new Date(2000, getNextSeasonStartMonth(set, now), 1).toLocaleDateString(locale, { month: "long" });
       label = copy.roomShopReturns.replace("{month}", month);
       onPress = undefined;
     } else if (status === "too-expensive") {

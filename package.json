@@ -1,7 +1,7 @@
 {
   "name": "growra",
   "main": "expo-router/entry",
-  "version": "1.8.6",
+  "version": "1.9.0",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -30,6 +30,7 @@
     "expo-iap": "5.8.2",
     "expo-image": "~3.0.11",
     "expo-linking": "~8.0.11",
+    "expo-notifications": "~0.32.17",
     "expo-router": "~6.0.23",
     "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.13",

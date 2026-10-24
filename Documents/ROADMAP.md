@@ -1,5 +1,7 @@
 # Growra roadmap: future additions
 
+> Design detail only. Which work is open, and in what order, lives in GitHub issues and the top-level `ROADMAP.md`; checkboxes here aren't kept up to date.
+
 Things deliberately left for **after the current releases** (1.7.0 Growra Plus, 1.8.0 companion rooms). Each item says where its design lives. When you pick one up, write a plan for it (`docs/superpowers/plans/`) before building.
 
 Last updated: 2 October 2026.

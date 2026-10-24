@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, AppState, BackHandler, StyleSheet, useColorScheme, View } from "react-native";
+import { Alert, AppState, BackHandler, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
@@ -18,7 +18,7 @@ import { getExploreLeft, grantExploreFind } from "./utils/explore";
 import { getActiveCompanion } from "./utils/companions";
 import { syncRooms } from "./utils/rooms";
 import { buildRoomShareMessage, shareRoomPicture } from "./utils/roomShare";
-import { resolveTheme } from "./utils/plus";
+import { resolveTheme, withResolvedTheme } from "./utils/plus";
 import { buildCompletionsCsv, buildTasksCsv } from "./utils/historyCsv";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
@@ -41,7 +41,9 @@ import JourneyScreen from "./screens/JourneyScreen";
 import TaskCalendarScreen from "./screens/TaskCalendarScreen";
 import TasksScreen from "./screens/TasksScreen";
 import { gameStateService } from "./services/gameStateService";
-import { maybeAskForReview, reachedCamp } from "./services/reviewService";
+import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/reviewService";
+import { ensureNotificationPermission, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
+import { getReturnRecap, ReturnRecap, shouldShowBackupNudge } from "./utils/returnRecap";
 import {
   AppLanguage,
   AppAppearance,
@@ -109,6 +111,23 @@ function newCompanionAudioCue(before: GameState, after: GameState): CompanionAud
   return companionAudioCueFor(after.companionEvents.slice(before.companionEvents.length));
 }
 
+/** Keeps scheduled notifications in line with the state: running timers (#38), the daily reminder (#39). */
+function syncNotifications(state: GameState, reminderToo = false) {
+  const copy = getAppCopy(state.settings.language);
+  void syncTimerNotifications(
+    state.tasks,
+    { title: copy.notifyTimerTitle, body: copy.notifyTimerBody, channelName: copy.notifyTimerChannel },
+    copy.reminderChannel,
+  );
+  if (reminderToo) {
+    void syncDailyReminder(
+      state.settings.dailyReminder,
+      { title: copy.reminderTitle, body: copy.reminderBody, channelName: copy.reminderChannel },
+      copy.notifyTimerChannel,
+    );
+  }
+}
+
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<Screen>("dashboard");
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -119,7 +138,12 @@ export default function App() {
   // Latest state for event handlers. Reading `gameState` from the render closure lets two
   // quick taps both act on the same old state (e.g. completing one task twice).
   const gameStateRef = useRef<GameState | null>(null);
+  const lastSaveWarningRef = useRef(0);
+  const [returnRecap, setReturnRecap] = useState<ReturnRecap | null>(null);
+  const [backupNudgeVisible, setBackupNudgeVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  /** Set when the save was written by a newer Growra: nothing is loaded or overwritten (#50). */
+  const [newerSaveLanguage, setNewerSaveLanguage] = useState<string | null>(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [tutorialVisible, setTutorialVisible] = useState(false);
   const [tutorialCard, setTutorialCard] = useState<TutorialCardMode | null>(null);
@@ -214,7 +238,13 @@ export default function App() {
         }
 
         const currentGameState = gameStateRef.current ?? gameState;
-        const syncedGameState = syncRecurringTasks(currentGameState);
+        // Back after 2+ days with the app still in memory: same welcome as a fresh start (#53).
+        const recap = currentGameState.tutorialCompleted
+          ? getReturnRecap(currentGameState, currentGameState.lastPlayedAt, Date.now())
+          : null;
+        if (recap) setReturnRecap(recap);
+        const seen = recap ? { ...currentGameState, lastPlayedAt: Date.now() } : currentGameState;
+        const syncedGameState = syncRecurringTasks(seen);
 
         if (syncedGameState !== currentGameState) {
           await persistGameState(syncedGameState);
@@ -229,6 +259,11 @@ export default function App() {
 
   const loadGame = async () => {
     const loadResult = await gameStateService.loadGame();
+    if (loadResult.status === "newer") {
+      setNewerSaveLanguage((await gameStateService.readStoredLanguage()) ?? "en");
+      setLoading(false);
+      return;
+    }
 
     let resolvedGameState: GameState;
 
@@ -239,14 +274,21 @@ export default function App() {
       await gameStateService.saveGame(createSaveData(syncedGameState));
       resolvedGameState = syncedGameState;
     } else {
-      if (loadResult.status === "corrupt") {
-        Alert.alert(
-          "Save could not be loaded",
-          "Your previous progress couldn't be read, so a new game was started. " +
-            "A copy of the old save was kept on this device and can still be recovered.",
-        );
-      }
       const newGameState = createInitialGameState();
+      if (loadResult.status === "corrupt") {
+        const copy = getAppCopy(newGameState.settings.language);
+        const { backupKey } = loadResult;
+        Alert.alert(copy.saveCorruptTitle, copy.saveCorruptBody, [
+          {
+            text: copy.saveCorruptShare,
+            onPress: () =>
+              void gameStateService.readCorruptSave(backupKey).then((data) => {
+                if (data) void Share.share({ message: data }).catch(() => undefined);
+              }),
+          },
+          { text: "OK" },
+        ]);
+      }
       await gameStateService.saveGame(createSaveData(newGameState));
       resolvedGameState = newGameState;
     }
@@ -271,8 +313,26 @@ export default function App() {
       await gameStateService.saveGame(createSaveData(resolvedGameState));
     }
 
+    if (loadResult.status === "loaded" && resolvedGameState.tutorialCompleted) {
+      // Welcome back after 2+ days away (#53), measured from the last time the player was here;
+      // opening the app counts as being here, so the card doesn't repeat on the next launch.
+      const recap = getReturnRecap(resolvedGameState, loadResult.saveData.gameState.lastPlayedAt, Date.now());
+      if (recap) {
+        setReturnRecap(recap);
+        resolvedGameState = { ...resolvedGameState, lastPlayedAt: Date.now() };
+        await gameStateService.saveGame(createSaveData(resolvedGameState));
+      }
+    }
+    // The backup card shows once (#54): it's marked as shown the moment it appears.
+    if (shouldShowBackupNudge(resolvedGameState)) {
+      setBackupNudgeVisible(true);
+      resolvedGameState = { ...resolvedGameState, backupNudgeShown: true };
+      await gameStateService.saveGame(createSaveData(resolvedGameState));
+    }
+
     gameStateRef.current = resolvedGameState;
     setGameState(resolvedGameState);
+    syncNotifications(resolvedGameState, true);
     if (!resolvedGameState.tutorialCompleted) {
       // Brand-new players get the welcome card first; anyone mid-tutorial goes straight back to it.
       if (resolvedGameState.tasks.length === 0) setTutorialCard("welcome");
@@ -282,11 +342,20 @@ export default function App() {
     setLoading(false);
   };
 
-  const persistGameState = async (nextGameState: GameState) => {
+  /** Applies and saves the next state; resolves false (after telling the player) when the write failed. */
+  const persistGameState = async (nextGameState: GameState): Promise<boolean> => {
     const syncedGameState = syncRooms(applyFirstTaskReward(syncRecurringTasks(nextGameState)));
     gameStateRef.current = syncedGameState;
     setGameState(syncedGameState);
-    await gameStateService.saveGame(createSaveData(syncedGameState));
+    const saved = await gameStateService.saveGame(createSaveData(syncedGameState));
+    syncNotifications(syncedGameState);
+    // One warning per minute: a full phone fails every write, and an alert per tap would be worse.
+    if (!saved && Date.now() - lastSaveWarningRef.current > 60_000) {
+      lastSaveWarningRef.current = Date.now();
+      const copy = getAppCopy(syncedGameState.settings.language);
+      Alert.alert(copy.saveFailedTitle, copy.saveFailedBody);
+    }
+    return saved;
   };
 
   const handleAddTask = async (
@@ -405,6 +474,8 @@ export default function App() {
   };
 
   const handleStartTimer = async (taskId: string) => {
+    // The first timer start is the moment to ask; a refusal only means no background alert.
+    await ensureNotificationPermission();
     await applyTimerUpdate(taskId, startTaskTimer);
     void playGrowraCue("timer-start", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
@@ -493,6 +564,8 @@ export default function App() {
         language,
       },
     });
+    // The reminder's text is written in the language at scheduling time.
+    if (gameStateRef.current) syncNotifications(gameStateRef.current, true);
     void playGrowraCue("ui-tap", gameState.settings.sfxEnabled);
   };
 
@@ -513,6 +586,21 @@ export default function App() {
     void persistGameState(finishTutorial(current));
     void playGrowraCue("camp-milestone", current.settings.sfxEnabled);
   }, [activeScreen, gameState, tutorialVisible]);
+
+  const handleDailyReminderChange = async (dailyReminder: GameState["settings"]["dailyReminder"]) => {
+    const current = gameStateRef.current;
+    if (!current) return;
+    // Permission is asked only when the player turns the reminder on (owner decision, #39).
+    if (dailyReminder.enabled && !current.settings.dailyReminder.enabled && !(await ensureNotificationPermission())) {
+      const copy = getAppCopy(current.settings.language);
+      Alert.alert(copy.settingsReminder, copy.settingsReminderDenied);
+      return;
+    }
+    const latest = gameStateRef.current ?? current;
+    const next = { ...latest, settings: { ...latest.settings, dailyReminder } };
+    await persistGameState(next);
+    syncNotifications(next, true);
+  };
 
   const handleConfirmExitChange = async (confirmExit: boolean) => {
     const gameState = gameStateRef.current;
@@ -638,7 +726,7 @@ export default function App() {
       if (!before.plus.owned) {
         const result = await adsService.watchForReward();
         if (result !== "earned") {
-          if (result === "unavailable") Alert.alert(copy.plusTitle, copy.exploreNoAd);
+          if (result === "unavailable") Alert.alert("🧭", copy.exploreNoAd);
           return;
         }
       }
@@ -700,12 +788,27 @@ export default function App() {
   const handleExportCsv = async () => {
     const current = gameStateRef.current;
     if (!current?.plus.owned) return;
-    const tasksFile = new File(Paths.cache, "growra-tasks.csv");
-    const completionsFile = new File(Paths.cache, "growra-completions.csv");
-    tasksFile.write(buildTasksCsv(current.tasks));
-    completionsFile.write(buildCompletionsCsv(current.days));
-    await Sharing.shareAsync(tasksFile.uri, { mimeType: "text/csv", dialogTitle: "growra-tasks.csv" });
-    await Sharing.shareAsync(completionsFile.uri, { mimeType: "text/csv", dialogTitle: "growra-completions.csv" });
+    const copy = getAppCopy(current.settings.language);
+    // One share sheet per tap: the player picks which file, instead of a second sheet
+    // opening as soon as the first closes.
+    const share = async (name: string, contents: string) => {
+      try {
+        const file = new File(Paths.cache, name);
+        file.write(contents);
+        await Sharing.shareAsync(file.uri, { mimeType: "text/csv", dialogTitle: name });
+      } catch (error) {
+        console.error("CSV export failed:", error);
+        Alert.alert(copy.settingsExportCsv, copy.csvExportError);
+      }
+    };
+    Alert.alert(copy.settingsExportCsv, copy.csvExportChoose, [
+      { text: copy.csvExportTasks, onPress: () => void share("growra-tasks.csv", buildTasksCsv(current.tasks)) },
+      {
+        text: copy.csvExportCompletions,
+        onPress: () => void share("growra-completions.csv", buildCompletionsCsv(current.days)),
+      },
+      { text: copy.addTaskCancel, style: "cancel" },
+    ]);
   };
 
   const handleExportData = async (): Promise<string> => {
@@ -719,11 +822,34 @@ export default function App() {
   const handleImportData = async (backupCode: string) => {
     const importedSaveData = gameStateService.importSaveCode(backupCode);
     const current = gameStateRef.current;
+    // The save being replaced stays on the phone, like a corrupt one, so an import can be undone.
+    await gameStateService.snapshotBeforeOverwrite();
     // Plus ownership belongs to this device's Play account, never to a backup code.
-    await persistGameState(current ? keepPlusOnImport(importedSaveData.gameState, current) : importedSaveData.gameState);
+    const saved = await persistGameState(
+      current ? keepPlusOnImport(importedSaveData.gameState, current) : importedSaveData.gameState,
+    );
     playUiTap();
     void plus.restore();
+    return saved;
   };
+
+  if (newerSaveLanguage !== null) {
+    const copy = getAppCopy(newerSaveLanguage === "pt" ? "pt" : "en");
+    const theme = getAppTheme("mint");
+    return (
+      <View style={[styles.container, styles.newerSave, { backgroundColor: theme.background }]}>
+        <Text style={[styles.newerSaveTitle, { color: theme.text }]}>{copy.saveNewerTitle}</Text>
+        <Text style={[styles.newerSaveBody, { color: theme.mutedText }]}>{copy.saveNewerBody}</Text>
+        <TouchableOpacity
+          style={[styles.newerSaveButton, { backgroundColor: theme.accent }]}
+          onPress={() => void openStoreListing()}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.newerSaveButtonText, { color: theme.accentText }]}>{copy.saveNewerUpdate}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (loading || !gameState) {
     return <View className="flex-1" style={styles.container} />;
@@ -731,13 +857,14 @@ export default function App() {
 
   const isPlus = gameState.plus.owned;
   const appTheme = getAppTheme(resolveTheme(gameState.settings.theme, isPlus));
+  const viewState = withResolvedTheme(gameState);
 
   const renderScreen = () => {
     switch (activeScreen) {
       case "dashboard":
         return (
           <DashboardScreen
-            gameState={gameState}
+            gameState={viewState}
             tutorialLocked={tutorialStep !== "done"}
             onAddTask={handleAddTask}
             onCompleteTask={handleCompleteTask}
@@ -750,12 +877,29 @@ export default function App() {
             onPauseTimer={handlePauseTimer}
             onResetTimer={handleResetTimer}
             onTimerReady={handleTimerReady}
+            returnRecap={returnRecap}
+            onDismissReturnRecap={() => {
+              setReturnRecap(null);
+              playUiTap();
+            }}
+            backupNudgeVisible={backupNudgeVisible}
+            onShareBackup={() => {
+              setBackupNudgeVisible(false);
+              playUiTap();
+              void handleExportData().then((code) => {
+                if (code) void Share.share({ message: code }).catch(() => undefined);
+              });
+            }}
+            onDismissBackupNudge={() => {
+              setBackupNudgeVisible(false);
+              playUiTap();
+            }}
           />
         );
       case "tasks":
         return (
           <TasksScreen
-            settings={gameState.settings}
+            settings={viewState.settings}
             tasks={gameState.tasks}
             customTaskTemplates={gameState.customTaskTemplates}
             tutorialTarget={
@@ -786,7 +930,7 @@ export default function App() {
       case "task-calendar":
         return (
           <TaskCalendarScreen
-            settings={gameState.settings}
+            settings={viewState.settings}
             tasks={gameState.tasks}
             onBack={() => handleNavigate("tasks")}
           />
@@ -794,8 +938,8 @@ export default function App() {
       case "journey":
         return (
           <JourneyScreen
-            gameState={gameState}
-            settings={gameState.settings}
+            gameState={viewState}
+            settings={viewState.settings}
             onBuyDecoration={handleBuyDecoration}
             onPlaceDecoration={handlePlaceDecoration}
             onRemoveDecoration={handleRemoveDecoration}
@@ -809,8 +953,8 @@ export default function App() {
       case "companions":
         return (
           <CompanionsScreen
-            gameState={gameState}
-            settings={gameState.settings}
+            gameState={viewState}
+            settings={viewState.settings}
             tutorialMode={tutorialStep === "choose-companion" ? "choose" : null}
             onChooseStarter={handleChooseStarter}
             onEquipPet={handleEquipPet}
@@ -841,7 +985,7 @@ export default function App() {
             activeScreen === "task-calendar" ? "tasks" : activeScreen
           }
           onNavigate={handleNavigate}
-          settings={gameState.settings}
+          settings={viewState.settings}
           tutorialTarget={
             !tutorialVisible
               ? null
@@ -859,7 +1003,7 @@ export default function App() {
         />
         <SettingsModal
           visible={settingsVisible}
-          gameState={gameState}
+          gameState={viewState}
           onClose={() => {
             setSettingsVisible(false);
             playUiTap();
@@ -868,6 +1012,7 @@ export default function App() {
           onThemeChange={handleThemeChange}
           onAppearanceChange={handleAppearanceChange}
           onConfirmExitChange={handleConfirmExitChange}
+          onDailyReminderChange={(reminder) => void handleDailyReminderChange(reminder)}
           onReplayTutorial={() => {
             setSettingsVisible(false);
             setTutorialCard("tour");
@@ -886,7 +1031,7 @@ export default function App() {
         />
         {roomEditorId && (
           <RoomEditorScreen
-            state={gameState}
+            state={viewState}
             roomId={roomEditorId}
             onChange={(update) => {
               const current = gameStateRef.current;
@@ -903,14 +1048,14 @@ export default function App() {
           />
         )}
         <UpdatePrompt
-          settings={gameState.settings}
+          settings={viewState.settings}
           state={appUpdate.state}
           progress={appUpdate.progress}
           controller={appUpdate.controller}
         />
         <GrowraPlusModal
           visible={plusVisible}
-          settings={gameState.settings}
+          settings={viewState.settings}
           isPlus={isPlus}
           price={plus.price}
           busy={plus.busy}
@@ -924,12 +1069,12 @@ export default function App() {
         <TutorialOverlay
           visible={tutorialVisible && tutorialStep !== "done" && tutorialCard === null}
           step={tutorialStep}
-          settings={gameState.settings}
+          settings={viewState.settings}
           onSkip={handleSkipTutorial}
         />
         <TutorialCards
           mode={tutorialCard}
-          settings={gameState.settings}
+          settings={viewState.settings}
           onStart={() => {
             setTutorialCard(null);
             setTutorialVisible(true);
@@ -943,7 +1088,7 @@ export default function App() {
         />
         <CompanionRevealModal
           visible={gameState.companionEvents.length > 0}
-          settings={gameState.settings}
+          settings={viewState.settings}
           events={gameState.companionEvents}
           pets={gameState.pets}
           onClose={handleCloseCompanionReveal}
@@ -957,4 +1102,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  newerSave: { justifyContent: "center", padding: 24, gap: 12 },
+  newerSaveTitle: { fontSize: 22, fontWeight: "700", textAlign: "center" },
+  newerSaveBody: { fontSize: 15, lineHeight: 21, textAlign: "center", marginBottom: 8 },
+  newerSaveButton: { minHeight: 48, borderRadius: 12, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
+  newerSaveButtonText: { fontSize: 16, fontWeight: "700" },
 });

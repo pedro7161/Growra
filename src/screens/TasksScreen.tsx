@@ -29,6 +29,7 @@ import TaskTimerControls from "../components/TaskTimerControls";
 import { getLocaleFromSettings } from "../utils/settings";
 import { taskCategoryLabel, taskFrequencyLabel } from "../utils/taskLabels";
 import { customTaskDraftProblem } from "../utils/taskDraft";
+import { taskMatchesSearch } from "../utils/taskSearch";
 
 interface TasksScreenProps {
   settings: AppSettings;
@@ -99,27 +100,7 @@ export default function TasksScreen({
   const baseTasks =
     filter === "all" ? tasks : filter === TaskStatus.PENDING ? todayTasks : filter === "upcoming" ? upcomingTasks : completedTasks;
   const filteredTasks = [...baseTasks]
-    .filter((task) => {
-      const normalizedQuery = searchQuery.trim().toLowerCase();
-
-      if (!normalizedQuery) {
-        return true;
-      }
-
-      const predefinedTask = task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId) : null;
-
-      return (
-        task.name.toLowerCase().includes(normalizedQuery) ||
-        task.description.toLowerCase().includes(normalizedQuery) ||
-        task.category.toLowerCase().includes(normalizedQuery) ||
-        task.frequency.toLowerCase().includes(normalizedQuery) ||
-        task.type.toLowerCase().includes(normalizedQuery) ||
-        (predefinedTask ? predefinedTask.category.toLowerCase().includes(normalizedQuery) : false) ||
-        taskCategoryLabel(settings.language, predefinedTask ? predefinedTask.category : task.category)
-          .toLowerCase()
-          .includes(normalizedQuery)
-      );
-    })
+    .filter((task) => taskMatchesSearch(task, searchQuery, settings.language))
     .sort((leftTask, rightTask) => {
       const priorityOrder = {
         [TaskPriority.HIGH]: 0,
@@ -192,6 +173,8 @@ export default function TasksScreen({
             ]}
             onPress={onOpenCalendar}
             disabled={tutorialOn}
+            hitSlop={{ top: 8, bottom: 8 }}
+            accessibilityRole="button"
           >
             <Text style={[styles.calendarButtonText, { color: theme.text }]}>{copy.tasksCalendar}</Text>
           </TouchableOpacity>
@@ -207,6 +190,8 @@ export default function TasksScreen({
               onUiTap();
             }}
             disabled={tutorialOn && tutorialTarget !== "add-button"}
+            hitSlop={{ top: 8, bottom: 8 }}
+            accessibilityRole="button"
           >
             <Text style={[styles.addButtonText, { color: theme.accentText }]}>{copy.tasksAdd}</Text>
           </TouchableOpacity>
@@ -470,6 +455,13 @@ function TaskItem({
         ]}
         onPress={onComplete}
         disabled={isCompleted || isScheduled || (tutorialEnabled && !tutorialTarget)}
+        hitSlop={10}
+        accessibilityRole="checkbox"
+        accessibilityLabel={task.name}
+        accessibilityState={{
+          checked: isCompleted,
+          disabled: isCompleted || isScheduled || (tutorialEnabled && !tutorialTarget),
+        }}
       >
         {isCompleted && <Text style={styles.checkmark}>✓</Text>}
       </TouchableOpacity>
@@ -546,6 +538,9 @@ function FilterTab({
       ]}
       onPress={onPress}
       disabled={disabled}
+      hitSlop={{ top: 8, bottom: 8 }}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active, disabled }}
     >
       <Text style={[styles.filterText, { color: active ? theme.accentText : theme.mutedText }]}>
         {label}
@@ -561,6 +556,8 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -623,8 +620,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#fff",
   },
+  // Wraps at large font sizes instead of pushing the last chips off screen (#51).
   filterContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    rowGap: 8,
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,

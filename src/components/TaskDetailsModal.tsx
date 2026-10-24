@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -19,6 +20,7 @@ import { updateTaskTimerDuration } from "../utils/taskTimer";
 import TaskDatePicker from "./TaskDatePicker";
 import { taskCategoryLabel } from "../utils/taskLabels";
 import { categorySuggestions, matchExistingCategory } from "../utils/categorySuggestions";
+import { customTaskDraftProblem } from "../utils/taskDraft";
 
 interface TaskDetailsModalProps {
   visible: boolean;
@@ -121,7 +123,18 @@ export default function TaskDetailsModal({
             <Text style={[styles.headerAction, { color: theme.mutedText }]}>{copy.addTaskCancel}</Text>
           </TouchableOpacity>
           <Text style={[styles.title, { color: theme.text }]}>{copy.tasksDetails}</Text>
-          <TouchableOpacity onPress={() => onSave(draftTask)}>
+          <TouchableOpacity
+            onPress={() => {
+              // Same rule and message as the add form (#61): a task can't be edited into a blank name.
+              if (customTaskDraftProblem({ name: draftTask.name, category: draftTask.category })) {
+                Alert.alert(copy.addTaskTitle, copy.addTaskNameMissing);
+                return;
+              }
+              // One spelling per category (#60): "Work" typed while "work" exists saves as "work",
+              // the same way the add form does.
+              onSave({ ...draftTask, category: matchExistingCategory(draftTask.category, customCategories) });
+            }}
+          >
             <Text style={[styles.headerAction, { color: theme.accent }]}>{copy.tasksSave}</Text>
           </TouchableOpacity>
         </View>

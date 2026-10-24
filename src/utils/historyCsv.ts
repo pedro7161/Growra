@@ -1,7 +1,9 @@
 import { DayRecord, Task } from "../types";
 
 export function csvField(value: string | number): string {
-  const text = String(value);
+  // A cell starting with = + - @ (or a tab/CR) runs as a formula in spreadsheet apps; the
+  // leading ' makes it plain text. Numbers are left alone so negative values stay numbers.
+  const text = typeof value === "string" && /^[=+\-@\t\r]/.test(value) ? `'${value}` : String(value);
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

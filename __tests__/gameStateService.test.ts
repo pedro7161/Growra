@@ -145,3 +145,118 @@ describe('room state', () => {
     expect(result.saveData.gameState.roomShareFooter).toBe(true);
   });
 });
+
+describe('save hardening (#46)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('refuses a backup code whose checksum is fine but whose contents are the wrong shape', () => {
+    const good = createSaveData(createInitialGameState());
+    const code = gameStateService.exportSaveCode(good);
+    expect(gameStateService.importSaveCode(code).gameState.tasks).toEqual([]);
+
+    const broken = { ...good, gameState: { ...good.gameState, tasks: 'oops', coins: 'many' } };
+    const badCode = gameStateService.exportSaveCode(broken as never);
+    expect(() => gameStateService.importSaveCode(badCode)).toThrow();
+  });
+
+  it('treats a readable save with the wrong shape as corrupt instead of loading it', async () => {
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify({ version: 16, gameState: { tasks: 5 } }));
+    expect((await gameStateService.loadGame()).status).toBe('corrupt');
+  });
+
+  it('keeps only the two newest unreadable saves', async () => {
+    await AsyncStorage.setItem('growra_save_data_corrupt_100', 'a');
+    await AsyncStorage.setItem('growra_save_data_corrupt_200', 'b');
+    await AsyncStorage.setItem('growra_save_data_corrupt_300', 'c');
+    await AsyncStorage.setItem('growra_save_data', '{not json');
+    const result = await gameStateService.loadGame();
+
+    const kept = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith('growra_save_data_corrupt_'));
+    expect(kept).toHaveLength(2);
+    expect(result.status === 'corrupt' && kept.includes(result.backupKey)).toBe(true);
+    expect(kept).toContain('growra_save_data_corrupt_300');
+  });
+
+  it('reports a failed write instead of swallowing it', async () => {
+    // setItem is already a jest.fn in the AsyncStorage mock; spyOn + mockRestore would wipe its implementation.
+    (AsyncStorage.setItem as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('disk full')));
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    expect(await gameStateService.saveGame(createSaveData(createInitialGameState()))).toBe(false);
+    expect(await gameStateService.saveGame(createSaveData(createInitialGameState()))).toBe(true);
+    errorSpy.mockRestore();
+  });
+
+  it('shares a backup code for a readable save and the raw text for a broken one', async () => {
+    expect(await gameStateService.readStoredSaveForSharing()).toBeNull();
+    await gameStateService.saveGame(createSaveData(createInitialGameState()));
+    expect(await gameStateService.readStoredSaveForSharing()).toMatch(/^[^:]+:[^:]+:/);
+    await AsyncStorage.setItem('growra_save_data', '{not json');
+    expect(await gameStateService.readStoredSaveForSharing()).toBe('{not json');
+  });
+});
+
+describe('save versioning (#50)', () => {
+  const { SAVE_VERSION } = require('../src/utils/initialState');
+  const { NewerSaveError } = require('../src/services/gameStateService');
+
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('loads a same-version save unchanged in version', async () => {
+    await gameStateService.saveGame(createSaveData(createInitialGameState()));
+    const result = await gameStateService.loadGame();
+    expect(result.status === 'loaded' && result.saveData.version).toBe(SAVE_VERSION);
+  });
+
+  it('migrates an older save and stamps the current version', async () => {
+    const old = { ...createSaveData(createInitialGameState()), version: 9 };
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify(old));
+    const result = await gameStateService.loadGame();
+    expect(result.status === 'loaded' && result.saveData.version).toBe(SAVE_VERSION);
+  });
+
+  it('refuses a save from a newer build and leaves it untouched', async () => {
+    const newer = JSON.stringify({ ...createSaveData(createInitialGameState()), version: SAVE_VERSION + 1 });
+    await AsyncStorage.setItem('growra_save_data', newer);
+    expect(await gameStateService.loadGame()).toEqual({ status: 'newer', version: SAVE_VERSION + 1 });
+    expect(await AsyncStorage.getItem('growra_save_data')).toBe(newer);
+  });
+
+  it('refuses a backup code from a newer build', () => {
+    const code = gameStateService.exportSaveCode({ ...createSaveData(createInitialGameState()), version: SAVE_VERSION + 1 });
+    expect(() => gameStateService.importSaveCode(code)).toThrow(NewerSaveError);
+  });
+
+  it('snapshots the current save before an overwrite, keeping the newest two', async () => {
+    await gameStateService.saveGame(createSaveData(createInitialGameState()));
+    for (let index = 0; index < 3; index += 1) {
+      await gameStateService.snapshotBeforeOverwrite();
+      await new Promise((resolve) => setTimeout(resolve, 2));
+    }
+    const snapshots = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith('growra_save_data_snapshot_'));
+    expect(snapshots).toHaveLength(2);
+    expect(await AsyncStorage.getItem(snapshots[0])).toBe(await AsyncStorage.getItem('growra_save_data'));
+  });
+});
+
+describe('daily reminder setting (#39)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('is off at 20:00 for saves from before the reminder, and keeps a valid stored one', async () => {
+    const old = createSaveData(createInitialGameState());
+    const { dailyReminder: _gone, ...settings } = old.gameState.settings;
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify({ ...old, gameState: { ...old.gameState, settings } }));
+    const loaded = await gameStateService.loadGame();
+    expect(loaded.status === 'loaded' && loaded.saveData.gameState.settings.dailyReminder).toEqual({ enabled: false, hour: 20, minute: 0 });
+
+    const stored = { ...old, gameState: { ...old.gameState, settings: { ...old.gameState.settings, dailyReminder: { enabled: true, hour: 7, minute: 30 } } } };
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify(stored));
+    const again = await gameStateService.loadGame();
+    expect(again.status === 'loaded' && again.saveData.gameState.settings.dailyReminder).toEqual({ enabled: true, hour: 7, minute: 30 });
+  });
+});

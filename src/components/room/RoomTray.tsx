@@ -63,6 +63,7 @@ export default function RoomTray(props: RoomTrayProps) {
                   key={typeId}
                   style={[styles.tile, { backgroundColor: theme.surface }]}
                   onPress={() => props.onAddDecoration(ids[0])}
+                  accessibilityRole="button"
                 >
                   {image ? (
                     <Image source={image} style={styles.tileImage} resizeMode="contain" />
@@ -89,6 +90,8 @@ export default function RoomTray(props: RoomTrayProps) {
               style={[styles.tile, { backgroundColor: theme.surface, opacity: placed ? 0.4 : 1 }]}
               onPress={() => props.onAddCompanion(pet.id)}
               disabled={placed}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: placed }}
             >
               <Image
                 source={getPetImage(pet.templateId, pet.evolutionStage, pet.activeImageVariantId)}
@@ -120,6 +123,8 @@ export default function RoomTray(props: RoomTrayProps) {
               ]}
               onPress={() => props.onSetStyle(styleId)}
               disabled={locked}
+              accessibilityRole="button"
+              accessibilityState={{ selected: room.styleId === styleId, disabled: locked }}
             >
               {image ? (
                 <Image source={image} style={styles.styleImage} resizeMode="cover" />

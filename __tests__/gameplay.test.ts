@@ -9,7 +9,7 @@ import {
   completeTask,
   BASE_TASK_COIN_REWARD,
 } from '../src/utils/gameplay';
-import { DAILY_BASE_BOND_CAP, DAILY_COIN_TASK_CAP } from '../src/utils/companions';
+import { DAILY_BASE_BOND_CAP, DAILY_COIN_TASK_CAP, collectableCompanionCount, createEmptyUsage, getCompletionFacts, getPerkCoins } from '../src/utils/companions';
 import { createInitialGameState, createInitialStreak } from '../src/utils/initialState';
 import { createCustomTask } from '../src/utils/taskFactory';
 
@@ -151,5 +151,73 @@ describe('companions', () => {
     const next = applyTaskUpdated(state, before, after);
     expect(next.usage.rescheduled).toBe(1);
     expect(next.pets.map((pet) => pet.templateId)).toContain('ripple');
+  });
+});
+
+describe('getEffectiveStreak (#40)', () => {
+  const { getEffectiveStreak, calculateUpdatedStreak } = require('../src/utils/gameplay');
+  const day = 24 * 60 * 60 * 1000;
+  const start = new Date(2026, 9, 10, 12).getTime();
+  const streak = { level: 5, bonus: 0.25, lastCompletedDate: new Date(2026, 9, 10).getTime(), consecutiveMisses: 0 };
+
+  it('is unchanged on the day of the last completion and the day after', () => {
+    expect(getEffectiveStreak(streak, start)).toBe(streak);
+    expect(getEffectiveStreak(streak, start + day)).toBe(streak);
+  });
+
+  it('drops for a missed day without waiting for the next completion', () => {
+    const effective = getEffectiveStreak(streak, start + 2 * day);
+    expect(effective.level).toBe(4);
+    expect(effective.bonus).toBeLessThan(streak.bonus);
+  });
+
+  it('agrees with the completion path after a gap, minus the completion itself', () => {
+    for (const gap of [2, 3, 4, 6]) {
+      const now = start + gap * day;
+      expect(getEffectiveStreak(streak, now).level).toBe(calculateUpdatedStreak(streak, now).level);
+    }
+  });
+
+  it('resets to level 1 after three or more missed days', () => {
+    expect(getEffectiveStreak(streak, start + 4 * day).level).toBe(1);
+  });
+});
+
+describe('Lumen, the founder companion (free for everyone who uses Growra before 2027)', () => {
+  const december = local(2026, 12, 31, 23);
+  const newYear = local(2027, 1, 1, 0);
+  const lumens = (state: ReturnType<typeof createInitialGameState>) => state.pets.filter((pet) => pet.templateId === 'lumen');
+
+  it('joins anyone who has picked a starter before 2027, and says so', () => {
+    const next = applyCompanionJoins(adoptStarter(createInitialGameState(), 'sprout'), december);
+    expect(lumens(next)).toHaveLength(1);
+    expect(next.companionEvents).toContainEqual({ kind: 'joined', templateId: 'lumen' });
+  });
+
+  it('never joins twice', () => {
+    const once = applyCompanionJoins(adoptStarter(createInitialGameState(), 'sprout'), december);
+    expect(lumens(applyCompanionJoins(once, december))).toHaveLength(1);
+  });
+
+  it('does not join from 2027 on, but stays with anyone who already has it', () => {
+    const starter = adoptStarter(createInitialGameState(), 'sprout');
+    expect(lumens(applyCompanionJoins(starter, newYear))).toHaveLength(0);
+    const founder = applyCompanionJoins(starter, december);
+    expect(lumens(applyCompanionJoins(founder, newYear))).toHaveLength(1);
+  });
+
+  it('waits for the starter like everyone else', () => {
+    expect(applyCompanionJoins(createInitialGameState(), december).pets).toHaveLength(0);
+  });
+
+  it('gives +1 coin for every task while active', () => {
+    expect(getPerkCoins('founder', getCompletionFacts(createCustomTask('A', '', 'health', TaskFrequency.ONCE, '', 0), createEmptyUsage(), december))).toBe(1);
+  });
+});
+
+describe('collectable companions count', () => {
+  it('counts Lumen only for players who have it', () => {
+    expect(collectableCompanionCount(new Set(['sprout']))).toBe(12);
+    expect(collectableCompanionCount(new Set(['sprout', 'lumen']))).toBe(13);
   });
 });

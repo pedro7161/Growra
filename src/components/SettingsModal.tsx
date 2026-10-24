@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   Alert,
+  Share,
   Linking,
   Modal,
   ScrollView,
@@ -14,10 +15,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { appThemes, getAppTheme, themeName } from "../constants/appTheme";
 import { getChangelog } from "../constants/changelog";
-import { AppAppearance, AppLanguage, AppThemeId, GameState, TimerAlertMode } from "../types";
+import { AppAppearance, AppLanguage, AppThemeId, DailyReminderSettings, GameState, TimerAlertMode } from "../types";
 import { getGameStatsSummary } from "../utils/settings";
 import { isPlusTheme } from "../utils/plus";
 import { openStoreListing } from "../services/reviewService";
+import { NewerSaveError } from "../services/gameStateService";
+import { confirmReplaceSave } from "../utils/importConfirm";
 
 const PRIVACY_POLICY_URL = "https://pedro7161.github.io/growra-website/privacy-policy.html";
 
@@ -30,12 +33,14 @@ interface SettingsModalProps {
   onAppearanceChange: (appearance: AppAppearance) => void;
   onAudioPreferenceChange: (key: "musicEnabled" | "sfxEnabled", enabled: boolean) => void;
   onConfirmExitChange: (enabled: boolean) => void;
+  onDailyReminderChange: (reminder: DailyReminderSettings) => void;
   onReplayTutorial: () => void;
   onTimerAlertModeChange: (mode: TimerAlertMode) => void;
   onPickTimerAlertSound: () => Promise<void>;
   onClearTimerAlertSound: () => Promise<void>;
   onExportData: () => Promise<string>;
-  onImportData: (backupCode: string) => Promise<void>;
+  /** Resolves false when the imported save couldn't be written (the app has already said so). */
+  onImportData: (backupCode: string) => Promise<boolean>;
   isPlus: boolean;
   onOpenPlus: () => void;
   onExportCsv: () => Promise<void>;
@@ -51,6 +56,7 @@ export default function SettingsModal({
   onThemeChange,
   onAppearanceChange,
   onConfirmExitChange,
+  onDailyReminderChange,
   onReplayTutorial,
   onAudioPreferenceChange,
   onTimerAlertModeChange,
@@ -68,21 +74,38 @@ export default function SettingsModal({
   const theme = getAppTheme(gameState.settings.theme);
   const changelog = getChangelog(gameState.settings.language);
   const stats = getGameStatsSummary(gameState);
+  const reminder = gameState.settings.dailyReminder;
   const [backupCode, setBackupCode] = useState("");
   const [changelogVisible, setChangelogVisible] = useState(false);
 
+  // Export opens the share sheet straight away (copy, mail, notes...): selecting a long code
+  // by hand in the field was the only way out before (#49). The code still shows in the field.
   const handleExport = async () => {
     const exportedBackupCode = await onExportData();
     setBackupCode(exportedBackupCode);
-    Alert.alert(copy.settingsTitle, copy.settingsBackupExported);
+    if (!exportedBackupCode) return;
+    try {
+      await Share.share({ message: exportedBackupCode });
+    } catch {
+      Alert.alert(copy.settingsTitle, copy.settingsBackupExported);
+    }
   };
 
   const handleImport = async () => {
-    try {
-      await onImportData(backupCode);
-      Alert.alert(copy.settingsTitle, copy.settingsBackupImported);
-    } catch {
+    if (!backupCode.trim()) {
       Alert.alert(copy.settingsTitle, copy.settingsBackupInvalid);
+      return;
+    }
+    if (!(await confirmReplaceSave(copy, gameState, Alert.alert))) return;
+    try {
+      if (await onImportData(backupCode)) {
+        Alert.alert(copy.settingsTitle, copy.settingsBackupImported);
+      }
+    } catch (error) {
+      Alert.alert(
+        copy.settingsTitle,
+        error instanceof NewerSaveError ? copy.settingsBackupNewer : copy.settingsBackupInvalid,
+      );
     }
   };
 
@@ -237,6 +260,48 @@ export default function SettingsModal({
                 themeId={theme.id}
               />
             </View>
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsReminder}</Text>
+            <Text style={[styles.helpText, { color: theme.mutedText }]}>{copy.settingsReminderHelp}</Text>
+            <View style={styles.optionRow}>
+              <OptionButton
+                label={copy.settingsOn}
+                active={reminder.enabled}
+                onPress={() => onDailyReminderChange({ ...reminder, enabled: true })}
+                themeId={theme.id}
+              />
+              <OptionButton
+                label={copy.settingsOff}
+                active={!reminder.enabled}
+                onPress={() => onDailyReminderChange({ ...reminder, enabled: false })}
+                themeId={theme.id}
+              />
+            </View>
+            {reminder.enabled && (
+              <View style={styles.reminderTimeRow}>
+                <TouchableOpacity
+                  style={[styles.reminderStep, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}
+                  onPress={() => onDailyReminderChange(stepReminder(reminder, -30))}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={copy.settingsReminderEarlier}
+                >
+                  <Text style={[styles.reminderStepText, { color: theme.text }]}>−</Text>
+                </TouchableOpacity>
+                <Text style={[styles.reminderTime, { color: theme.text }]}>{formatReminderTime(reminder)}</Text>
+                <TouchableOpacity
+                  style={[styles.reminderStep, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}
+                  onPress={() => onDailyReminderChange(stepReminder(reminder, 30))}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={copy.settingsReminderLater}
+                >
+                  <Text style={[styles.reminderStepText, { color: theme.text }]}>+</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           <View style={[styles.section, { backgroundColor: theme.surface }]}>
@@ -417,6 +482,16 @@ function OptionButton({
   );
 }
 
+/** Moves the reminder by `deltaMinutes`, wrapping around midnight. */
+function stepReminder(reminder: DailyReminderSettings, deltaMinutes: number): DailyReminderSettings {
+  const total = (((reminder.hour * 60 + reminder.minute + deltaMinutes) % 1440) + 1440) % 1440;
+  return { ...reminder, hour: Math.floor(total / 60), minute: total % 60 };
+}
+
+function formatReminderTime(reminder: DailyReminderSettings): string {
+  return `${String(reminder.hour).padStart(2, "0")}:${String(reminder.minute).padStart(2, "0")}`;
+}
+
 function StatRow({
   label,
   value,
@@ -437,6 +512,10 @@ function StatRow({
 }
 
 const styles = StyleSheet.create({
+  reminderTimeRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 12 },
+  reminderStep: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  reminderStepText: { fontSize: 22, fontWeight: "700" },
+  reminderTime: { fontSize: 22, fontWeight: "700", minWidth: 80, textAlign: "center" },
   privacyLink: {
     fontSize: 14,
     fontWeight: "600",
@@ -587,10 +666,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
   },
+  // Label and value share the row and wrap at large font sizes instead of clipping (#51).
   statLabel: {
+    flex: 1,
     fontSize: 13,
+    marginRight: 12,
   },
   statValue: {
+    flexShrink: 1,
+    maxWidth: "50%",
+    textAlign: "right",
     fontSize: 14,
     fontWeight: "700",
   },

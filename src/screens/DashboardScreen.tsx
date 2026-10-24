@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { getLocaleFromSettings } from "../utils/settings";
 import { formatCount } from "../utils/formatCount";
+import type { ReturnRecap } from "../utils/returnRecap";
 import {
     Image,
     ScrollView,
@@ -27,7 +28,7 @@ import {
     getCompanionMood,
     getPerkStreakBonus,
 } from "../utils/companions";
-import { getLevelProgress, PLAYER_LEVEL_BASE_COST } from "../utils/gameplay";
+import { getEffectiveStreak, getLevelProgress, PLAYER_LEVEL_BASE_COST } from "../utils/gameplay";
 import { getRoadPosition } from "../utils/journey";
 import { taskCategoryLabel } from "../utils/taskLabels";
 import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
@@ -44,6 +45,13 @@ interface DashboardScreenProps {
   onPauseTimer: (taskId: string) => void;
   onResetTimer: (taskId: string) => void;
   onTimerReady: (taskId: string) => void;
+  /** Shown once after 2+ days away (#53); null otherwise. */
+  returnRecap: ReturnRecap | null;
+  onDismissReturnRecap: () => void;
+  /** The one-time backup card (#54). */
+  backupNudgeVisible: boolean;
+  onShareBackup: () => void;
+  onDismissBackupNudge: () => void;
 }
 
 export default function DashboardScreen({
@@ -57,6 +65,11 @@ export default function DashboardScreen({
   onPauseTimer,
   onResetTimer,
   onTimerReady,
+  returnRecap,
+  onDismissReturnRecap,
+  backupNudgeVisible,
+  onShareBackup,
+  onDismissBackupNudge,
 }: DashboardScreenProps) {
   const copy = getAppCopy(gameState.settings.language);
   const locale = getLocaleFromSettings(gameState.settings);
@@ -75,7 +88,7 @@ export default function DashboardScreen({
     (task) => task.predefinedTaskId,
   ).length;
   const streakBonus =
-    gameState.streak.bonus + getPerkStreakBonus(getActiveStyle(gameState));
+    getEffectiveStreak(gameState.streak, Date.now()).bonus + getPerkStreakBonus(getActiveStyle(gameState));
   const activeMultiplier = equippedPet
     ? (1 + streakBonus) * (1 + equippedPet.taskMultiplier)
     : 1 + streakBonus;
@@ -141,6 +154,44 @@ export default function DashboardScreen({
             )}
           </View>
         </View>
+
+        {returnRecap && (
+          <View style={[styles.noticeCard, { backgroundColor: theme.surface, borderColor: theme.accentSoft }]}>
+            <Text style={[styles.noticeTitle, { color: theme.text }]}>
+              {equippedPet ? copy.welcomeBackNamed.replace("{name}", equippedPet.name) : copy.welcomeBack}
+            </Text>
+            <Text style={[styles.noticeBody, { color: theme.mutedText }]}>
+              {(returnRecap.focus > 0 ? copy.returnRecapFocus : copy.returnRecapLine)
+                .replace("{days}", formatCount(returnRecap.days, locale))
+                .replace("{done}", formatCount(returnRecap.done, locale))
+                .replace("{focus}", formatCount(returnRecap.focus, locale))}
+            </Text>
+            <View style={styles.noticeActions}>
+              <TouchableOpacity onPress={onDismissReturnRecap} hitSlop={8} accessibilityRole="button">
+                <Text style={[styles.noticeLink, { color: theme.accent }]}>{copy.welcomeBackDismiss}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {backupNudgeVisible && (
+          <View style={[styles.noticeCard, { backgroundColor: theme.surface, borderColor: theme.accentSoft }]}>
+            <Text style={[styles.noticeTitle, { color: theme.text }]}>{copy.backupNudgeTitle}</Text>
+            <Text style={[styles.noticeBody, { color: theme.mutedText }]}>{copy.backupNudgeBody}</Text>
+            <View style={styles.noticeActions}>
+              <TouchableOpacity onPress={onDismissBackupNudge} hitSlop={8} accessibilityRole="button">
+                <Text style={[styles.noticeLink, { color: theme.mutedText }]}>{copy.backupNudgeDismiss}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.noticeButton, { backgroundColor: theme.accent }]}
+                onPress={onShareBackup}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.noticeButtonText, { color: theme.accentText }]}>{copy.backupNudgeShare}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -211,6 +262,10 @@ export default function DashboardScreen({
                     style={[styles.checkbox, { borderColor: theme.border }]}
                     onPress={() => onCompleteTask(task.id)}
                     disabled={tutorialLocked}
+                    hitSlop={10}
+                    accessibilityRole="checkbox"
+                    accessibilityLabel={task.name}
+                    accessibilityState={{ checked: false, disabled: tutorialLocked }}
                   />
                   <View style={styles.todayTaskContent}>
                     <Text style={[styles.taskName, { color: theme.text }]}>
@@ -374,6 +429,13 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  noticeCard: { borderRadius: 16, borderWidth: 1.5, padding: 16, marginBottom: 20, gap: 8 },
+  noticeTitle: { fontSize: 16, fontWeight: "700" },
+  noticeBody: { fontSize: 14, lineHeight: 20 },
+  noticeActions: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap", gap: 16, marginTop: 4 },
+  noticeLink: { fontSize: 14, fontWeight: "700" },
+  noticeButton: { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 },
+  noticeButtonText: { fontSize: 14, fontWeight: "700" },
   heroCard: {
     borderRadius: 16,
     padding: 20,

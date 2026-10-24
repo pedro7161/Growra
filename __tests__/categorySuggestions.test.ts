@@ -31,3 +31,15 @@ describe("matchExistingCategory", () => {
     expect(categorySuggestions(["", "home", ""])).toEqual(["home"]);
   });
 });
+
+describe('one spelling per category (#60)', () => {
+  const { categorySuggestions: suggest, matchExistingCategory: match } = require('../src/utils/categorySuggestions');
+
+  it('a case variant resolves to the existing chip, for highlight and for save', () => {
+    const chips = suggest(['work', 'work', 'work', 'Work']);
+    expect(chips).toEqual(['work']);
+    expect(match('Work', chips)).toBe('work');
+    expect(match('  WORK ', chips)).toBe('work');
+    expect(match('Home', chips)).toBe('Home');
+  });
+});

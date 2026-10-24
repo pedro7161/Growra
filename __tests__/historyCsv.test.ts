@@ -10,6 +10,16 @@ describe('history CSV', () => {
     expect(csvField('two\nlines')).toBe('"two\nlines"');
   });
 
+  it('neutralises cells a spreadsheet would run as a formula (#43)', () => {
+    expect(csvField('=SUM(A1)')).toBe("'=SUM(A1)");
+    expect(csvField('+call mum')).toBe("'+call mum");
+    expect(csvField('-gym')).toBe("'-gym");
+    expect(csvField('@home')).toBe("'@home");
+    expect(csvField('=1,2')).toBe('"\'=1,2"');
+    expect(csvField(-5)).toBe('-5');
+    expect(csvField('a=b')).toBe('a=b');
+  });
+
   it('writes a header and one row per task', () => {
     const task = createCustomTask('Buy milk, eggs', '', 'Shopping', TaskFrequency.ONCE);
     const lines = buildTasksCsv([task]).trimEnd().split('\r\n');

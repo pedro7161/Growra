@@ -144,6 +144,22 @@ interface AppCopy {
   settingsBackupExported: string;
   settingsBackupImported: string;
   settingsBackupInvalid: string;
+  crashTitle: string;
+  crashBody: string;
+  crashRestart: string;
+  crashShareBackup: string;
+  saveCorruptTitle: string;
+  saveCorruptBody: string;
+  saveCorruptShare: string;
+  saveFailedTitle: string;
+  saveFailedBody: string;
+  saveNewerTitle: string;
+  saveNewerBody: string;
+  saveNewerUpdate: string;
+  settingsBackupNewer: string;
+  importConfirmTitle: string;
+  importConfirmBody: string;
+  importConfirmReplace: string;
   settingsChangelog: string;
   settingsUpdatedOn: string;
   tutorialSkip: string;
@@ -204,6 +220,15 @@ interface AppCopy {
   /** Companion descriptions by companion id; a missing entry falls back to the English original in utils/gameplay.ts. */
   companionBios: Partial<Record<string, string>>;
   dashboardActiveDays: string;
+  welcomeBackNamed: string;
+  welcomeBack: string;
+  returnRecapLine: string;
+  returnRecapFocus: string;
+  welcomeBackDismiss: string;
+  backupNudgeTitle: string;
+  backupNudgeBody: string;
+  backupNudgeShare: string;
+  backupNudgeDismiss: string;
   tutorialChooseCompanionHint: string;
   companionFoundTitle: string;
   companionFoundSubtitle: string;
@@ -278,6 +303,17 @@ interface AppCopy {
   settingsAppSounds: string;
   tasksConfirmDelete: string;
   settingsConfirmExit: string;
+  notifyTimerTitle: string;
+  notifyTimerBody: string;
+  notifyTimerChannel: string;
+  reminderTitle: string;
+  reminderBody: string;
+  reminderChannel: string;
+  settingsReminder: string;
+  settingsReminderHelp: string;
+  settingsReminderDenied: string;
+  settingsReminderEarlier: string;
+  settingsReminderLater: string;
   settingsOn: string;
   settingsOff: string;
   exitTitle: string;
@@ -324,6 +360,10 @@ interface AppCopy {
   plusBadge: string;
   settingsPlus: string;
   settingsExportCsv: string;
+  csvExportChoose: string;
+  csvExportTasks: string;
+  csvExportCompletions: string;
+  csvExportError: string;
   timerLabel: string;
   taskStatusPending: string;
   taskStatusCompleted: string;
@@ -472,6 +512,22 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsBackupExported: "Backup code generated.",
     settingsBackupImported: "Backup imported successfully.",
     settingsBackupInvalid: "The backup code is invalid.",
+    crashTitle: "Something went wrong",
+    crashBody: "Growra hit an error. Your tasks and progress are still saved on this phone. Restart to try again, or share your backup code to keep a copy.",
+    crashRestart: "Restart",
+    crashShareBackup: "Share my backup code",
+    saveCorruptTitle: "Save could not be loaded",
+    saveCorruptBody: "Your previous progress couldn't be read, so a new game was started. The old save is still kept on this phone: share it and send it to growra@outlook.pt to get it back.",
+    saveCorruptShare: "Share old save",
+    saveFailedTitle: "Progress not saved",
+    saveFailedBody: "Growra couldn't save your latest change. Your phone may be out of storage; free some space so your progress is kept.",
+    saveNewerTitle: "Update Growra",
+    saveNewerBody: "Your progress was saved by a newer version of Growra. Update the app from Google Play to keep playing; nothing has been changed.",
+    saveNewerUpdate: "Open Google Play",
+    settingsBackupNewer: "This backup code comes from a newer version of Growra. Update the app, then import it again.",
+    importConfirmTitle: "Replace your progress?",
+    importConfirmBody: "Importing replaces everything in this app ({tasks} tasks, {companions} companions, {coins} coins) with the backup. Growra Plus stays as it is.",
+    importConfirmReplace: "Replace",
     settingsChangelog: "Changelog",
     settingsUpdatedOn: "Updated on",
     tutorialSkip: "Skip",
@@ -547,8 +603,18 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       tidying: { loves: "tidying up", perk: "+2 coins for finishing an overdue task", joins: "Joins after you clear {target} overdue tasks (done, moved or deleted)" },
       "long-run": { loves: "the long run", perk: "+10% streak bonus", joins: "Joins after {target} active days" },
       "big-days": { loves: "big days", perk: "+10 coins on your 5th task of a day", joins: "Joins on your first day with 5 tasks done" },
+      founder: { loves: "the early days", perk: "+1 coin for every task", joins: "Joined everyone who used Growra in 2026" },
     },
     dashboardActiveDays: "Active days",
+    welcomeBackNamed: "{name} is happy to see you again.",
+    welcomeBack: "Good to see you again.",
+    returnRecapLine: "Your last {days} active days: {done} tasks done.",
+    returnRecapFocus: "Your last {days} active days: {done} tasks done, {focus} focus sessions.",
+    welcomeBackDismiss: "OK",
+    backupNudgeTitle: "Keep a copy of your progress",
+    backupNudgeBody: "Your tasks and progress live only on this phone. Share a backup code to somewhere safe, like a note or an email to yourself, so you can bring everything back on a new phone.",
+    backupNudgeShare: "Share backup code",
+    backupNudgeDismiss: "No thanks",
     tutorialChooseCompanionHint: "Choose your first companion. The others join as you use Growra.",
     companionFoundTitle: "{name} found something!",
     companionFoundSubtitle: "A {item} from your focus session. It's in your bag on the Journey.",
@@ -631,6 +697,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     plusBadge: "Plus",
     settingsPlus: "Growra Plus",
     settingsExportCsv: "Export your history (CSV)",
+    csvExportChoose: "Which file do you want to share?",
+    csvExportTasks: "Tasks",
+    csvExportCompletions: "Completions",
+    csvExportError: "The file couldn't be created or shared. Please try again.",
     exploreButton: "Send {name} exploring",
     exploreAdHint: "Watch a short ad · {left} left today",
     explorePlusHint: "{left} left today",
@@ -645,6 +715,17 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsAppSounds: "App sounds",
     tasksConfirmDelete: "Confirm delete",
     settingsConfirmExit: "Ask before leaving the app",
+    notifyTimerTitle: "Time's up",
+    notifyTimerBody: "The timer for “{task}” has finished.",
+    notifyTimerChannel: "Task timers",
+    reminderTitle: "Growra",
+    reminderBody: "Your tasks are waiting whenever you're ready.",
+    reminderChannel: "Daily reminder",
+    settingsReminder: "Daily reminder",
+    settingsReminderHelp: "One gentle reminder a day, at the time you pick. Off unless you turn it on.",
+    settingsReminderDenied: "Notifications are turned off for Growra. Turn them on in your phone's settings to get the reminder.",
+    settingsReminderEarlier: "Earlier",
+    settingsReminderLater: "Later",
     settingsOn: "On",
     settingsOff: "Off",
     exitTitle: "Leave Growra?",
@@ -907,6 +988,22 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsBackupExported: "Código de backup gerado.",
     settingsBackupImported: "Backup importado com sucesso.",
     settingsBackupInvalid: "O código de backup é inválido.",
+    crashTitle: "Algo correu mal",
+    crashBody: "O Growra teve um erro. As tuas tarefas e o teu progresso continuam guardados neste telemóvel. Reinicia para tentar outra vez, ou partilha o teu código de backup para guardares uma cópia.",
+    crashRestart: "Reiniciar",
+    crashShareBackup: "Partilhar o código de backup",
+    saveCorruptTitle: "Não foi possível carregar o progresso",
+    saveCorruptBody: "Não foi possível ler o teu progresso anterior, por isso começou um jogo novo. O progresso antigo continua guardado neste telemóvel: partilha-o e envia-o para growra@outlook.pt para o recuperares.",
+    saveCorruptShare: "Partilhar progresso antigo",
+    saveFailedTitle: "Progresso não guardado",
+    saveFailedBody: "O Growra não conseguiu guardar a tua última alteração. O telemóvel pode estar sem espaço; liberta algum espaço para o teu progresso ficar guardado.",
+    saveNewerTitle: "Atualiza o Growra",
+    saveNewerBody: "O teu progresso foi guardado por uma versão mais recente do Growra. Atualiza a app no Google Play para continuares; nada foi alterado.",
+    saveNewerUpdate: "Abrir o Google Play",
+    settingsBackupNewer: "Este código de backup vem de uma versão mais recente do Growra. Atualiza a app e importa-o outra vez.",
+    importConfirmTitle: "Substituir o teu progresso?",
+    importConfirmBody: "Importar substitui tudo nesta app ({tasks} tarefas, {companions} companheiros, {coins} moedas) pelo backup. O Growra Plus fica como está.",
+    importConfirmReplace: "Substituir",
     settingsChangelog: "Registo de alterações",
     settingsUpdatedOn: "Atualizado em",
     tutorialSkip: "Saltar",
@@ -981,6 +1078,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       umbra: "Um espírito de sombra aveludado que brilha suavemente no nevoeiro ao luar, em vez de se esconder nele.",
       nova: "Um companheiro com coração de estrela, cuja aura junta fogo e luz das estrelas.",
       cindra: "Uma fera fofa de lava, com um coração de magma brilhante e o hábito de levantar faíscas.",
+      lumen: "Um pequeno espírito-semente com uma lanterna, para quem iluminou o caminho cedo.",
     },
     companionStyles: {
       "getting-started": { loves: "começar", perk: "+2 moedas na primeira tarefa de cada dia", joins: "Junta-se após {target} dias ativos" },
@@ -995,8 +1093,18 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       tidying: { loves: "arrumar", perk: "+2 moedas ao concluir uma tarefa atrasada", joins: "Junta-se depois de resolveres {target} tarefas atrasadas (feitas, adiadas ou apagadas)" },
       "long-run": { loves: "o longo prazo", perk: "+10% de bónus de sequência", joins: "Junta-se após {target} dias ativos" },
       "big-days": { loves: "dias em grande", perk: "+10 moedas na 5.ª tarefa do dia", joins: "Junta-se no primeiro dia com 5 tarefas feitas" },
+      founder: { loves: "os primeiros dias", perk: "+1 moeda em cada tarefa", joins: "Juntou-se a todos os que usaram o Growra em 2026" },
     },
     dashboardActiveDays: "Dias ativos",
+    welcomeBackNamed: "{name} está contente por te ver outra vez.",
+    welcomeBack: "É bom ver-te outra vez.",
+    returnRecapLine: "Os teus últimos {days} dias ativos: {done} tarefas feitas.",
+    returnRecapFocus: "Os teus últimos {days} dias ativos: {done} tarefas feitas, {focus} sessões de foco.",
+    welcomeBackDismiss: "OK",
+    backupNudgeTitle: "Guarda uma cópia do teu progresso",
+    backupNudgeBody: "As tuas tarefas e o teu progresso só existem neste telemóvel. Partilha um código de backup para um sítio seguro, como uma nota ou um email para ti, para recuperares tudo num telemóvel novo.",
+    backupNudgeShare: "Partilhar código de backup",
+    backupNudgeDismiss: "Dispensar",
     tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro. Os outros juntam-se a ti quando usas o Growra.",
     companionFoundTitle: "{name} encontrou uma coisa!",
     companionFoundSubtitle: "Um(a) {item} da tua sessão de foco. Está na tua mochila na Jornada.",
@@ -1079,6 +1187,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     plusBadge: "Plus",
     settingsPlus: "Growra Plus",
     settingsExportCsv: "Exportar o teu histórico (CSV)",
+    csvExportChoose: "Que ficheiro queres partilhar?",
+    csvExportTasks: "Tarefas",
+    csvExportCompletions: "Conclusões",
+    csvExportError: "Não foi possível criar ou partilhar o ficheiro. Tenta outra vez.",
     exploreButton: "Enviar {name} a explorar",
     exploreAdHint: "Vê um anúncio curto · faltam {left} hoje",
     explorePlusHint: "faltam {left} hoje",
@@ -1093,6 +1205,17 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsAppSounds: "Sons da aplicação",
     tasksConfirmDelete: "Confirmar eliminação",
     settingsConfirmExit: "Perguntar antes de sair da app",
+    notifyTimerTitle: "Tempo esgotado",
+    notifyTimerBody: "O temporizador de “{task}” terminou.",
+    notifyTimerChannel: "Temporizadores das tarefas",
+    reminderTitle: "Growra",
+    reminderBody: "As tuas tarefas estão à tua espera quando quiseres.",
+    reminderChannel: "Lembrete diário",
+    settingsReminder: "Lembrete diário",
+    settingsReminderHelp: "Um lembrete suave por dia, à hora que escolheres. Desligado a não ser que o ligues.",
+    settingsReminderDenied: "As notificações do Growra estão desligadas. Liga-as nas definições do telemóvel para receberes o lembrete.",
+    settingsReminderEarlier: "Mais cedo",
+    settingsReminderLater: "Mais tarde",
     settingsOn: "Ligado",
     settingsOff: "Desligado",
     exitTitle: "Sair do Growra?",

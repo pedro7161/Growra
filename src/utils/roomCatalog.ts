@@ -83,6 +83,18 @@ export function isSetInSeason(set: RoomSetId, now: number): boolean {
   }
 }
 
+/**
+ * Month (0-11) of the set's next window, for "Returns in {month}". Easter moves every year, so once
+ * this year's window is over the next one is next year's Easter, not this year's (#42).
+ */
+export function getNextSeasonStartMonth(set: RoomSetId, now: number): number {
+  const year = new Date(now).getFullYear();
+  if (set !== "easter") return getSetSeasonStartMonth(set, year);
+  const easter = easterSunday(year);
+  const windowEnd = dayStart(new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 7));
+  return getSetSeasonStartMonth(set, dayStart(new Date(now)) > windowEnd ? year + 1 : year);
+}
+
 /** Month (0-11) the set's window starts, for "Returns in {month}". */
 export function getSetSeasonStartMonth(set: RoomSetId, year: number): number {
   switch (set) {

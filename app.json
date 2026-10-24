@@ -2,7 +2,7 @@
   "expo": {
     "name": "Growra",
     "slug": "growra",
-    "version": "1.8.6",
+    "version": "1.9.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "growra",
@@ -17,7 +17,7 @@
     },
     "android": {
       "package": "com.growra.app",
-      "versionCode": 15,
+      "versionCode": 16,
       "adaptiveIcon": {
         "backgroundColor": "#DDF3EC",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -60,6 +60,12 @@
         {
           "microphonePermission": false,
           "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#1f7a73"
         }
       ]
     ],

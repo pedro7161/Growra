@@ -143,11 +143,11 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
           <TouchableOpacity
             style={styles.nameButton}
             onPress={() => {
-              setRenaming(room.name || displayName);
+              setRenaming(room.name);
               onUiTap();
             }}
           >
-            <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>{displayName} ✎</Text>
+            <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>{displayName} ✎</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -192,7 +192,13 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
 
         <View style={styles.toolbar}>
           {toolbar.map((action) => (
-            <TouchableOpacity key={action.label} style={[styles.tool, { backgroundColor: theme.surface }]} onPress={action.onPress}>
+            <TouchableOpacity
+              key={action.label}
+              style={[styles.tool, { backgroundColor: theme.surface }]}
+              onPress={action.onPress}
+              hitSlop={6}
+              accessibilityRole="button"
+            >
               <Text style={[styles.toolText, { color: theme.text }]}>{action.label}</Text>
             </TouchableOpacity>
           ))}
@@ -226,6 +232,9 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
               <TextInput
                 value={renaming ?? ""}
                 onChangeText={setRenaming}
+                // Starts empty with the default name as a hint; saving it empty keeps the default (#42).
+                placeholder={displayName}
+                placeholderTextColor={theme.mutedText}
                 maxLength={40}
                 autoFocus
                 style={[styles.renameInput, { color: theme.text, borderColor: theme.border }]}
@@ -250,7 +259,7 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
+  topBar: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
   nameButton: { flex: 1 },
   name: { fontSize: 17, fontWeight: "700" },
   barButton: { fontSize: 14, fontWeight: "600" },

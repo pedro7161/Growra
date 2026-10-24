@@ -31,6 +31,7 @@ import {
 import { buildDaysFromTasks } from "../utils/journey";
 import { getNextAvailableDate, getStartOfDay } from "../utils/taskSchedule";
 import { defaultSettings, defaultTimerAlertSettings } from "../utils/settings";
+import { SAVE_VERSION } from "../utils/initialState";
 import { createTaskTimer } from "../utils/taskTimer";
 import { BOND_GROWTH_THRESHOLDS, createEmptyUsage } from "../utils/companions";
 
@@ -41,11 +42,82 @@ const CONSUMABLE_TO_COINS = 10;
 
 const SAVE_KEY = "growra_save_data";
 const CORRUPT_SAVE_KEY_PREFIX = "growra_save_data_corrupt_";
+/** The save as it was just before an import replaced it. */
+const SNAPSHOT_SAVE_KEY_PREFIX = "growra_save_data_snapshot_";
+/** Unreadable saves (and pre-import snapshots) kept for recovery; older copies are dropped. */
+const MAX_CORRUPT_SAVES = 2;
+
+/** Thrown when a save or backup was written by a newer Growra than this one. */
+export class NewerSaveError extends Error {
+  constructor(readonly version: number) {
+    super(`Save version ${version} is newer than this app (${SAVE_VERSION})`);
+    this.name = "NewerSaveError";
+  }
+}
+
+function normalizeDailyReminder(value: unknown): AppSettings["dailyReminder"] {
+  const stored = isObject(value) ? value : {};
+  const hour = Number(stored.hour);
+  const minute = Number(stored.minute);
+  return {
+    enabled: stored.enabled === true,
+    hour: Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : defaultSettings.dailyReminder.hour,
+    minute: minute === 30 ? 30 : 0,
+  };
+}
+
+function savedVersion(data: unknown): number {
+  const version = isObject(data) ? data.version : undefined;
+  return typeof version === "number" && Number.isFinite(version) ? version : 0;
+}
+
+const ARRAY_FIELDS = [
+  "tasks",
+  "customTaskTemplates",
+  "pets",
+  "companionEvents",
+  "notices",
+  "days",
+  "decorations",
+  "rooms",
+  "ownedRoomStyles",
+] as const;
+const NUMBER_FIELDS = ["level", "coins", "totalExperience", "totalTasksCompleted", "createdAt", "lastPlayedAt"] as const;
+const OBJECT_FIELDS = ["settings", "usage", "streak", "plus", "explore"] as const;
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/**
+ * True when a (migrated) save has the shape the app renders from. A checksum only proves a backup
+ * code wasn't truncated; this keeps a structurally broken payload from becoming live state.
+ */
+export function isValidSaveShape(saveData: unknown): saveData is SaveData {
+  if (!isObject(saveData) || !isObject(saveData.gameState)) return false;
+  const gameState = saveData.gameState;
+  return (
+    ARRAY_FIELDS.every((field) => Array.isArray(gameState[field])) &&
+    NUMBER_FIELDS.every((field) => typeof gameState[field] === "number" && Number.isFinite(gameState[field])) &&
+    OBJECT_FIELDS.every((field) => isObject(gameState[field])) &&
+    typeof (gameState.settings as Record<string, unknown>).language === "string"
+  );
+}
+
+/** Keeps only the newest MAX_CORRUPT_SAVES copies under a prefix (the key suffix is the time it was stashed). */
+async function pruneCorruptSaves(prefix: string = CORRUPT_SAVE_KEY_PREFIX): Promise<void> {
+  const keys = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith(prefix));
+  const newestFirst = [...keys].sort(
+    (left, right) => Number(right.slice(prefix.length)) - Number(left.slice(prefix.length)),
+  );
+  const stale = newestFirst.slice(MAX_CORRUPT_SAVES);
+  if (stale.length > 0) await AsyncStorage.multiRemove(stale);
+}
 
 export type LoadResult =
   | { status: "empty" }
   | { status: "loaded"; saveData: SaveData }
-  | { status: "corrupt"; backupKey: string };
+  | { status: "corrupt"; backupKey: string }
+  | { status: "newer"; version: number };
 const BACKUP_PREFIX = "growra-backup";
 
 type PersistedGameState = Omit<
@@ -69,6 +141,7 @@ type PersistedGameState = Omit<
   | "rooms"
   | "ownedRoomStyles"
   | "roomShareFooter"
+  | "backupNudgeShown"
 > & {
   days?: DayRecord[];
   decorations?: Decoration[];
@@ -77,6 +150,7 @@ type PersistedGameState = Omit<
   rooms?: Room[];
   ownedRoomStyles?: string[];
   roomShareFooter?: boolean;
+  backupNudgeShown?: boolean;
   usage?: UsageStats;
   companionEvents?: CompanionEvent[];
   notices?: GameNotice[];
@@ -285,6 +359,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     rooms: saveData.gameState.rooms ?? [],
     ownedRoomStyles: saveData.gameState.ownedRoomStyles ?? ["wooden-bedroom"],
     roomShareFooter: saveData.gameState.roomShareFooter ?? true,
+    backupNudgeShown: saveData.gameState.backupNudgeShown === true,
     totalTasksCompleted:
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted
@@ -306,6 +381,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
           : "system",
       confirmExit: storedSettings.confirmExit !== false,
       taskToolsOpen: storedSettings.taskToolsOpen !== false,
+      dailyReminder: normalizeDailyReminder(storedSettings.dailyReminder),
       musicEnabled: storedSettings.musicEnabled === true,
       sfxEnabled: storedSettings.sfxEnabled === true,
       timerAlert,
@@ -358,7 +434,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
 
   return {
     ...saveData,
-    version: 16,
+    version: SAVE_VERSION,
     gameState: migratedGameState,
   };
 }
@@ -395,7 +471,16 @@ function parseBackupCode(backupCode: string): SaveData {
   }
 
   const parsedSaveData: PersistedSaveData = JSON.parse(serializedSaveData);
-  return migrateSaveData(parsedSaveData);
+  if (savedVersion(parsedSaveData) > SAVE_VERSION) {
+    throw new NewerSaveError(savedVersion(parsedSaveData));
+  }
+  const saveData = migrateSaveData(parsedSaveData);
+
+  if (!isValidSaveShape(saveData)) {
+    throw new Error("Invalid backup contents");
+  }
+
+  return saveData;
 }
 
 export const gameStateService = {
@@ -405,24 +490,83 @@ export const gameStateService = {
       return { status: "empty" };
     }
 
+    let parsedData: PersistedSaveData | undefined;
     try {
-      const parsedData: PersistedSaveData = JSON.parse(data);
-      return { status: "loaded", saveData: migrateSaveData(parsedData) };
+      parsedData = JSON.parse(data);
+    } catch {
+      parsedData = undefined;
+    }
+    // A newer build wrote this save: don't migrate it down (that drops what this build doesn't
+    // know) and don't overwrite it. The player updates the app instead (#50).
+    if (parsedData !== undefined && savedVersion(parsedData) > SAVE_VERSION) {
+      return { status: "newer", version: savedVersion(parsedData) };
+    }
+
+    try {
+      if (parsedData === undefined) throw new Error("Save is not valid JSON");
+      const saveData = migrateSaveData(parsedData);
+      if (!isValidSaveShape(saveData)) {
+        throw new Error("Save has an invalid shape");
+      }
+      return { status: "loaded", saveData };
     } catch (error) {
       // Keep the unreadable save under its own key before anything can overwrite SAVE_KEY,
       // so a later version (or a manual fix) can still recover the player's progress.
       console.error("Failed to load game:", error);
       const backupKey = `${CORRUPT_SAVE_KEY_PREFIX}${Date.now()}`;
       await AsyncStorage.setItem(backupKey, data);
+      await pruneCorruptSaves();
       return { status: "corrupt", backupKey };
     }
   },
 
-  async saveGame(saveData: SaveData): Promise<void> {
+  /** Writes the save; resolves false (instead of failing silently) when the write didn't happen. */
+  async saveGame(saveData: SaveData): Promise<boolean> {
     try {
       await AsyncStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+      return true;
     } catch (error) {
       console.error("Failed to save game:", error);
+      return false;
+    }
+  },
+
+  /** Copies the current save aside before something replaces it whole (an import). */
+  async snapshotBeforeOverwrite(): Promise<void> {
+    const data = await AsyncStorage.getItem(SAVE_KEY);
+    if (!data) return;
+    await AsyncStorage.setItem(`${SNAPSHOT_SAVE_KEY_PREFIX}${Date.now()}`, data);
+    await pruneCorruptSaves(SNAPSHOT_SAVE_KEY_PREFIX);
+  },
+
+  /** The raw text of a stashed unreadable save, so the player can send it for recovery. */
+  async readCorruptSave(backupKey: string): Promise<string | null> {
+    return AsyncStorage.getItem(backupKey);
+  },
+
+  /**
+   * What the crash screen offers to share: a backup code when the stored save still reads,
+   * otherwise its raw text. Null when there is nothing stored.
+   */
+  async readStoredSaveForSharing(): Promise<string | null> {
+    const data = await AsyncStorage.getItem(SAVE_KEY);
+    if (!data) return null;
+    try {
+      const saveData = migrateSaveData(JSON.parse(data) as PersistedSaveData);
+      return isValidSaveShape(saveData) ? createBackupCode(saveData) : data;
+    } catch {
+      return data;
+    }
+  },
+
+  /** The language stored in the save, for screens shown before (or without) the game state. */
+  async readStoredLanguage(): Promise<string | null> {
+    try {
+      const data = await AsyncStorage.getItem(SAVE_KEY);
+      const language = data ? (JSON.parse(data) as { gameState?: { settings?: { language?: unknown } } }).gameState?.settings?.language : null;
+      return typeof language === "string" ? language : null;
+    } catch {
+      return null;
     }
   },
 

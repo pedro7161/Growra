@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Image, ImageSourcePropType, StyleSheet, Text } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import { MAX_ITEM_SCALE, MIN_ITEM_SCALE } from "../../utils/rooms";
 
 interface RoomItemViewProps {
   source: ImageSourcePropType | undefined;
@@ -91,7 +92,8 @@ export default function RoomItemView(props: RoomItemViewProps) {
     transform: [
       { translateX: dx.value },
       { translateY: dy.value },
-      { scale: scale * pinch.value },
+      // Preview the same 50-150% range the committed resize is clamped to (#42).
+      { scale: Math.min(Math.max(scale * pinch.value, MIN_ITEM_SCALE), MAX_ITEM_SCALE) },
       { scaleX: flip ? -1 : 1 },
     ],
   }));
