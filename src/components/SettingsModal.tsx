@@ -433,7 +433,7 @@ export default function SettingsModal({
                       {copy.settingsUpdatedOn}: {entry.dateLabel}
                     </Text>
                     <View style={styles.changelogItems}>
-                      {entry.items.map((item) => (
+                      {[...entry.items, ...(entry.fixes ?? [])].map((item) => (
                         <View key={item} style={styles.changelogRow}>
                           <Text style={[styles.changelogBullet, { color: theme.accent }]}>•</Text>
                           <Text style={[styles.changelogItem, { color: theme.mutedText }]}>{item}</Text>

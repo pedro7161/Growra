@@ -142,6 +142,7 @@ type PersistedGameState = Omit<
   | "ownedRoomStyles"
   | "roomShareFooter"
   | "backupNudgeShown"
+  | "lastSeenVersion"
 > & {
   days?: DayRecord[];
   decorations?: Decoration[];
@@ -151,6 +152,7 @@ type PersistedGameState = Omit<
   ownedRoomStyles?: string[];
   roomShareFooter?: boolean;
   backupNudgeShown?: boolean;
+  lastSeenVersion?: string;
   usage?: UsageStats;
   companionEvents?: CompanionEvent[];
   notices?: GameNotice[];
@@ -360,6 +362,8 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     ownedRoomStyles: saveData.gameState.ownedRoomStyles ?? ["wooden-bedroom"],
     roomShareFooter: saveData.gameState.roomShareFooter ?? true,
     backupNudgeShown: saveData.gameState.backupNudgeShown === true,
+    // Saves from before the What's New popup: the player updated, so the notes are shown once.
+    lastSeenVersion: saveData.gameState.lastSeenVersion ?? "",
     totalTasksCompleted:
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted
