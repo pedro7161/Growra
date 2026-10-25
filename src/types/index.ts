@@ -189,6 +189,8 @@ export interface UsageStats {
   rescheduled: number;
   scheduledWeekAhead: number;
   bigDays: number;
+  /** Tasks done during each season, keyed like "halloween-2026" (event companions Gloam and Holly). */
+  seasonTasks?: Record<string, number>;
 }
 
 export interface GameNotice {

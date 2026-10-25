@@ -221,3 +221,57 @@ describe('collectable companions count', () => {
     expect(collectableCompanionCount(new Set(['sprout', 'lumen']))).toBe(13);
   });
 });
+
+describe('event companions: Gloam (Halloween) and Holly (Christmas)', () => {
+  const halloween = local(2026, 10, 25, 12);
+  const christmas = local(2026, 12, 20, 12);
+  const june = local(2026, 6, 1, 12);
+  const has = (state: ReturnType<typeof createInitialGameState>, id: string) => state.pets.some((pet) => pet.templateId === id);
+  const starter = () => adoptStarter(createInitialGameState(), 'sprout');
+  const withSeasonTasks = (key: string, count: number) => {
+    const state = starter();
+    return { ...state, usage: { ...state.usage, seasonTasks: { [key]: count } } };
+  };
+
+  afterEach(() => jest.useRealTimers());
+
+  it('counts tasks done during a season, by season and year', () => {
+    jest.useFakeTimers().setSystemTime(halloween);
+    const { state, ids } = withTasks(starter(), 3);
+    expect(completeAll(state, ids).usage.seasonTasks).toEqual({ 'halloween-2026': 3 });
+  });
+
+  it('does not count tasks outside a season', () => {
+    jest.useFakeTimers().setSystemTime(june);
+    const { state, ids } = withTasks(starter(), 3);
+    expect(completeAll(state, ids).usage.seasonTasks ?? {}).toEqual({});
+  });
+
+  it('Gloam joins after 10 tasks during Halloween, not 9', () => {
+    expect(has(applyCompanionJoins(withSeasonTasks('halloween-2026', 9), halloween), 'gloam')).toBe(false);
+    const joined = applyCompanionJoins(withSeasonTasks('halloween-2026', 10), halloween);
+    expect(has(joined, 'gloam')).toBe(true);
+    expect(has(joined, 'holly')).toBe(false);
+  });
+
+  it('Holly joins after 10 tasks during Christmas', () => {
+    expect(has(applyCompanionJoins(withSeasonTasks('christmas-2026', 10), christmas), 'holly')).toBe(true);
+  });
+
+  it("last season's tasks do not count after it ends, but a joined event companion stays", () => {
+    expect(has(applyCompanionJoins(withSeasonTasks('halloween-2026', 12), june), 'gloam')).toBe(false);
+    const joined = applyCompanionJoins(withSeasonTasks('halloween-2026', 10), halloween);
+    expect(has(applyCompanionJoins(joined, june), 'gloam')).toBe(true);
+  });
+
+  it('give +1 coin for every task while active, like Lumen', () => {
+    const facts = getCompletionFacts(createCustomTask('A', '', 'health', TaskFrequency.ONCE, '', 0), createEmptyUsage(), june);
+    expect(getPerkCoins('halloween', facts)).toBe(1);
+    expect(getPerkCoins('christmas', facts)).toBe(1);
+  });
+
+  it('event companions only count toward the total once they have joined', () => {
+    expect(collectableCompanionCount(new Set(['sprout']))).toBe(12);
+    expect(collectableCompanionCount(new Set(['sprout', 'gloam']))).toBe(13);
+  });
+});

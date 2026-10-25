@@ -3,7 +3,6 @@ import { companionDescription } from "../utils/companionText";
 import {
   Animated,
   Easing,
-  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
+import CompanionArtwork from "./CompanionArtwork";
 import { getAppTheme } from "../constants/appTheme";
 import { getPetImage } from "../constants/petImages";
 import { AppSettings, CompanionEvent, Pet } from "../types";
@@ -252,12 +252,13 @@ export default function CompanionRevealModal({
                         { backgroundColor: theme.accentSoft },
                       ]}
                     />
-                    <Image
+                    <CompanionArtwork
                       source={getPetImage(
                         activePet.templateId,
                         activePet.evolutionStage,
                         activePet.activeImageVariantId,
                       )}
+                      templateId={activePet.templateId}
                       style={styles.revealImage}
                       resizeMode="contain"
                     />
@@ -379,12 +380,13 @@ export default function CompanionRevealModal({
                         ]}
                         onPress={() => setActiveIndex(index)}
                       >
-                        <Image
+                        <CompanionArtwork
                           source={getPetImage(
                             pet.templateId,
                             pet.evolutionStage,
                             pet.activeImageVariantId,
                           )}
+                          templateId={pet.templateId}
                           style={styles.thumbnailImage}
                           resizeMode="contain"
                         />

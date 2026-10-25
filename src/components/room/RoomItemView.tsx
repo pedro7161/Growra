@@ -1,11 +1,13 @@
 import React, { useEffect } from "react";
 import { Image, ImageSourcePropType, StyleSheet, Text } from "react-native";
+import CompanionArtwork from "../CompanionArtwork";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { MAX_ITEM_SCALE, MIN_ITEM_SCALE } from "../../utils/rooms";
 
 interface RoomItemViewProps {
   source: ImageSourcePropType | undefined;
+  petTemplateId?: string;
   fallbackIcon: string;
   canvasWidth: number;
   canvasHeight: number;
@@ -110,7 +112,16 @@ export default function RoomItemView(props: RoomItemViewProps) {
     <GestureDetector gesture={Gesture.Simultaneous(pan, pinchGesture, tap)}>
       <Animated.View style={[box, animated, selected && styles.selected]}>
         {props.source ? (
-          <Image source={props.source} style={styles.fill} resizeMode="contain" />
+          props.petTemplateId ? (
+            <CompanionArtwork
+              source={props.source}
+              templateId={props.petTemplateId}
+              style={styles.fill}
+              resizeMode="contain"
+            />
+          ) : (
+            <Image source={props.source} style={styles.fill} resizeMode="contain" />
+          )
         ) : (
           <Text style={[styles.icon, { fontSize: side * 0.6 }]}>{props.fallbackIcon}</Text>
         )}

@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
+import CompanionArtwork from "../components/CompanionArtwork";
 import { getAppTheme } from "../constants/appTheme";
 import {
   EMPTY_SPOT_IMAGE,
@@ -186,12 +187,13 @@ export default function JourneyScreen({
           </ImageBackground>
         </TouchableOpacity>
         {index === tiles.length - 1 && companion && (
-          <Image
+          <CompanionArtwork
             source={getPetImage(
               companion.templateId,
               companion.evolutionStage,
               companion.activeImageVariantId,
             )}
+            templateId={companion.templateId}
             style={styles.tileCompanion}
             resizeMode="contain"
           />

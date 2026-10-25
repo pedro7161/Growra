@@ -3,7 +3,6 @@ import { companionDescription } from "../utils/companionText";
 import { getLocaleFromSettings } from "../utils/settings";
 import { formatCount } from "../utils/formatCount";
 import {
-  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -14,14 +13,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import ExploreButton from "../components/ExploreButton";
+import CompanionArtwork from "../components/CompanionArtwork";
 import { getExploreLeft } from "../utils/explore";
 import { getVisibleRooms } from "../utils/rooms";
 import { getAppTheme } from "../constants/appTheme";
+import { currentSeason } from "../utils/seasons";
 import { getPetImage } from "../constants/petImages";
 import { AppSettings, GameState } from "../types";
 import {
   COMPANIONS,
   collectableCompanionCount,
+  isLimitedCompanionStyle,
   getBondProgress,
   getActiveCompanion,
   getCompanionDefinition,
@@ -63,9 +65,12 @@ export default function CompanionsScreen({
   const now = Date.now();
   const [selectedPetId, setSelectedPetId] = useState("");
   const ownedTemplateIds = new Set(gameState.pets.map((pet) => pet.templateId));
-  // Lumen (the founder companion) only ever joins on its own; it never shows as one to unlock.
+  // Lumen only ever joins on its own; Gloam and Holly show as ones to unlock only during their season.
+  const season = currentSeason(now);
   const notMetCompanions = COMPANIONS.filter(
-    (companion) => !ownedTemplateIds.has(companion.templateId) && companion.style !== "founder",
+    (companion) =>
+      !ownedTemplateIds.has(companion.templateId) &&
+      (!isLimitedCompanionStyle(companion.style) || companion.style === season),
   );
   const needsStarter = gameState.pets.length === 0;
   const activeExplorer = getActiveCompanion(gameState);
@@ -263,12 +268,13 @@ function PetCard({
       onPress={onPress}
       activeOpacity={0.9}
     >
-      <Image
+      <CompanionArtwork
         source={getPetImage(
           pet.templateId,
           pet.evolutionStage,
           pet.activeImageVariantId,
         )}
+        templateId={pet.templateId}
         style={styles.petCardImage}
         resizeMode="contain"
       />
@@ -424,8 +430,9 @@ function StarterPicker({
                 },
               ]}
             >
-              <Image
+              <CompanionArtwork
                 source={getPetImage(templateId, 0, "default")}
+                templateId={templateId}
                 style={styles.petCardImage}
                 resizeMode="contain"
               />
@@ -534,12 +541,13 @@ function CompanionDetailModal({
           contentContainerStyle={styles.detailScrollContent}
         >
           <View style={[styles.detailHero, { backgroundColor: theme.surface }]}>
-            <Image
+            <CompanionArtwork
               source={getPetImage(
                 pet.templateId,
                 pet.evolutionStage,
                 pet.activeImageVariantId,
               )}
+              templateId={pet.templateId}
               style={styles.detailHeroImage}
               resizeMode="contain"
             />
