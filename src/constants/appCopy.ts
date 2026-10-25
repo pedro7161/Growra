@@ -1,6 +1,7 @@
 import { AppLanguage } from "../types";
 import type { CompanionMood, CompanionStyle } from "../utils/companions";
 import type { TileFeature } from "../utils/journey";
+import type { Holiday, Season } from "../utils/seasons";
 
 interface CompanionStyleCopy {
   loves: string;
@@ -216,6 +217,10 @@ interface AppCopy {
   companionEvolvedTitle: string;
   companionRevealSubtitle: string;
   companionMood: Record<CompanionMood, string>;
+  /** The mood lines during Halloween and Christmas. */
+  companionSeasonMood: Record<Season, Record<CompanionMood, string>>;
+  /** Greetings on the day itself (shown instead of the mood line, unless the companion is asleep). */
+  companionHolidayGreeting: Record<Holiday, string>;
   companionStyles: Record<CompanionStyle, CompanionStyleCopy>;
   /** Companion descriptions by companion id; a missing entry falls back to the English original in utils/gameplay.ts. */
   companionBios: Partial<Record<string, string>>;
@@ -593,6 +598,26 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       happy: "{name} is happy with today.",
       glowing: "{name} is glowing. What a day!",
       sleepy: "{name} dozed off while you were away. Any task wakes it up.",
+    },
+    companionSeasonMood: {
+      halloween: {
+        hello: "{name} has the witch hat on. Ready when you are.",
+        happy: "{name} is collecting a treat for every task today.",
+        glowing: "{name} is glowing like a jack-o'-lantern. What a day!",
+        sleepy: "{name} dozed off dreaming of pumpkins. Any task wakes it up.",
+      },
+      christmas: {
+        hello: "{name} is all wrapped up and ready when you are.",
+        happy: "{name} is feeling festive about today.",
+        glowing: "{name} is glowing like a Christmas tree. What a day!",
+        sleepy: "{name} is napping by the fire. Any task wakes it up.",
+      },
+    },
+    companionHolidayGreeting: {
+      halloween: "{name} says: Happy Halloween! 🎃",
+      christmasEve: "{name} says: Merry Christmas Eve! 🎄",
+      christmas: "{name} says: Merry Christmas! 🎁",
+      newYear: "{name} says: Happy New Year! ✨",
     },
     companionBios: {},
     companionStyles: {
@@ -1076,6 +1101,26 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       happy: "{name} está contente com o dia de hoje.",
       glowing: "{name} está a brilhar. Que dia!",
       sleepy: "{name} adormeceu enquanto estavas fora. Qualquer tarefa o acorda.",
+    },
+    companionSeasonMood: {
+      halloween: {
+        hello: "{name} já tem o chapéu de bruxa posto. Quando tu quiseres.",
+        happy: "{name} está a juntar um doce por cada tarefa de hoje.",
+        glowing: "{name} brilha como uma abóbora iluminada. Que dia!",
+        sleepy: "{name} adormeceu a sonhar com abóboras. Qualquer tarefa o acorda.",
+      },
+      christmas: {
+        hello: "{name} está bem agasalhado e à tua espera.",
+        happy: "{name} está com espírito natalício hoje.",
+        glowing: "{name} brilha como uma árvore de Natal. Que dia!",
+        sleepy: "{name} está a dormir junto à lareira. Qualquer tarefa o acorda.",
+      },
+    },
+    companionHolidayGreeting: {
+      halloween: "{name} diz: Feliz Halloween! 🎃",
+      christmasEve: "{name} diz: Feliz véspera de Natal! 🎄",
+      christmas: "{name} diz: Feliz Natal! 🎁",
+      newYear: "{name} diz: Feliz Ano Novo! ✨",
     },
     companionBios: {
       sprout: "Um amigo do bosque dos cogumelos que brilha mais onde quer que descanse.",

@@ -41,3 +41,16 @@ export function seasonKey(now: number = Date.now()): string | null {
   const year = season === "christmas" && date.getMonth() === 0 ? date.getFullYear() - 1 : date.getFullYear();
   return `${season}-${year}`;
 }
+
+export type Holiday = "halloween" | "christmasEve" | "christmas" | "newYear";
+
+/** The holiday that falls on this local date, if any: the companion greets the player on it. */
+export function holidayOn(now: number = Date.now()): Holiday | null {
+  const date = new Date(now);
+  const day = (date.getMonth() + 1) * 100 + date.getDate();
+  if (day === 1031) return "halloween";
+  if (day === 1224) return "christmasEve";
+  if (day === 1225) return "christmas";
+  if (day === 101) return "newYear";
+  return null;
+}
