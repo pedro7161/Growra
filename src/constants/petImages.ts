@@ -129,77 +129,143 @@ type StageImages = Pick<PetImages<ImageSourcePropType>, "base" | "evo1" | "evo2"
 
 /**
  * The companions with the season's hat drawn on, shown during that season. Gloam and Holly have
- * no hatted art (they are the event companions); Christmas art comes later.
+ * no hatted art (they are the event companions).
  */
 const SEASONAL_PET_IMAGES: Record<Season, Partial<Record<string, StageImages>>> = {
   halloween: {
     astra: {
-      base: require("../../assets/seasonal/halloween/pets/astra/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/astra/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/astra/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/astra/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/astra/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/astra/evo2.webp"),
     },
     cindra: {
-      base: require("../../assets/seasonal/halloween/pets/cindra/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/cindra/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/cindra/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/cindra/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/cindra/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/cindra/evo2.webp"),
     },
     ember: {
-      base: require("../../assets/seasonal/halloween/pets/ember/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/ember/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/ember/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/ember/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/ember/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/ember/evo2.webp"),
     },
     glint: {
-      base: require("../../assets/seasonal/halloween/pets/glint/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/glint/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/glint/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/glint/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/glint/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/glint/evo2.webp"),
     },
     lumen: {
-      base: require("../../assets/seasonal/halloween/pets/lumen/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/lumen/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/lumen/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/lumen/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/lumen/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/lumen/evo2.webp"),
     },
     moss: {
-      base: require("../../assets/seasonal/halloween/pets/moss/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/moss/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/moss/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/moss/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/moss/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/moss/evo2.webp"),
     },
     nova: {
-      base: require("../../assets/seasonal/halloween/pets/nova/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/nova/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/nova/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/nova/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/nova/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/nova/evo2.webp"),
     },
     pebble: {
-      base: require("../../assets/seasonal/halloween/pets/pebble/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/pebble/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/pebble/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/pebble/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/pebble/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/pebble/evo2.webp"),
     },
     ripple: {
-      base: require("../../assets/seasonal/halloween/pets/ripple/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/ripple/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/ripple/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/ripple/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/ripple/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/ripple/evo2.webp"),
     },
     sprout: {
-      base: require("../../assets/seasonal/halloween/pets/sprout/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/sprout/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/sprout/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/sprout/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/sprout/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/sprout/evo2.webp"),
     },
     tempo: {
-      base: require("../../assets/seasonal/halloween/pets/tempo/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/tempo/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/tempo/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/tempo/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/tempo/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/tempo/evo2.webp"),
     },
     umbra: {
-      base: require("../../assets/seasonal/halloween/pets/umbra/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/umbra/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/umbra/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/umbra/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/umbra/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/umbra/evo2.webp"),
     },
     zephie: {
-      base: require("../../assets/seasonal/halloween/pets/zephie/base.png"),
-      evo1: require("../../assets/seasonal/halloween/pets/zephie/evo1.png"),
-      evo2: require("../../assets/seasonal/halloween/pets/zephie/evo2.png"),
+      base: require("../../assets/seasonal/halloween/pets/zephie/base.webp"),
+      evo1: require("../../assets/seasonal/halloween/pets/zephie/evo1.webp"),
+      evo2: require("../../assets/seasonal/halloween/pets/zephie/evo2.webp"),
     },
   },
-  christmas: {},
+  christmas: {
+    astra: {
+      base: require("../../assets/seasonal/christmas/pets/astra/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/astra/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/astra/evo2.webp"),
+    },
+    cindra: {
+      base: require("../../assets/seasonal/christmas/pets/cindra/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/cindra/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/cindra/evo2.webp"),
+    },
+    ember: {
+      base: require("../../assets/seasonal/christmas/pets/ember/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/ember/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/ember/evo2.webp"),
+    },
+    glint: {
+      base: require("../../assets/seasonal/christmas/pets/glint/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/glint/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/glint/evo2.webp"),
+    },
+    lumen: {
+      base: require("../../assets/seasonal/christmas/pets/lumen/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/lumen/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/lumen/evo2.webp"),
+    },
+    moss: {
+      base: require("../../assets/seasonal/christmas/pets/moss/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/moss/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/moss/evo2.webp"),
+    },
+    nova: {
+      base: require("../../assets/seasonal/christmas/pets/nova/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/nova/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/nova/evo2.webp"),
+    },
+    pebble: {
+      base: require("../../assets/seasonal/christmas/pets/pebble/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/pebble/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/pebble/evo2.webp"),
+    },
+    ripple: {
+      base: require("../../assets/seasonal/christmas/pets/ripple/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/ripple/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/ripple/evo2.webp"),
+    },
+    sprout: {
+      base: require("../../assets/seasonal/christmas/pets/sprout/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/sprout/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/sprout/evo2.webp"),
+    },
+    tempo: {
+      base: require("../../assets/seasonal/christmas/pets/tempo/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/tempo/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/tempo/evo2.webp"),
+    },
+    umbra: {
+      base: require("../../assets/seasonal/christmas/pets/umbra/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/umbra/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/umbra/evo2.webp"),
+    },
+    zephie: {
+      base: require("../../assets/seasonal/christmas/pets/zephie/base.webp"),
+      evo1: require("../../assets/seasonal/christmas/pets/zephie/evo1.webp"),
+      evo2: require("../../assets/seasonal/christmas/pets/zephie/evo2.webp"),
+    },
+  },
 };
 
 export function getPetImage(
