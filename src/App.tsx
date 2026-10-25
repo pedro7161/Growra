@@ -335,19 +335,15 @@ export default function App() {
       await gameStateService.saveGame(createSaveData(resolvedGameState));
     }
 
-    // What's new after an update (#64): marked as seen the moment it appears, like the backup card.
-    if (resolvedGameState.lastSeenVersion !== APP_VERSION) {
-      setWhatsNew(
-        whatsNewToShow(
-          resolvedGameState.lastSeenVersion,
-          APP_VERSION,
-          resolvedGameState.tutorialCompleted,
-          resolvedGameState.settings.language,
-        ),
-      );
-      resolvedGameState = { ...resolvedGameState, lastSeenVersion: APP_VERSION };
-      await gameStateService.saveGame(createSaveData(resolvedGameState));
-    }
+    // What's new in this version (#64), on every launch until the player hides it for this version.
+    setWhatsNew(
+      whatsNewToShow(
+        resolvedGameState.whatsNewHiddenFor,
+        APP_VERSION,
+        resolvedGameState.tutorialCompleted,
+        resolvedGameState.settings.language,
+      ),
+    );
 
     gameStateRef.current = resolvedGameState;
     setGameState(resolvedGameState);
@@ -1076,9 +1072,11 @@ export default function App() {
           notes={whatsNew}
           version={APP_VERSION}
           settings={viewState.settings}
-          onClose={() => {
+          onClose={(hideUntilNextUpdate) => {
             setWhatsNew(null);
             playUiTap();
+            const current = gameStateRef.current;
+            if (hideUntilNextUpdate && current) void persistGameState({ ...current, whatsNewHiddenFor: APP_VERSION });
           }}
         />
         <GrowraPlusModal

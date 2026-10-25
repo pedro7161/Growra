@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
@@ -9,13 +9,19 @@ interface WhatsNewModalProps {
   notes: ChangelogEntry | null;
   version: string;
   settings: AppSettings;
-  onClose: () => void;
+  /** True when the player ticked "don't show again until the next update". */
+  onClose: (hideUntilNextUpdate: boolean) => void;
 }
 
-/** What's new and what was fixed, shown once on the first launch after an update (#64). */
+/** What's new and what was fixed in this version, on every launch until the player hides it (#64). */
 export default function WhatsNewModal({ notes, version, settings, onClose }: WhatsNewModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
+  const [hide, setHide] = useState(false);
+  const close = () => {
+    onClose(hide);
+    setHide(false);
+  };
   const sections = notes
     ? [
         { title: copy.whatsNewNew, lines: notes.items },
@@ -24,7 +30,7 @@ export default function WhatsNewModal({ notes, version, settings, onClose }: Wha
     : [];
 
   return (
-    <Modal visible={notes !== null} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={notes !== null} transparent animationType="slide" onRequestClose={close}>
       <View style={styles.backdrop}>
         <View style={[styles.sheet, { backgroundColor: theme.background }]}>
           <Text style={[styles.title, { color: theme.text }]}>{copy.whatsNewTitle.replace("{version}", version)}</Text>
@@ -42,8 +48,19 @@ export default function WhatsNewModal({ notes, version, settings, onClose }: Wha
             ))}
           </ScrollView>
           <TouchableOpacity
+            style={styles.hideRow}
+            onPress={() => setHide(!hide)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: hide }}
+          >
+            <View style={[styles.box, { borderColor: theme.accent, backgroundColor: hide ? theme.accent : "transparent" }]}>
+              {hide && <Text style={[styles.tick, { color: theme.accentText }]}>✓</Text>}
+            </View>
+            <Text style={[styles.hideText, { color: theme.text }]}>{copy.whatsNewHide}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.close, { backgroundColor: theme.accent }]}
-            onPress={onClose}
+            onPress={close}
             accessibilityRole="button"
           >
             <Text style={[styles.closeText, { color: theme.accentText }]}>{copy.whatsNewClose}</Text>
@@ -65,6 +82,10 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 8 },
   bullet: { fontSize: 15, lineHeight: 21 },
   line: { flex: 1, fontSize: 15, lineHeight: 21 },
+  hideRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },
+  box: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  tick: { fontSize: 15, fontWeight: "700" },
+  hideText: { flex: 1, fontSize: 15 },
   close: { borderRadius: 14, paddingVertical: 14, alignItems: "center" },
   closeText: { fontSize: 16, fontWeight: "700" },
 });
