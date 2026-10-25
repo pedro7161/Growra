@@ -229,6 +229,10 @@ interface AppCopy {
   backupNudgeBody: string;
   backupNudgeShare: string;
   backupNudgeDismiss: string;
+  whatsNewTitle: string;
+  whatsNewNew: string;
+  whatsNewFixed: string;
+  whatsNewClose: string;
   tutorialChooseCompanionHint: string;
   companionFoundTitle: string;
   companionFoundSubtitle: string;
@@ -617,6 +621,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     backupNudgeBody: "Your tasks and progress live only on this phone. Share a backup code to somewhere safe, like a note or an email to yourself, so you can bring everything back on a new phone.",
     backupNudgeShare: "Share backup code",
     backupNudgeDismiss: "No thanks",
+    whatsNewTitle: "What's new in {version}",
+    whatsNewNew: "New",
+    whatsNewFixed: "Fixed",
+    whatsNewClose: "Got it",
     tutorialChooseCompanionHint: "Choose your first companion. The others join as you use Growra.",
     companionFoundTitle: "{name} found something!",
     companionFoundSubtitle: "A {item} from your focus session. It's in your bag on the Journey.",
@@ -1111,6 +1119,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     backupNudgeBody: "As tuas tarefas e o teu progresso só existem neste telemóvel. Partilha um código de backup para um sítio seguro, como uma nota ou um email para ti, para recuperares tudo num telemóvel novo.",
     backupNudgeShare: "Partilhar código de backup",
     backupNudgeDismiss: "Dispensar",
+    whatsNewTitle: "Novidades da versão {version}",
+    whatsNewNew: "Novo",
+    whatsNewFixed: "Corrigido",
+    whatsNewClose: "Percebi",
     tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro. Os outros juntam-se a ti quando usas o Growra.",
     companionFoundTitle: "{name} encontrou uma coisa!",
     companionFoundSubtitle: "Um(a) {item} da tua sessão de foco. Está na tua mochila na Jornada.",

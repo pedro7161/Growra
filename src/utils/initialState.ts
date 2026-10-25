@@ -1,3 +1,4 @@
+import { APP_VERSION } from "../constants/appVersion";
 import { GameState, SaveData, Streak } from "../types";
 import { defaultSettings } from "./settings";
 import { generateId } from "./idUtils";
@@ -38,6 +39,7 @@ export function createInitialGameState(): GameState {
     ownedRoomStyles: ["wooden-bedroom"],
     roomShareFooter: true,
     backupNudgeShown: false,
+    lastSeenVersion: APP_VERSION, // a fresh install has nothing new to show
     createdAt: Date.now(),
     lastPlayedAt: Date.now(),
   };
@@ -47,7 +49,7 @@ export function createInitialGameState(): GameState {
  * The save format this build writes. Bump it whenever a build changes the save shape, so an older
  * build refuses that save instead of quietly dropping what it doesn't understand (#50).
  */
-export const SAVE_VERSION = 18; // 18: backupNudgeShown (#54)
+export const SAVE_VERSION = 19; // 19: lastSeenVersion (#64)
 
 export function createSaveData(gameState: GameState): SaveData {
   return {
