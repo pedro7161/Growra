@@ -13,6 +13,19 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      version: "1.9.1",
+      dateLabel: "Version 1.9.1 · October 26, 2026",
+      items: [
+        "Halloween is here until November 9: every companion wears a witch hat, and the app icon dresses up too. Santa hats follow in December.",
+        "Your companion has seasonal lines and greets you on Halloween, Christmas and New Year's Day.",
+        "Room codes: share a room as a code from the room's ⋯ menu, or copy a friend's. Items you don't have yet show as faded ghosts until you place one.",
+        "After each update, a short note like this one shows what's new.",
+      ],
+      fixes: [
+        "Companion pictures fit their frames in every screen.",
+      ],
+    },
+    {
       version: "1.9.0",
       dateLabel: "Version 1.9.0 · October 24, 2026",
       items: [
@@ -156,6 +169,19 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      version: "1.9.1",
+      dateLabel: "Versão 1.9.1 · 26 de outubro de 2026",
+      items: [
+        "O Halloween chegou e fica até 9 de novembro: todos os companheiros usam chapéu de bruxa, e o ícone da app também se mascara. Os gorros de Pai Natal chegam em dezembro.",
+        "O teu companheiro tem frases da época e cumprimenta-te no Halloween, no Natal e no Dia de Ano Novo.",
+        "Códigos de quarto: partilha um quarto como código no menu ⋯ do quarto, ou copia o de um amigo. Os itens que ainda não tens aparecem como fantasmas até colocares um.",
+        "Depois de cada atualização, uma nota curta como esta mostra as novidades.",
+      ],
+      fixes: [
+        "As imagens dos companheiros cabem nas molduras em todos os ecrãs.",
+      ],
+    },
     {
       version: "1.9.0",
       dateLabel: "Versão 1.9.0 · 24 de outubro de 2026",
