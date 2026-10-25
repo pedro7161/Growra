@@ -1,5 +1,6 @@
 import { ImageSourcePropType } from "react-native";
 import { PetImages } from "../types";
+import { Season, currentSeason } from "../utils/seasons";
 
 const PET_IMAGES: Record<string, PetImages<ImageSourcePropType>> = {
   sprout: {
@@ -124,10 +125,88 @@ const PET_IMAGES: Record<string, PetImages<ImageSourcePropType>> = {
   },
 };
 
+type StageImages = Pick<PetImages<ImageSourcePropType>, "base" | "evo1" | "evo2">;
+
+/**
+ * The companions with the season's hat drawn on, shown during that season. Gloam and Holly have
+ * no hatted art (they are the event companions); Christmas art comes later.
+ */
+const SEASONAL_PET_IMAGES: Record<Season, Partial<Record<string, StageImages>>> = {
+  halloween: {
+    astra: {
+      base: require("../../assets/seasonal/halloween/pets/astra/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/astra/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/astra/evo2.png"),
+    },
+    cindra: {
+      base: require("../../assets/seasonal/halloween/pets/cindra/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/cindra/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/cindra/evo2.png"),
+    },
+    ember: {
+      base: require("../../assets/seasonal/halloween/pets/ember/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/ember/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/ember/evo2.png"),
+    },
+    glint: {
+      base: require("../../assets/seasonal/halloween/pets/glint/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/glint/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/glint/evo2.png"),
+    },
+    lumen: {
+      base: require("../../assets/seasonal/halloween/pets/lumen/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/lumen/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/lumen/evo2.png"),
+    },
+    moss: {
+      base: require("../../assets/seasonal/halloween/pets/moss/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/moss/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/moss/evo2.png"),
+    },
+    nova: {
+      base: require("../../assets/seasonal/halloween/pets/nova/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/nova/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/nova/evo2.png"),
+    },
+    pebble: {
+      base: require("../../assets/seasonal/halloween/pets/pebble/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/pebble/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/pebble/evo2.png"),
+    },
+    ripple: {
+      base: require("../../assets/seasonal/halloween/pets/ripple/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/ripple/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/ripple/evo2.png"),
+    },
+    sprout: {
+      base: require("../../assets/seasonal/halloween/pets/sprout/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/sprout/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/sprout/evo2.png"),
+    },
+    tempo: {
+      base: require("../../assets/seasonal/halloween/pets/tempo/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/tempo/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/tempo/evo2.png"),
+    },
+    umbra: {
+      base: require("../../assets/seasonal/halloween/pets/umbra/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/umbra/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/umbra/evo2.png"),
+    },
+    zephie: {
+      base: require("../../assets/seasonal/halloween/pets/zephie/base.png"),
+      evo1: require("../../assets/seasonal/halloween/pets/zephie/evo1.png"),
+      evo2: require("../../assets/seasonal/halloween/pets/zephie/evo2.png"),
+    },
+  },
+  christmas: {},
+};
+
 export function getPetImage(
   templateId: string,
   evolutionStage: number,
-  variantId: string
+  variantId: string,
+  now: number = Date.now()
 ): ImageSourcePropType {
   const petImages = PET_IMAGES[templateId];
 
@@ -135,18 +214,19 @@ export function getPetImage(
     return petImages.variants[variantId];
   }
 
+  const season = currentSeason(now);
+  const stages = (season && SEASONAL_PET_IMAGES[season][templateId]) || petImages;
+
   if (evolutionStage === 2) {
-    return petImages.evo2;
+    return stages.evo2;
   }
 
   if (evolutionStage === 1) {
-    return petImages.evo1;
+    return stages.evo1;
   }
 
-  return petImages.base;
+  return stages.base;
 }
-
-type StageImages = Pick<PetImages<ImageSourcePropType>, "base" | "evo1" | "evo2">;
 
 /** Sleepy-mood art (P4); companions without it fall back to their normal image. */
 const SLEEPY_PET_IMAGES: Partial<Record<string, StageImages>> = {

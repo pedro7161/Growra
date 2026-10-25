@@ -1,9 +1,5 @@
 # Growra Halloween artwork
 
-- `app-icon.png`: 1254×1254 opaque seasonal icon master featuring Sprout in a witch hat among autumn mushrooms.
-- `witch-hat-overlay.png`: transparent witch hat displayed over every companion during October using the device's local month.
-- `../../pets/gloam/`: three transparent evolution sprites for Gloam, a pumpkin phantom companion.
-
-The normal app icon remains `assets/images/icon.png`. The seasonal icon is staged separately; matching Android adaptive-icon layers have not been made.
-
-Gloam's art is staged as a concept and has not been added to the companion unlock catalog. Its event availability and unlock rule are still to be defined.
+- `app-icon.png`: seasonal icon master (Sprout in a witch hat). `scripts/set-app-icon.py halloween` installs it; the icon changes only with an app update.
+- `pets/<id>/{base,evo1,evo2}.png`: every companion with the witch hat drawn on, shown during Halloween (`getPetImage` in `src/constants/petImages.ts`). Gloam and Holly have none.
+- `witch-hat-overlay.png`: the hat used as the reference when the hatted art was drawn; the app does not show it.

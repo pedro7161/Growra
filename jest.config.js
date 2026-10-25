@@ -7,7 +7,8 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testMatch: ['**/__tests__/**/*.(test|spec).(ts|tsx|js)'],
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest'
+    '^.+\\.(ts|tsx)$': 'ts-jest',
+    '^.+\\.png$': '<rootDir>/__mocks__/fileTransform.js'
   },
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
