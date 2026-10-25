@@ -1,4 +1,6 @@
 import { Decoration, GameState, Room, RoomItem } from "../types";
+import type { RoomLayout } from "./roomCode";
+import { getPetTemplates } from "./gameplay";
 import { getDecorationType } from "./journey";
 import { STARTER_ROOM_STYLE, getRoomItemSize, getRoomStyle } from "./roomCatalog";
 import { generateId } from "./idUtils";
@@ -59,6 +61,7 @@ export function syncRooms(state: GameState): GameState {
   rooms = rooms.map((room) => {
     const hiddenPlusRoom = (room.ownerPetId === null && !plus) || isOrphanRoom(room, petIds);
     const items = room.items.filter((item) => {
+      if (item.kind === "ghost") return item.ghostOf !== undefined;
       if (item.kind === "companion") return petIds.has(item.ref);
       const decoration = decorationsById.get(item.ref);
       // kept.has: a broken save can list one decoration twice; only its first item stays (#42).
@@ -100,7 +103,8 @@ export function getRoomBag(state: GameState): Decoration[] {
 }
 
 export function getItemSize(state: GameState, item: RoomItem): number {
-  if (item.kind === "companion") return COMPANION_ROOM_SIZE;
+  if (item.kind === "companion" || (item.kind === "ghost" && item.ghostOf === "companion")) return COMPANION_ROOM_SIZE;
+  if (item.kind === "ghost") return getRoomItemSize(item.ref);
   const decoration = state.decorations.find((candidate) => candidate.id === item.ref);
   return decoration ? getRoomItemSize(decoration.typeId) : getRoomItemSize("");
 }
@@ -230,4 +234,100 @@ export function replaceRoom(state: GameState, snapshot: Room): GameState {
       return decoration;
     }),
   };
+}
+
+/** What copying a room left undone, for the summary (#41). */
+export interface RoomCopyReport {
+  /** Decoration types the player doesn't own a free copy of, one entry per missing item. */
+  missing: string[];
+  /** Companion templates not met yet. */
+  unmetCompanions: string[];
+  /** The copied style when the player doesn't own it (the room keeps its own). */
+  styleNotOwned: string | null;
+}
+
+/**
+ * Replaces a room's layout with a copied one (rooms spec §3). The room's decorations go back to the
+ * bag first; each copied item is then filled from the bag by type, or becomes a ghost. Copying never
+ * moves an item out of another room or camp.
+ */
+export function copyRoomLayout(state: GameState, roomId: string, layout: RoomLayout): { state: GameState; report: RoomCopyReport } {
+  const report: RoomCopyReport = { missing: [], unmetCompanions: [], styleNotOwned: null };
+  const room = getVisibleRooms(state).find((candidate) => candidate.id === roomId);
+  if (!room) return { state, report };
+
+  const cleared = replaceRoom(state, { ...room, items: [] });
+  const bag = [...getRoomBag(cleared)];
+  const placed = new Set<string>();
+  const items: RoomItem[] = [];
+  for (const entry of layout.items.slice(0, MAX_ROOM_ITEMS)) {
+    const position = { x: entry.x, y: entry.y, scale: clamp(entry.scale, MIN_ITEM_SCALE, MAX_ITEM_SCALE), flip: entry.flip };
+    if (entry.kind === "decoration") {
+      if (!getDecorationType(entry.type)) continue;
+      const index = bag.findIndex((decoration) => decoration.typeId === entry.type);
+      if (index >= 0) {
+        const [decoration] = bag.splice(index, 1);
+        placed.add(decoration.id);
+        items.push({ id: generateId(), kind: "decoration", ref: decoration.id, ...position });
+      } else {
+        report.missing.push(entry.type);
+        items.push({ id: generateId(), kind: "ghost", ghostOf: "decoration", ref: entry.type, ...position });
+      }
+    } else {
+      if (!getPetTemplates().some((template) => template.id === entry.type)) continue;
+      const pet = cleared.pets.find((candidate) => candidate.templateId === entry.type);
+      if (pet && !items.some((item) => item.kind === "companion" && item.ref === pet.id)) {
+        items.push({ id: generateId(), kind: "companion", ref: pet.id, ...position });
+      } else if (!pet) {
+        report.unmetCompanions.push(entry.type);
+        items.push({ id: generateId(), kind: "ghost", ghostOf: "companion", ref: entry.type, ...position });
+      }
+    }
+  }
+
+  const style = getRoomStyle(layout.styleId);
+  const styleOwned = style && cleared.ownedRoomStyles.includes(layout.styleId) && (!style.set || cleared.plus.owned);
+  if (style && !styleOwned) report.styleNotOwned = layout.styleId;
+  const next = updateRoom(cleared, roomId, (current) => ({ ...current, items, styleId: styleOwned ? layout.styleId : current.styleId }));
+  return {
+    state: { ...next, decorations: next.decorations.map((decoration) => (placed.has(decoration.id) ? { ...decoration, roomId } : decoration)) },
+    report,
+  };
+}
+
+/** Where the player's copies of a ghost's item are, for its label. */
+export type GhostWhere = { where: "bag" } | { where: "camp"; camp: number } | { where: "room" } | { where: "none" };
+
+export function ghostWhere(state: GameState, item: RoomItem): GhostWhere {
+  if (item.ghostOf === "companion") {
+    return state.pets.some((pet) => pet.templateId === item.ref) ? { where: "bag" } : { where: "none" };
+  }
+  if (getRoomBag(state).some((decoration) => decoration.typeId === item.ref)) return { where: "bag" };
+  const owned = state.decorations.filter((decoration) => decoration.typeId === item.ref);
+  const inCamp = owned.find((decoration) => decoration.camp >= 0);
+  if (inCamp) return { where: "camp", camp: inCamp.camp };
+  return owned.length > 0 ? { where: "room" } : { where: "none" };
+}
+
+/** Puts a real item where a ghost is: a free decoration of that type from the bag, or the met companion. */
+export function fillGhost(state: GameState, roomId: string, itemId: string): GameState {
+  const ghost = state.rooms.find((room) => room.id === roomId)?.items.find((item) => item.id === itemId);
+  if (!ghost || ghost.kind !== "ghost") return state;
+  const position = { x: ghost.x, y: ghost.y, scale: ghost.scale, flip: ghost.flip };
+  if (ghost.ghostOf === "companion") {
+    const pet = state.pets.find((candidate) => candidate.templateId === ghost.ref);
+    const room = state.rooms.find((candidate) => candidate.id === roomId);
+    if (!pet || room?.items.some((item) => item.kind === "companion" && item.ref === pet.id)) return state;
+    return updateRoom(state, roomId, (current) => ({
+      ...current,
+      items: current.items.map((item) => (item.id === itemId ? { id: item.id, kind: "companion", ref: pet.id, ...position } : item)),
+    }));
+  }
+  const decoration = getRoomBag(state).find((candidate) => candidate.typeId === ghost.ref);
+  if (!decoration) return state;
+  const next = updateRoom(state, roomId, (current) => ({
+    ...current,
+    items: current.items.map((item) => (item.id === itemId ? { id: item.id, kind: "decoration", ref: decoration.id, ...position } : item)),
+  }));
+  return { ...next, decorations: next.decorations.map((candidate) => (candidate.id === decoration.id ? { ...candidate, roomId } : candidate)) };
 }

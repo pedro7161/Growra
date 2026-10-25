@@ -2,6 +2,7 @@ import { AppLanguage } from "../types";
 import type { CompanionMood, CompanionStyle } from "../utils/companions";
 import type { TileFeature } from "../utils/journey";
 import type { Holiday, Season } from "../utils/seasons";
+import type { RoomCodeError } from "../utils/roomCode";
 
 interface CompanionStyleCopy {
   loves: string;
@@ -296,6 +297,24 @@ interface AppCopy {
   roomBack: string;
   roomRemove: string;
   roomUndo: string;
+  roomMore: string;
+  roomShareCode: string;
+  roomCodeShareMessage: string;
+  roomCopy: string;
+  roomCopyHint: string;
+  roomCopyConfirmTitle: string;
+  roomCopyConfirmBody: string;
+  roomCopyReplace: string;
+  roomCopyCancel: string;
+  roomCodeErrors: Record<RoomCodeError, string>;
+  roomCopyDoneTitle: string;
+  roomCopyAllThere: string;
+  roomCopyNeed: string;
+  roomCopyUnmet: string;
+  roomCopyStyle: string;
+  roomGhostPlace: string;
+  roomGhostInRoom: string;
+  roomGhostNotOwned: string;
   roomShopStyles: string;
   roomShopFurniture: string;
   roomShopPlusSets: string;
@@ -789,6 +808,28 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     roomBack: "Back",
     roomRemove: "Remove",
     roomUndo: "Undo",
+    roomMore: "More",
+    roomShareCode: "Share room code",
+    roomCodeShareMessage: "My room in Growra. Paste this code in Growra (room ⋯ → Copy a room): {code}",
+    roomCopy: "Copy a room",
+    roomCopyHint: "Paste a room code from a friend.",
+    roomCopyConfirmTitle: "Replace this room's layout?",
+    roomCopyConfirmBody: "The items in this room go back to your bag.",
+    roomCopyReplace: "Replace",
+    roomCopyCancel: "Cancel",
+    roomCodeErrors: {
+      format: "That isn't a room code.",
+      checksum: "This room code is incomplete or was changed. Ask for it again.",
+      newer: "This room code comes from a newer Growra. Update the app to use it.",
+    },
+    roomCopyDoneTitle: "Room copied",
+    roomCopyAllThere: "Everything is in place.",
+    roomCopyNeed: "You need: {items}.",
+    roomCopyUnmet: "Not met yet: {names}.",
+    roomCopyStyle: "This room uses the {style} style; get it in the shop.",
+    roomGhostPlace: "Place",
+    roomGhostInRoom: "In another room",
+    roomGhostNotOwned: "Not owned",
     roomShopStyles: "Room styles",
     roomShopFurniture: "Furniture",
     roomShopPlusSets: "Plus sets",
@@ -1308,6 +1349,28 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     roomBack: "Para trás",
     roomRemove: "Tirar",
     roomUndo: "Desfazer",
+    roomMore: "Mais",
+    roomShareCode: "Partilhar código do quarto",
+    roomCodeShareMessage: "O meu quarto no Growra. Cola este código no Growra (quarto ⋯ → Copiar um quarto): {code}",
+    roomCopy: "Copiar um quarto",
+    roomCopyHint: "Cola o código de quarto de um amigo.",
+    roomCopyConfirmTitle: "Substituir a disposição deste quarto?",
+    roomCopyConfirmBody: "Os itens deste quarto voltam para o teu saco.",
+    roomCopyReplace: "Substituir",
+    roomCopyCancel: "Cancelar",
+    roomCodeErrors: {
+      format: "Isto não é um código de quarto.",
+      checksum: "Este código de quarto está incompleto ou foi alterado. Pede-o outra vez.",
+      newer: "Este código de quarto vem de um Growra mais recente. Atualiza a app para o usar.",
+    },
+    roomCopyDoneTitle: "Quarto copiado",
+    roomCopyAllThere: "Está tudo no lugar.",
+    roomCopyNeed: "Precisas de: {items}.",
+    roomCopyUnmet: "Ainda não conheces: {names}.",
+    roomCopyStyle: "Este quarto usa o estilo {style}; encontra-o na loja.",
+    roomGhostPlace: "Colocar",
+    roomGhostInRoom: "Noutro quarto",
+    roomGhostNotOwned: "Não tens",
     roomShopStyles: "Estilos de quarto",
     roomShopFurniture: "Mobília",
     roomShopPlusSets: "Conjuntos Plus",

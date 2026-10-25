@@ -237,8 +237,10 @@ export interface Streak {
 // A placed thing in a companion room (spec §1). Position is the item's centre as a fraction of the 4:5 canvas.
 export interface RoomItem {
   id: string;
-  kind: "decoration" | "companion";
-  ref: string; // decoration instance id, or pet id
+  /** "ghost": a copied item the player doesn't have here yet (#41), drawn faded and left out of shared pictures. */
+  kind: "decoration" | "companion" | "ghost";
+  ref: string; // decoration instance id, or pet id; for a ghost, the decoration typeId or companion templateId
+  ghostOf?: "decoration" | "companion";
   x: number;
   y: number;
   scale: number; // 0.5..1.5

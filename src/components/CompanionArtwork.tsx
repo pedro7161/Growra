@@ -20,7 +20,12 @@ interface CompanionArtworkProps {
 export default function CompanionArtwork({ source, style, resizeMode = "contain" }: CompanionArtworkProps) {
   return (
     <View pointerEvents="none" style={style}>
-      <Image source={source} style={StyleSheet.absoluteFill} resizeMode={resizeMode} />
+      {/* Explicit 100% size: with absoluteFill the bundled image's own 1024 px size wins and only its corner shows. */}
+      <Image source={source} style={styles.fill} resizeMode={resizeMode} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  fill: { width: "100%", height: "100%" },
+});
