@@ -264,10 +264,12 @@ describe('event companions: Gloam (Halloween) and Holly (Christmas)', () => {
     expect(has(applyCompanionJoins(joined, june), 'gloam')).toBe(true);
   });
 
-  it('give +1 coin for every task while active, like Lumen', () => {
-    const facts = getCompletionFacts(createCustomTask('A', '', 'health', TaskFrequency.ONCE, '', 0), createEmptyUsage(), june);
-    expect(getPerkCoins('halloween', facts)).toBe(1);
-    expect(getPerkCoins('christmas', facts)).toBe(1);
+  it('give +3 coins per task during their own season, +1 the rest of the year', () => {
+    const facts = (now: number) => getCompletionFacts(createCustomTask('A', '', 'health', TaskFrequency.ONCE, '', 0), createEmptyUsage(), now);
+    expect(getPerkCoins('halloween', facts(halloween))).toBe(3);
+    expect(getPerkCoins('halloween', facts(christmas))).toBe(1);
+    expect(getPerkCoins('christmas', facts(christmas))).toBe(3);
+    expect(getPerkCoins('christmas', facts(june))).toBe(1);
   });
 
   it('event companions only count toward the total once they have joined', () => {

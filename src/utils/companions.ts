@@ -42,6 +42,8 @@ export const FOUNDER_TEMPLATE_ID = "lumen";
 
 /** Gloam and Holly join after this many tasks done during their season (owner: "earned during the season"). */
 export const EVENT_COMPANION_TASKS = 10;
+/** Coins per task Gloam and Holly add during their own season (+1 the rest of the year). */
+export const EVENT_SEASON_PERK_COINS = 3;
 
 /** Event companions join during their season once enough tasks are done in it; they stay after. */
 const eventJoin = (season: Season) => (usage: UsageStats, now: number) => {
@@ -159,6 +161,8 @@ export interface CompletionFacts {
   scheduledAhead: boolean;
   firstOfDay: boolean;
   bigDayReached: boolean;
+  /** The season running when the task was done (Gloam and Holly pay more in theirs). */
+  season: Season | null;
 }
 
 export function getCompletionFacts(task: Task, usageToday: UsageStats, now: number): CompletionFacts {
@@ -174,6 +178,7 @@ export function getCompletionFacts(task: Task, usageToday: UsageStats, now: numb
     scheduledAhead: getCalendarDayDifference(task.createdAt, task.dueDate) >= SCHEDULED_AHEAD_DAYS,
     firstOfDay: usageToday.todayDone === 0,
     bigDayReached: usageToday.todayDone + 1 === BIG_DAY_TASKS,
+    season: currentSeason(now),
   };
 }
 
@@ -230,9 +235,10 @@ export function getPerkCoins(style: CompanionStyle | undefined, facts: Completio
     case "big-days":
       return facts.bigDayReached ? 10 : 0;
     case "founder":
+      return 1;
     case "halloween":
     case "christmas":
-      return 1;
+      return facts.season === style ? EVENT_SEASON_PERK_COINS : 1;
     default:
       return 0;
   }
