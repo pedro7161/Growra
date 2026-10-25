@@ -264,6 +264,44 @@ const PET_TEMPLATES: Record<PetRarity, PetTemplate[]> = {
         },
       },
     },
+      {
+      id: "gloam",
+      name: "Gloam",
+      element: "shadow",
+      description:
+        "A pumpkin phantom in a purple ghost cloak, who glows brightest on the darkest autumn nights.",
+      rarity: PetRarity.EPIC,
+      stats: { attack: 9, defense: 8, speed: 9, luck: 10 },
+      taskMultiplier: 0.15,
+      xpMultiplier: 1.5,
+      images: {
+        base: "assets/pets/gloam/base.png",
+        evo1: "assets/pets/gloam/evo1.png",
+        evo2: "assets/pets/gloam/evo2.png",
+        variants: {
+          default: "assets/pets/gloam/variants/default.png",
+        },
+      },
+    },
+    {
+      id: "holly",
+      name: "Holly",
+      element: "frost",
+      description:
+        "A winter fawn with holly antlers and a red scarf, who jingles a little gold bell.",
+      rarity: PetRarity.EPIC,
+      stats: { attack: 8, defense: 9, speed: 10, luck: 9 },
+      taskMultiplier: 0.15,
+      xpMultiplier: 1.5,
+      images: {
+        base: "assets/pets/holly/base.png",
+        evo1: "assets/pets/holly/evo1.png",
+        evo2: "assets/pets/holly/evo2.png",
+        variants: {
+          default: "assets/pets/holly/variants/default.png",
+        },
+      },
+    },
   ],
   [PetRarity.LEGENDARY]: [
     {

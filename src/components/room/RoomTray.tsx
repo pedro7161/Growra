@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import CompanionArtwork from "../CompanionArtwork";
 import { getAppCopy } from "../../constants/appCopy";
 import { getAppTheme } from "../../constants/appTheme";
 import { getDecorationImage } from "../../constants/journeyImages";
@@ -93,8 +94,9 @@ export default function RoomTray(props: RoomTrayProps) {
               accessibilityRole="button"
               accessibilityState={{ disabled: placed }}
             >
-              <Image
+              <CompanionArtwork
                 source={getPetImage(pet.templateId, pet.evolutionStage, pet.activeImageVariantId)}
+                templateId={pet.templateId}
                 style={styles.tileImage}
                 resizeMode="contain"
               />

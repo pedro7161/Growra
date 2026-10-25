@@ -3,7 +3,6 @@ import { getLocaleFromSettings } from "../utils/settings";
 import { formatCount } from "../utils/formatCount";
 import type { ReturnRecap } from "../utils/returnRecap";
 import {
-    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -13,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AddTaskModal from "../components/AddTaskModal";
 import TaskTimerControls from "../components/TaskTimerControls";
+import CompanionArtwork from "../components/CompanionArtwork";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { getPetImage, getSleepyPetImage } from "../constants/petImages";
@@ -142,12 +142,13 @@ export default function DashboardScreen({
               )}
             </View>
             {equippedPet && (
-              <Image
+              <CompanionArtwork
                 source={(mood === "sleepy" ? getSleepyPetImage : getPetImage)(
                   equippedPet.templateId,
                   equippedPet.evolutionStage,
                   equippedPet.activeImageVariantId,
                 )}
+                templateId={equippedPet.templateId}
                 style={styles.heroPetImage}
                 resizeMode="contain"
               />

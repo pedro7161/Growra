@@ -32,11 +32,13 @@ const RoomCanvas = React.forwardRef<View, RoomCanvasProps>(function RoomCanvas(p
       <Pressable style={StyleSheet.absoluteFillObject} onPress={() => props.onSelect(null)} />
       {room.items.map((item) => {
         let source;
+        let petTemplateId: string | undefined;
         let icon = "◌";
         if (item.kind === "companion") {
           const pet = state.pets.find((candidate) => candidate.id === item.ref);
           if (!pet) return null;
           source = getPetImage(pet.templateId, pet.evolutionStage, pet.activeImageVariantId);
+          petTemplateId = pet.templateId;
         } else {
           const decoration = state.decorations.find((candidate) => candidate.id === item.ref);
           if (!decoration) return null;
@@ -47,6 +49,7 @@ const RoomCanvas = React.forwardRef<View, RoomCanvasProps>(function RoomCanvas(p
           <RoomItemView
             key={item.id}
             source={source}
+            petTemplateId={petTemplateId}
             fallbackIcon={icon}
             canvasWidth={width}
             canvasHeight={height}

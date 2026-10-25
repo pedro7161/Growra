@@ -106,6 +106,22 @@ const PET_IMAGES: Record<string, PetImages<ImageSourcePropType>> = {
       default: require("../../assets/pets/lumen/variants/default.png"),
     },
   },
+  gloam: {
+    base: require("../../assets/pets/gloam/base.png"),
+    evo1: require("../../assets/pets/gloam/evo1.png"),
+    evo2: require("../../assets/pets/gloam/evo2.png"),
+    variants: {
+      default: require("../../assets/pets/gloam/variants/default.png"),
+    },
+  },
+  holly: {
+    base: require("../../assets/pets/holly/base.png"),
+    evo1: require("../../assets/pets/holly/evo1.png"),
+    evo2: require("../../assets/pets/holly/evo2.png"),
+    variants: {
+      default: require("../../assets/pets/holly/variants/default.png"),
+    },
+  },
 };
 
 export function getPetImage(
