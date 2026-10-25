@@ -292,8 +292,8 @@ export interface GameState {
   roomShareFooter: boolean;
   /** The one-time "keep a backup" card has been shown (#54); it never comes back. */
   backupNudgeShown: boolean;
-  /** The app version whose What's New notes were last shown or skipped; "" for saves from before 1.9.1. */
-  lastSeenVersion: string;
+  /** The app version whose What's New notes the player chose to stop seeing ("" = none yet). */
+  whatsNewHiddenFor: string;
   createdAt: number;
   lastPlayedAt: number;
 }

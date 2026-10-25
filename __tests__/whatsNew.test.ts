@@ -3,27 +3,23 @@ import { APP_VERSION } from '../src/constants/appVersion';
 import { createInitialGameState } from '../src/utils/initialState';
 import { whatsNewToShow } from '../src/utils/whatsNew';
 
-describe("What's New after an update (#64)", () => {
-  it('shows the notes once after an update from an older version', () => {
-    const notes = whatsNewToShow('1.8.6', '1.9.0', true, 'en');
+describe("What's New (#64)", () => {
+  it("shows this version's notes until the player hides them for this version", () => {
+    const notes = whatsNewToShow('', '1.9.0', true, 'en');
     expect(notes?.version).toBe('1.9.0');
     expect(notes?.fixes?.length).toBeGreaterThan(0);
-  });
-
-  it('shows them to saves from before the popup existed', () => {
-    expect(whatsNewToShow('', '1.9.0', true, 'pt')?.dateLabel).toContain('1.9.0');
-  });
-
-  it('skips the version already seen, players in the tutorial and versions without notes', () => {
+    expect(whatsNewToShow('1.8.6', '1.9.0', true, 'pt')?.dateLabel).toContain('1.9.0');
     expect(whatsNewToShow('1.9.0', '1.9.0', true, 'en')).toBeNull();
-    expect(whatsNewToShow('1.8.6', '1.9.0', false, 'en')).toBeNull();
-    expect(whatsNewToShow('1.8.6', '0.0.1', true, 'en')).toBeNull();
   });
 
-  it('a fresh install has nothing new to show', () => {
+  it('a fresh install sees them too, once the tutorial is done', () => {
     const fresh = createInitialGameState();
-    expect(fresh.lastSeenVersion).toBe(APP_VERSION);
-    expect(whatsNewToShow(fresh.lastSeenVersion, APP_VERSION, true, 'en')).toBeNull();
+    expect(whatsNewToShow(fresh.whatsNewHiddenFor, '1.9.0', false, 'en')).toBeNull();
+    expect(whatsNewToShow(fresh.whatsNewHiddenFor, '1.9.0', true, 'en')?.version).toBe('1.9.0');
+  });
+
+  it('a version without notes shows nothing', () => {
+    expect(whatsNewToShow('', '0.0.1', true, 'en')).toBeNull();
   });
 
   it('every version with notes has them in both languages, with the same number of lines', () => {

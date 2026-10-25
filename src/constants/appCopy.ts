@@ -233,6 +233,7 @@ interface AppCopy {
   whatsNewNew: string;
   whatsNewFixed: string;
   whatsNewClose: string;
+  whatsNewHide: string;
   tutorialChooseCompanionHint: string;
   companionFoundTitle: string;
   companionFoundSubtitle: string;
@@ -625,6 +626,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     whatsNewNew: "New",
     whatsNewFixed: "Fixed",
     whatsNewClose: "Got it",
+    whatsNewHide: "Don't show again until the next update",
     tutorialChooseCompanionHint: "Choose your first companion. The others join as you use Growra.",
     companionFoundTitle: "{name} found something!",
     companionFoundSubtitle: "A {item} from your focus session. It's in your bag on the Journey.",
@@ -1123,6 +1125,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     whatsNewNew: "Novo",
     whatsNewFixed: "Corrigido",
     whatsNewClose: "Percebi",
+    whatsNewHide: "Não mostrar outra vez até à próxima atualização",
     tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro. Os outros juntam-se a ti quando usas o Growra.",
     companionFoundTitle: "{name} encontrou uma coisa!",
     companionFoundSubtitle: "Um(a) {item} da tua sessão de foco. Está na tua mochila na Jornada.",

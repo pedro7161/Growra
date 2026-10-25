@@ -218,11 +218,11 @@ describe('save versioning (#50)', () => {
     expect(result.status === 'loaded' && result.saveData.version).toBe(SAVE_VERSION);
   });
 
-  it("a save from before the What's New popup loads with no version seen, so the notes show once (#64)", async () => {
-    const { lastSeenVersion: _dropped, ...gameState } = createInitialGameState();
+  it("a save from before the What's New popup loads with nothing hidden (#64)", async () => {
+    const { whatsNewHiddenFor: _dropped, ...gameState } = createInitialGameState();
     await AsyncStorage.setItem('growra_save_data', JSON.stringify({ ...createSaveData(gameState as never), version: 18 }));
     const result = await gameStateService.loadGame();
-    expect(result.status === 'loaded' && result.saveData.gameState.lastSeenVersion).toBe('');
+    expect(result.status === 'loaded' && result.saveData.gameState.whatsNewHiddenFor).toBe('');
   });
 
   it('refuses a save from a newer build and leaves it untouched', async () => {
