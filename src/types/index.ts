@@ -189,6 +189,8 @@ export interface UsageStats {
   rescheduled: number;
   scheduledWeekAhead: number;
   bigDays: number;
+  /** Tasks done during each season, keyed like "halloween-2026" (event companions Gloam and Holly). */
+  seasonTasks?: Record<string, number>;
 }
 
 export interface GameNotice {
@@ -235,8 +237,10 @@ export interface Streak {
 // A placed thing in a companion room (spec §1). Position is the item's centre as a fraction of the 4:5 canvas.
 export interface RoomItem {
   id: string;
-  kind: "decoration" | "companion";
-  ref: string; // decoration instance id, or pet id
+  /** "ghost": a copied item the player doesn't have here yet (#41), drawn faded and left out of shared pictures. */
+  kind: "decoration" | "companion" | "ghost";
+  ref: string; // decoration instance id, or pet id; for a ghost, the decoration typeId or companion templateId
+  ghostOf?: "decoration" | "companion";
   x: number;
   y: number;
   scale: number; // 0.5..1.5
@@ -290,6 +294,8 @@ export interface GameState {
   roomShareFooter: boolean;
   /** The one-time "keep a backup" card has been shown (#54); it never comes back. */
   backupNudgeShown: boolean;
+  /** The app version whose What's New notes the player chose to stop seeing ("" = none yet). */
+  whatsNewHiddenFor: string;
   createdAt: number;
   lastPlayedAt: number;
 }

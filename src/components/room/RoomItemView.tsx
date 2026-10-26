@@ -1,11 +1,15 @@
 import React, { useEffect } from "react";
-import { Image, ImageSourcePropType, StyleSheet, Text } from "react-native";
+import { Image, ImageSourcePropType, StyleSheet, Text, View } from "react-native";
+import CompanionArtwork from "../CompanionArtwork";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { MAX_ITEM_SCALE, MIN_ITEM_SCALE } from "../../utils/rooms";
 
 interface RoomItemViewProps {
   source: ImageSourcePropType | undefined;
+  petTemplateId?: string;
+  /** Set for a ghost: drawn faded with this label under it. */
+  ghostLabel?: string;
   fallbackIcon: string;
   canvasWidth: number;
   canvasHeight: number;
@@ -109,10 +113,26 @@ export default function RoomItemView(props: RoomItemViewProps) {
   return (
     <GestureDetector gesture={Gesture.Simultaneous(pan, pinchGesture, tap)}>
       <Animated.View style={[box, animated, selected && styles.selected]}>
+        <View style={[styles.fill, props.ghostLabel !== undefined && styles.ghost]}>
         {props.source ? (
-          <Image source={props.source} style={styles.fill} resizeMode="contain" />
+          props.petTemplateId ? (
+            <CompanionArtwork
+              source={props.source}
+              templateId={props.petTemplateId}
+              style={styles.fill}
+              resizeMode="contain"
+            />
+          ) : (
+            <Image source={props.source} style={styles.fill} resizeMode="contain" />
+          )
         ) : (
           <Text style={[styles.icon, { fontSize: side * 0.6 }]}>{props.fallbackIcon}</Text>
+        )}
+        </View>
+        {props.ghostLabel !== undefined && (
+          <Text style={[styles.ghostLabel, flip && styles.unflip]} numberOfLines={1}>
+            {props.ghostLabel}
+          </Text>
         )}
       </Animated.View>
     </GestureDetector>
@@ -122,5 +142,20 @@ export default function RoomItemView(props: RoomItemViewProps) {
 const styles = StyleSheet.create({
   fill: { width: "100%", height: "100%" },
   icon: { textAlign: "center" },
+  ghost: { opacity: 0.35 },
+  ghostLabel: {
+    position: "absolute",
+    bottom: -4,
+    alignSelf: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  unflip: { transform: [{ scaleX: -1 }] },
   selected: { borderWidth: 2, borderColor: "rgba(255, 255, 255, 0.9)", borderStyle: "dashed", borderRadius: 8 },
 });

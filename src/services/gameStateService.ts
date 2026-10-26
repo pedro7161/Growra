@@ -142,6 +142,7 @@ type PersistedGameState = Omit<
   | "ownedRoomStyles"
   | "roomShareFooter"
   | "backupNudgeShown"
+  | "whatsNewHiddenFor"
 > & {
   days?: DayRecord[];
   decorations?: Decoration[];
@@ -151,6 +152,7 @@ type PersistedGameState = Omit<
   ownedRoomStyles?: string[];
   roomShareFooter?: boolean;
   backupNudgeShown?: boolean;
+  whatsNewHiddenFor?: string;
   usage?: UsageStats;
   companionEvents?: CompanionEvent[];
   notices?: GameNotice[];
@@ -360,6 +362,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     ownedRoomStyles: saveData.gameState.ownedRoomStyles ?? ["wooden-bedroom"],
     roomShareFooter: saveData.gameState.roomShareFooter ?? true,
     backupNudgeShown: saveData.gameState.backupNudgeShown === true,
+    whatsNewHiddenFor: saveData.gameState.whatsNewHiddenFor ?? "",
     totalTasksCompleted:
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted

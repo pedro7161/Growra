@@ -1,5 +1,6 @@
 import { GameState, Pet, Task, TaskFrequency, TaskPriority, TaskStatus, TaskType, UsageStats } from "../types";
 import { getCalendarDayDifference, getStartOfDay } from "./taskSchedule";
+import { Season, currentSeason, seasonKey } from "./seasons";
 
 /**
  * Companions (Documents/GAME_REDESIGN.md §4): every pet exists once, joins when the user uses
@@ -19,7 +20,9 @@ export type CompanionStyle =
   | "tidying"
   | "long-run"
   | "big-days"
-  | "founder";
+  | "founder"
+  | "halloween"
+  | "christmas";
 
 export interface CompanionDefinition {
   templateId: string;
@@ -37,6 +40,24 @@ const count = (current: number, target: number) => ({ current: Math.min(current,
 export const FOUNDER_JOINS_UNTIL = new Date(2027, 0, 1).getTime();
 export const FOUNDER_TEMPLATE_ID = "lumen";
 
+/** Gloam and Holly join after this many tasks done during their season (owner: "earned during the season"). */
+export const EVENT_COMPANION_TASKS = 10;
+/** Coins per task Gloam and Holly add during their own season (+1 the rest of the year). */
+export const EVENT_SEASON_PERK_COINS = 3;
+
+/** Event companions join during their season once enough tasks are done in it; they stay after. */
+const eventJoin = (season: Season) => (usage: UsageStats, now: number) => {
+  const key = seasonKey(now);
+  return currentSeason(now) === season && key !== null && (usage.seasonTasks?.[key] ?? 0) >= EVENT_COMPANION_TASKS;
+};
+const eventProgress = (usage: UsageStats) => {
+  const key = seasonKey(Date.now());
+  return count(key ? usage.seasonTasks?.[key] ?? 0 : 0, EVENT_COMPANION_TASKS);
+};
+
+/** Companions that are only around at certain times: Lumen, and the seasonal Gloam and Holly. */
+export const isLimitedCompanionStyle = (style: CompanionStyle) => style === "founder" || style === "halloween" || style === "christmas";
+
 export const COMPANIONS: CompanionDefinition[] = [
   { templateId: "sprout", style: "getting-started", starter: true, joinsWhen: (u) => u.activeDays >= 3, joinProgress: (u) => count(u.activeDays, 3) },
   { templateId: "ripple", style: "flow", starter: true, joinsWhen: (u) => u.rescheduled >= 1, joinProgress: (u) => count(u.rescheduled, 1) },
@@ -51,11 +72,13 @@ export const COMPANIONS: CompanionDefinition[] = [
   { templateId: "nova", style: "long-run", starter: false, joinsWhen: (u) => u.activeDays >= 30, joinProgress: (u) => count(u.activeDays, 30) },
   { templateId: "cindra", style: "big-days", starter: false, joinsWhen: (u) => u.bigDays >= 1, joinProgress: (u) => count(u.bigDays, 1) },
   { templateId: FOUNDER_TEMPLATE_ID, style: "founder", starter: false, joinsWhen: (_u, now) => now < FOUNDER_JOINS_UNTIL, joinProgress: () => count(0, 1) },
+  { templateId: "gloam", style: "halloween", starter: false, joinsWhen: eventJoin("halloween"), joinProgress: eventProgress },
+  { templateId: "holly", style: "christmas", starter: false, joinsWhen: eventJoin("christmas"), joinProgress: eventProgress },
 ];
 
-/** How many companions a player can collect: Lumen counts only for those who have it (it can't be earned after 2026). */
+/** How many companions a player can collect: Lumen, Gloam and Holly count only once they've joined (they're time-limited). */
 export function collectableCompanionCount(ownedTemplateIds: ReadonlySet<string>): number {
-  return COMPANIONS.filter((c) => c.style !== "founder" || ownedTemplateIds.has(c.templateId)).length;
+  return COMPANIONS.filter((c) => !isLimitedCompanionStyle(c.style) || ownedTemplateIds.has(c.templateId)).length;
 }
 
 export const STARTER_TEMPLATE_IDS = COMPANIONS.filter((c) => c.starter).map((c) => c.templateId);
@@ -138,6 +161,8 @@ export interface CompletionFacts {
   scheduledAhead: boolean;
   firstOfDay: boolean;
   bigDayReached: boolean;
+  /** The season running when the task was done (Gloam and Holly pay more in theirs). */
+  season: Season | null;
 }
 
 export function getCompletionFacts(task: Task, usageToday: UsageStats, now: number): CompletionFacts {
@@ -153,6 +178,7 @@ export function getCompletionFacts(task: Task, usageToday: UsageStats, now: numb
     scheduledAhead: getCalendarDayDifference(task.createdAt, task.dueDate) >= SCHEDULED_AHEAD_DAYS,
     firstOfDay: usageToday.todayDone === 0,
     bigDayReached: usageToday.todayDone + 1 === BIG_DAY_TASKS,
+    season: currentSeason(now),
   };
 }
 
@@ -181,6 +207,8 @@ function matchesStyle(style: CompanionStyle, facts: CompletionFacts): boolean {
     case "flow":
     case "long-run":
     case "founder":
+    case "halloween":
+    case "christmas":
       return false;
   }
 }
@@ -208,6 +236,9 @@ export function getPerkCoins(style: CompanionStyle | undefined, facts: Completio
       return facts.bigDayReached ? 10 : 0;
     case "founder":
       return 1;
+    case "halloween":
+    case "christmas":
+      return facts.season === style ? EVENT_SEASON_PERK_COINS : 1;
     default:
       return 0;
   }
@@ -243,7 +274,15 @@ export function recordCompletion(usage: UsageStats, facts: CompletionFacts, now:
     highPriorityDone: usage.highPriorityDone + (facts.highPriority ? 1 : 0),
     overdueCleared: usage.overdueCleared + (facts.overdue ? 1 : 0),
     bigDays: usage.bigDays + (facts.bigDayReached ? 1 : 0),
+    ...withSeasonTask(usage, now),
   };
+}
+
+/** Counts a completion toward the running season (for Gloam and Holly). */
+function withSeasonTask(usage: UsageStats, now: number): Pick<UsageStats, "seasonTasks"> {
+  const key = seasonKey(now);
+  if (!key) return usage.seasonTasks ? { seasonTasks: usage.seasonTasks } : {};
+  return { seasonTasks: { ...usage.seasonTasks, [key]: (usage.seasonTasks?.[key] ?? 0) + 1 } };
 }
 
 export function recordTaskCreated(usage: UsageStats, task: Task, now: number): UsageStats {

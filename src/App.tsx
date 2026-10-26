@@ -5,6 +5,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import SettingsModal from "./components/SettingsModal";
 import GrowraPlusModal from "./components/GrowraPlusModal";
+import WhatsNewModal from "./components/WhatsNewModal";
+import { APP_VERSION } from "./constants/appVersion";
+import { ChangelogEntry } from "./constants/changelog";
+import { whatsNewToShow } from "./utils/whatsNew";
 import UpdatePrompt from "./components/UpdatePrompt";
 import { useAppUpdate } from "./hooks/useAppUpdate";
 import RoomEditorScreen from "./screens/RoomEditorScreen";
@@ -141,6 +145,7 @@ export default function App() {
   const lastSaveWarningRef = useRef(0);
   const [returnRecap, setReturnRecap] = useState<ReturnRecap | null>(null);
   const [backupNudgeVisible, setBackupNudgeVisible] = useState(false);
+  const [whatsNew, setWhatsNew] = useState<ChangelogEntry | null>(null);
   const [loading, setLoading] = useState(true);
   /** Set when the save was written by a newer Growra: nothing is loaded or overwritten (#50). */
   const [newerSaveLanguage, setNewerSaveLanguage] = useState<string | null>(null);
@@ -329,6 +334,16 @@ export default function App() {
       resolvedGameState = { ...resolvedGameState, backupNudgeShown: true };
       await gameStateService.saveGame(createSaveData(resolvedGameState));
     }
+
+    // What's new in this version (#64), on every launch until the player hides it for this version.
+    setWhatsNew(
+      whatsNewToShow(
+        resolvedGameState.whatsNewHiddenFor,
+        APP_VERSION,
+        resolvedGameState.tutorialCompleted,
+        resolvedGameState.settings.language,
+      ),
+    );
 
     gameStateRef.current = resolvedGameState;
     setGameState(resolvedGameState);
@@ -1052,6 +1067,17 @@ export default function App() {
           state={appUpdate.state}
           progress={appUpdate.progress}
           controller={appUpdate.controller}
+        />
+        <WhatsNewModal
+          notes={whatsNew}
+          version={APP_VERSION}
+          settings={viewState.settings}
+          onClose={(hideUntilNextUpdate) => {
+            setWhatsNew(null);
+            playUiTap();
+            const current = gameStateRef.current;
+            if (hideUntilNextUpdate && current) void persistGameState({ ...current, whatsNewHiddenFor: APP_VERSION });
+          }}
         />
         <GrowraPlusModal
           visible={plusVisible}

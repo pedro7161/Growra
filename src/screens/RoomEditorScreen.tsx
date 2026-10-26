@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Modal,
+  Share,
   StyleSheet,
   Switch,
   Text,
@@ -21,7 +23,10 @@ import {
   addCompanionToRoom,
   addDecorationToRoom,
   bringItemForward,
+  copyRoomLayout,
+  fillGhost,
   flipRoomItem,
+  ghostWhere,
   moveRoomItem,
   removeRoomItem,
   renameRoom,
@@ -31,6 +36,9 @@ import {
   sendItemBack,
   setRoomStyle,
 } from "../utils/rooms";
+import { decodeRoomCode, encodeRoomCode, roomLayout } from "../utils/roomCode";
+import type { RoomLayout } from "../utils/roomCode";
+import { getPetTemplates } from "../utils/gameplay";
 
 interface RoomEditorScreenProps {
   state: GameState;
@@ -55,6 +63,8 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
   const [undo, setUndo] = useState<Room | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [pastedCode, setPastedCode] = useState<string | null>(null);
 
   const room = getVisibleRooms(state).find((candidate) => candidate.id === roomId);
 
@@ -116,11 +126,64 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
     }
   };
 
+  // Room codes (#41): share this layout as text, or copy a friend's onto this room.
+  const shareCode = () => {
+    setMenuOpen(false);
+    const code = encodeRoomCode(roomLayout(state, room));
+    void Share.share({ message: copy.roomCodeShareMessage.replace("{code}", code) }).catch(() => undefined);
+  };
+
+  const listNames = (ids: string[], name: (id: string) => string) => {
+    const counts = new Map<string, number>();
+    ids.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1));
+    return [...counts].map(([id, count]) => (count > 1 ? `${name(id)} ×${count}` : name(id))).join(", ");
+  };
+
+  const applyCopy = (layout: RoomLayout) => {
+    let summary = "";
+    commit(
+      (current) => {
+        const { state: next, report } = copyRoomLayout(current, roomId, layout);
+        const lines = [
+          report.missing.length > 0 &&
+            copy.roomCopyNeed.replace("{items}", listNames(report.missing, (id) => copy.decorationNames[id] ?? id)),
+          report.unmetCompanions.length > 0 &&
+            copy.roomCopyUnmet.replace(
+              "{names}",
+              listNames(report.unmetCompanions, (id) => getPetTemplates().find((template) => template.id === id)?.name ?? id),
+            ),
+          report.styleNotOwned && copy.roomCopyStyle.replace("{style}", copy.roomStyleNames[report.styleNotOwned] ?? report.styleNotOwned),
+        ].filter(Boolean);
+        summary = lines.length > 0 ? lines.join("\n") : copy.roomCopyAllThere;
+        return next;
+      },
+      () => setSelectedItemId(null),
+    );
+    // onChange applies the edit synchronously, so the summary is ready here.
+    Alert.alert(copy.roomCopyDoneTitle, summary);
+  };
+
+  const submitCode = () => {
+    const decoded = decodeRoomCode(pastedCode ?? "");
+    if ("error" in decoded) {
+      Alert.alert(copy.roomCopy, copy.roomCodeErrors[decoded.error]);
+      return;
+    }
+    setPastedCode(null);
+    Alert.alert(copy.roomCopyConfirmTitle, copy.roomCopyConfirmBody, [
+      { text: copy.roomCopyCancel, style: "cancel" },
+      { text: copy.roomCopyReplace, onPress: () => applyCopy(decoded.layout) },
+    ]);
+  };
+
   const showFooter = sharing && (state.roomShareFooter || !state.plus.owned);
   const canvasWidth = Math.min(windowWidth - 32, 420);
   const selectedId = selectedItemId;
+  const selectedItem = room.items.find((item) => item.id === selectedId);
+  const canPlace = selectedItem?.kind === "ghost" && ghostWhere(state, selectedItem).where === "bag";
   const toolbar: { label: string; onPress: () => void }[] = selectedId
     ? [
+        ...(canPlace ? [{ label: copy.roomGhostPlace, onPress: () => commit((s) => fillGhost(s, roomId, selectedId)) }] : []),
         { label: copy.roomFlip, onPress: () => commit((s) => flipRoomItem(s, roomId, selectedId)) },
         { label: copy.roomForward, onPress: () => commit((s) => bringItemForward(s, roomId, selectedId)) },
         { label: copy.roomBack, onPress: () => commit((s) => sendItemBack(s, roomId, selectedId)) },
@@ -164,6 +227,17 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
           <TouchableOpacity onPress={() => void handleShare()} disabled={sharing}>
             <Text style={[styles.barButton, { color: theme.accent }]}>{copy.roomShare}</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setMenuOpen(true);
+              onUiTap();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={copy.roomMore}
+            hitSlop={8}
+          >
+            <Text style={[styles.barButton, { color: theme.accent }]}>⋯</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={onClose}>
             <Text style={[styles.barButton, styles.done, { color: theme.accent }]}>{copy.roomDone}</Text>
           </TouchableOpacity>
@@ -177,6 +251,7 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
             width={canvasWidth}
             selectedItemId={sharing ? null : selectedItemId}
             editable={!sharing}
+            showGhosts={!sharing}
             onSelect={setSelectedItemId}
             onMoveEnd={(itemId, x, y) => commit((s) => moveRoomItem(s, roomId, itemId, x, y))}
             onResizeEnd={(itemId, scale) => commit((s) => resizeRoomItem(s, roomId, itemId, scale))}
@@ -224,6 +299,53 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
           onBuyFurniture={(typeId) => applyWithoutUndo((s) => buyFurniture(s, typeId, Date.now()), onCoinPurchase)}
           onOpenPlus={onOpenPlus}
         />
+
+        <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+          <TouchableOpacity style={styles.renameBackdrop} activeOpacity={1} onPress={() => setMenuOpen(false)}>
+            <View style={[styles.renameCard, { backgroundColor: theme.surface }]}>
+              <TouchableOpacity onPress={shareCode} accessibilityRole="button">
+                <Text style={[styles.menuItem, { color: theme.text }]}>{copy.roomShareCode}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setMenuOpen(false);
+                  setPastedCode("");
+                }}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.menuItem, { color: theme.text }]}>{copy.roomCopy}</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        <Modal visible={pastedCode !== null} transparent animationType="fade" onRequestClose={() => setPastedCode(null)}>
+          <View style={styles.renameBackdrop}>
+            <View style={[styles.renameCard, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.name, { color: theme.text }]}>{copy.roomCopy}</Text>
+              <Text style={{ color: theme.mutedText }}>{copy.roomCopyHint}</Text>
+              <TextInput
+                value={pastedCode ?? ""}
+                onChangeText={setPastedCode}
+                placeholder="GROWRA-ROOM-…"
+                placeholderTextColor={theme.mutedText}
+                autoCapitalize="none"
+                autoCorrect={false}
+                multiline
+                autoFocus
+                style={[styles.renameInput, styles.codeInput, { color: theme.text, borderColor: theme.border }]}
+              />
+              <View style={styles.menuActions}>
+                <TouchableOpacity onPress={() => setPastedCode(null)}>
+                  <Text style={[styles.barButton, { color: theme.mutedText }]}>{copy.roomCopyCancel}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={submitCode} disabled={!pastedCode?.trim()}>
+                  <Text style={[styles.barButton, styles.done, { color: pastedCode?.trim() ? theme.accent : theme.border }]}>{copy.roomCopy}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         <Modal visible={renaming !== null} transparent animationType="fade" onRequestClose={closeRename}>
           <View style={styles.renameBackdrop}>
@@ -273,5 +395,8 @@ const styles = StyleSheet.create({
   footerText: { color: "#fff", fontWeight: "700", fontSize: 12 },
   renameBackdrop: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "rgba(0,0,0,0.45)" },
   renameCard: { borderRadius: 16, padding: 18, gap: 12 },
+  menuItem: { fontSize: 16, fontWeight: "600", paddingVertical: 10 },
+  menuActions: { flexDirection: "row", justifyContent: "flex-end", gap: 20 },
+  codeInput: { minHeight: 80, textAlignVertical: "top" },
   renameInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 16 },
 });

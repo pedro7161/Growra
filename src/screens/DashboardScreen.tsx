@@ -3,7 +3,6 @@ import { getLocaleFromSettings } from "../utils/settings";
 import { formatCount } from "../utils/formatCount";
 import type { ReturnRecap } from "../utils/returnRecap";
 import {
-    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -13,7 +12,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AddTaskModal from "../components/AddTaskModal";
 import TaskTimerControls from "../components/TaskTimerControls";
+import CompanionArtwork from "../components/CompanionArtwork";
 import { getAppCopy } from "../constants/appCopy";
+import { companionLine } from "../utils/companionText";
 import { getAppTheme } from "../constants/appTheme";
 import { getPetImage, getSleepyPetImage } from "../constants/petImages";
 import { getPredefinedTask } from "../constants/predefinedTasks";
@@ -93,12 +94,7 @@ export default function DashboardScreen({
     ? (1 + streakBonus) * (1 + equippedPet.taskMultiplier)
     : 1 + streakBonus;
   const mood = getCompanionMood(gameState, now);
-  const moodLine = equippedPet
-    ? copy.companionMood[mood].replace(
-        "{name}",
-        equippedPet.name,
-      )
-    : "";
+  const moodLine = equippedPet ? companionLine(copy, mood, equippedPet.name, now) : "";
 
   const currentLevel = gameState.level;
   const levelStartExp =
@@ -142,12 +138,13 @@ export default function DashboardScreen({
               )}
             </View>
             {equippedPet && (
-              <Image
+              <CompanionArtwork
                 source={(mood === "sleepy" ? getSleepyPetImage : getPetImage)(
                   equippedPet.templateId,
                   equippedPet.evolutionStage,
                   equippedPet.activeImageVariantId,
                 )}
+                templateId={equippedPet.templateId}
                 style={styles.heroPetImage}
                 resizeMode="contain"
               />

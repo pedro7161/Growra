@@ -1,13 +1,32 @@
 import { AppLanguage } from "../types";
 
 export interface ChangelogEntry {
+  /** The app version this entry belongs to (entries from 1.9.0 on); the What's New popup looks it up. */
+  version?: string;
   dateLabel: string;
+  /** What is new. */
   items: string[];
+  /** What was fixed, listed apart in the What's New popup and the changelog. */
+  fixes?: string[];
 }
 
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      version: "1.9.1",
+      dateLabel: "Version 1.9.1 · October 26, 2026",
+      items: [
+        "Halloween is here until November 9: every companion wears a witch hat, and the app icon dresses up too. Santa hats follow in December.",
+        "Your companion has seasonal lines and greets you on Halloween, Christmas and New Year's Day.",
+        "Room codes: share a room as a code from the room's ⋯ menu, or copy a friend's. Items you don't have yet show as faded ghosts until you place one.",
+        "After each update, a short note like this one shows what's new.",
+      ],
+      fixes: [
+        "Companion pictures fit their frames in every screen.",
+      ],
+    },
+    {
+      version: "1.9.0",
       dateLabel: "Version 1.9.0 · October 24, 2026",
       items: [
         "New: Lumen, a founder companion, joins everyone who uses Growra in 2026. While it's your active companion, every task gives +1 coin.",
@@ -15,8 +34,10 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
         "Back after a few days? Growra welcomes you with a short recap of your last active days.",
         "Backups: the backup code opens the share sheet, and importing a backup asks before replacing your data.",
         "Safer saves: Growra keeps a copy before an import and never loads a save from a newer version.",
-        "The dashboard shows your real streak after missed days.",
         "Accessibility: clearer labels, bigger touch areas and better text wrapping.",
+      ],
+      fixes: [
+        "The dashboard shows your real streak after missed days.",
         "Fixes for task names, task search, companion rooms and CSV export.",
       ],
     },
@@ -149,6 +170,20 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   ],
   pt: [
     {
+      version: "1.9.1",
+      dateLabel: "Versão 1.9.1 · 26 de outubro de 2026",
+      items: [
+        "O Halloween chegou e fica até 9 de novembro: todos os companheiros usam chapéu de bruxa, e o ícone da app também se mascara. Os gorros de Pai Natal chegam em dezembro.",
+        "O teu companheiro tem frases da época e cumprimenta-te no Halloween, no Natal e no Dia de Ano Novo.",
+        "Códigos de quarto: partilha um quarto como código no menu ⋯ do quarto, ou copia o de um amigo. Os itens que ainda não tens aparecem como fantasmas até colocares um.",
+        "Depois de cada atualização, uma nota curta como esta mostra as novidades.",
+      ],
+      fixes: [
+        "As imagens dos companheiros cabem nas molduras em todos os ecrãs.",
+      ],
+    },
+    {
+      version: "1.9.0",
       dateLabel: "Versão 1.9.0 · 24 de outubro de 2026",
       items: [
         "Novo: o Lumen, um companheiro fundador, junta-se a todos os que usam o Growra em 2026. Enquanto for o teu companheiro ativo, cada tarefa dá +1 moeda.",
@@ -156,8 +191,10 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
         "Voltaste ao fim de uns dias? O Growra recebe-te com um pequeno resumo dos teus últimos dias ativos.",
         "Cópias de segurança: o código abre a partilha, e importar uma cópia pergunta antes de substituir os teus dados.",
         "Gravações mais seguras: o Growra guarda uma cópia antes de importar e nunca carrega uma gravação de uma versão mais recente.",
-        "O painel mostra a tua sequência real depois de dias falhados.",
         "Acessibilidade: etiquetas mais claras, áreas de toque maiores e texto que se ajusta melhor.",
+      ],
+      fixes: [
+        "O painel mostra a tua sequência real depois de dias falhados.",
         "Correções nos nomes de tarefas, na pesquisa, nos quartos dos companheiros e na exportação CSV.",
       ],
     },
@@ -292,4 +329,9 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
 
 export function getChangelog(language: AppLanguage): ChangelogEntry[] {
   return changelogByLanguage[language];
+}
+
+/** The notes for one app version, if it has any. */
+export function getReleaseNotes(language: AppLanguage, version: string): ChangelogEntry | undefined {
+  return changelogByLanguage[language].find((entry) => entry.version === version);
 }

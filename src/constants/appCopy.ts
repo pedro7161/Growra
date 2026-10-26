@@ -1,6 +1,8 @@
 import { AppLanguage } from "../types";
 import type { CompanionMood, CompanionStyle } from "../utils/companions";
 import type { TileFeature } from "../utils/journey";
+import type { Holiday, Season } from "../utils/seasons";
+import type { RoomCodeError } from "../utils/roomCode";
 
 interface CompanionStyleCopy {
   loves: string;
@@ -216,6 +218,10 @@ interface AppCopy {
   companionEvolvedTitle: string;
   companionRevealSubtitle: string;
   companionMood: Record<CompanionMood, string>;
+  /** The mood lines during Halloween and Christmas. */
+  companionSeasonMood: Record<Season, Record<CompanionMood, string>>;
+  /** Greetings on the day itself (shown instead of the mood line, unless the companion is asleep). */
+  companionHolidayGreeting: Record<Holiday, string>;
   companionStyles: Record<CompanionStyle, CompanionStyleCopy>;
   /** Companion descriptions by companion id; a missing entry falls back to the English original in utils/gameplay.ts. */
   companionBios: Partial<Record<string, string>>;
@@ -229,6 +235,11 @@ interface AppCopy {
   backupNudgeBody: string;
   backupNudgeShare: string;
   backupNudgeDismiss: string;
+  whatsNewTitle: string;
+  whatsNewNew: string;
+  whatsNewFixed: string;
+  whatsNewClose: string;
+  whatsNewHide: string;
   tutorialChooseCompanionHint: string;
   companionFoundTitle: string;
   companionFoundSubtitle: string;
@@ -286,6 +297,24 @@ interface AppCopy {
   roomBack: string;
   roomRemove: string;
   roomUndo: string;
+  roomMore: string;
+  roomShareCode: string;
+  roomCodeShareMessage: string;
+  roomCopy: string;
+  roomCopyHint: string;
+  roomCopyConfirmTitle: string;
+  roomCopyConfirmBody: string;
+  roomCopyReplace: string;
+  roomCopyCancel: string;
+  roomCodeErrors: Record<RoomCodeError, string>;
+  roomCopyDoneTitle: string;
+  roomCopyAllThere: string;
+  roomCopyNeed: string;
+  roomCopyUnmet: string;
+  roomCopyStyle: string;
+  roomGhostPlace: string;
+  roomGhostInRoom: string;
+  roomGhostNotOwned: string;
   roomShopStyles: string;
   roomShopFurniture: string;
   roomShopPlusSets: string;
@@ -589,6 +618,26 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       glowing: "{name} is glowing. What a day!",
       sleepy: "{name} dozed off while you were away. Any task wakes it up.",
     },
+    companionSeasonMood: {
+      halloween: {
+        hello: "{name} has the witch hat on. Ready when you are.",
+        happy: "{name} is collecting a treat for every task today.",
+        glowing: "{name} is glowing like a jack-o'-lantern. What a day!",
+        sleepy: "{name} dozed off dreaming of pumpkins. Any task wakes it up.",
+      },
+      christmas: {
+        hello: "{name} is all wrapped up and ready when you are.",
+        happy: "{name} is feeling festive about today.",
+        glowing: "{name} is glowing like a Christmas tree. What a day!",
+        sleepy: "{name} is napping by the fire. Any task wakes it up.",
+      },
+    },
+    companionHolidayGreeting: {
+      halloween: "{name} says: Happy Halloween! 🎃",
+      christmasEve: "{name} says: Merry Christmas Eve! 🎄",
+      christmas: "{name} says: Merry Christmas! 🎁",
+      newYear: "{name} says: Happy New Year! ✨",
+    },
     companionBios: {},
     companionStyles: {
       "getting-started": { loves: "getting started", perk: "+2 coins on your first task each day", joins: "Joins after {target} active days" },
@@ -604,6 +653,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "long-run": { loves: "the long run", perk: "+10% streak bonus", joins: "Joins after {target} active days" },
       "big-days": { loves: "big days", perk: "+10 coins on your 5th task of a day", joins: "Joins on your first day with 5 tasks done" },
       founder: { loves: "the early days", perk: "+1 coin for every task", joins: "Joined everyone who used Growra in 2026" },
+      halloween: { loves: "spooky season", perk: "+3 coins per task during Halloween, +1 the rest of the year", joins: "Joins after {target} tasks done during Halloween" },
+      christmas: { loves: "the holidays", perk: "+3 coins per task during Christmas, +1 the rest of the year", joins: "Joins after {target} tasks done during Christmas" },
     },
     dashboardActiveDays: "Active days",
     welcomeBackNamed: "{name} is happy to see you again.",
@@ -615,6 +666,11 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     backupNudgeBody: "Your tasks and progress live only on this phone. Share a backup code to somewhere safe, like a note or an email to yourself, so you can bring everything back on a new phone.",
     backupNudgeShare: "Share backup code",
     backupNudgeDismiss: "No thanks",
+    whatsNewTitle: "What's new in {version}",
+    whatsNewNew: "New",
+    whatsNewFixed: "Fixed",
+    whatsNewClose: "Got it",
+    whatsNewHide: "Don't show again until the next update",
     tutorialChooseCompanionHint: "Choose your first companion. The others join as you use Growra.",
     companionFoundTitle: "{name} found something!",
     companionFoundSubtitle: "A {item} from your focus session. It's in your bag on the Journey.",
@@ -752,6 +808,28 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     roomBack: "Back",
     roomRemove: "Remove",
     roomUndo: "Undo",
+    roomMore: "More",
+    roomShareCode: "Share room code",
+    roomCodeShareMessage: "My room in Growra. Paste this code in Growra (room ⋯ → Copy a room): {code}",
+    roomCopy: "Copy a room",
+    roomCopyHint: "Paste a room code from a friend.",
+    roomCopyConfirmTitle: "Replace this room's layout?",
+    roomCopyConfirmBody: "The items in this room go back to your bag.",
+    roomCopyReplace: "Replace",
+    roomCopyCancel: "Cancel",
+    roomCodeErrors: {
+      format: "That isn't a room code.",
+      checksum: "This room code is incomplete or was changed. Ask for it again.",
+      newer: "This room code comes from a newer Growra. Update the app to use it.",
+    },
+    roomCopyDoneTitle: "Room copied",
+    roomCopyAllThere: "Everything is in place.",
+    roomCopyNeed: "You need: {items}.",
+    roomCopyUnmet: "Not met yet: {names}.",
+    roomCopyStyle: "This room uses the {style} style; get it in the shop.",
+    roomGhostPlace: "Place",
+    roomGhostInRoom: "In another room",
+    roomGhostNotOwned: "Not owned",
     roomShopStyles: "Room styles",
     roomShopFurniture: "Furniture",
     roomShopPlusSets: "Plus sets",
@@ -1065,6 +1143,26 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       glowing: "{name} está a brilhar. Que dia!",
       sleepy: "{name} adormeceu enquanto estavas fora. Qualquer tarefa o acorda.",
     },
+    companionSeasonMood: {
+      halloween: {
+        hello: "{name} já tem o chapéu de bruxa posto. Quando tu quiseres.",
+        happy: "{name} está a juntar um doce por cada tarefa de hoje.",
+        glowing: "{name} brilha como uma abóbora iluminada. Que dia!",
+        sleepy: "{name} adormeceu a sonhar com abóboras. Qualquer tarefa o acorda.",
+      },
+      christmas: {
+        hello: "{name} está bem agasalhado e à tua espera.",
+        happy: "{name} está com espírito natalício hoje.",
+        glowing: "{name} brilha como uma árvore de Natal. Que dia!",
+        sleepy: "{name} está a dormir junto à lareira. Qualquer tarefa o acorda.",
+      },
+    },
+    companionHolidayGreeting: {
+      halloween: "{name} diz: Feliz Halloween! 🎃",
+      christmasEve: "{name} diz: Feliz véspera de Natal! 🎄",
+      christmas: "{name} diz: Feliz Natal! 🎁",
+      newYear: "{name} diz: Feliz Ano Novo! ✨",
+    },
     companionBios: {
       sprout: "Um amigo do bosque dos cogumelos que brilha mais onde quer que descanse.",
       pebble: "Uma pequena criatura de pedra, robusta, que junta flores e musgo.",
@@ -1079,6 +1177,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       nova: "Um companheiro com coração de estrela, cuja aura junta fogo e luz das estrelas.",
       cindra: "Uma fera fofa de lava, com um coração de magma brilhante e o hábito de levantar faíscas.",
       lumen: "Um pequeno espírito-semente com uma lanterna, para quem iluminou o caminho cedo.",
+      gloam: "Um fantasma-abóbora com um manto roxo, que brilha mais nas noites mais escuras de outono.",
+      holly: "Uma pequena corça de inverno com hastes de azevinho e um cachecol vermelho, que toca um sininho dourado.",
     },
     companionStyles: {
       "getting-started": { loves: "começar", perk: "+2 moedas na primeira tarefa de cada dia", joins: "Junta-se após {target} dias ativos" },
@@ -1094,6 +1194,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       "long-run": { loves: "o longo prazo", perk: "+10% de bónus de sequência", joins: "Junta-se após {target} dias ativos" },
       "big-days": { loves: "dias em grande", perk: "+10 moedas na 5.ª tarefa do dia", joins: "Junta-se no primeiro dia com 5 tarefas feitas" },
       founder: { loves: "os primeiros dias", perk: "+1 moeda em cada tarefa", joins: "Juntou-se a todos os que usaram o Growra em 2026" },
+      halloween: { loves: "a época assustadora", perk: "+3 moedas por tarefa no Halloween, +1 no resto do ano", joins: "Junta-se após {target} tarefas feitas durante o Halloween" },
+      christmas: { loves: "as festas", perk: "+3 moedas por tarefa no Natal, +1 no resto do ano", joins: "Junta-se após {target} tarefas feitas durante o Natal" },
     },
     dashboardActiveDays: "Dias ativos",
     welcomeBackNamed: "{name} está contente por te ver outra vez.",
@@ -1105,6 +1207,11 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     backupNudgeBody: "As tuas tarefas e o teu progresso só existem neste telemóvel. Partilha um código de backup para um sítio seguro, como uma nota ou um email para ti, para recuperares tudo num telemóvel novo.",
     backupNudgeShare: "Partilhar código de backup",
     backupNudgeDismiss: "Dispensar",
+    whatsNewTitle: "Novidades da versão {version}",
+    whatsNewNew: "Novo",
+    whatsNewFixed: "Corrigido",
+    whatsNewClose: "Percebi",
+    whatsNewHide: "Não mostrar outra vez até à próxima atualização",
     tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro. Os outros juntam-se a ti quando usas o Growra.",
     companionFoundTitle: "{name} encontrou uma coisa!",
     companionFoundSubtitle: "Um(a) {item} da tua sessão de foco. Está na tua mochila na Jornada.",
@@ -1242,6 +1349,28 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     roomBack: "Para trás",
     roomRemove: "Tirar",
     roomUndo: "Desfazer",
+    roomMore: "Mais",
+    roomShareCode: "Partilhar código do quarto",
+    roomCodeShareMessage: "O meu quarto no Growra. Cola este código no Growra (quarto ⋯ → Copiar um quarto): {code}",
+    roomCopy: "Copiar um quarto",
+    roomCopyHint: "Cola o código de quarto de um amigo.",
+    roomCopyConfirmTitle: "Substituir a disposição deste quarto?",
+    roomCopyConfirmBody: "Os itens deste quarto voltam para o teu saco.",
+    roomCopyReplace: "Substituir",
+    roomCopyCancel: "Cancelar",
+    roomCodeErrors: {
+      format: "Isto não é um código de quarto.",
+      checksum: "Este código de quarto está incompleto ou foi alterado. Pede-o outra vez.",
+      newer: "Este código de quarto vem de um Growra mais recente. Atualiza a app para o usar.",
+    },
+    roomCopyDoneTitle: "Quarto copiado",
+    roomCopyAllThere: "Está tudo no lugar.",
+    roomCopyNeed: "Precisas de: {items}.",
+    roomCopyUnmet: "Ainda não conheces: {names}.",
+    roomCopyStyle: "Este quarto usa o estilo {style}; encontra-o na loja.",
+    roomGhostPlace: "Colocar",
+    roomGhostInRoom: "Noutro quarto",
+    roomGhostNotOwned: "Não tens",
     roomShopStyles: "Estilos de quarto",
     roomShopFurniture: "Mobília",
     roomShopPlusSets: "Conjuntos Plus",
