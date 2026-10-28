@@ -44,6 +44,8 @@ import CompanionsScreen from "./screens/CompanionsScreen";
 import JourneyScreen from "./screens/JourneyScreen";
 import TaskCalendarScreen from "./screens/TaskCalendarScreen";
 import TasksScreen from "./screens/TasksScreen";
+import WorkScreen from "./screens/WorkScreen";
+import TasksChooser, { buildWorkPreview } from "./components/TasksChooser";
 import { gameStateService } from "./services/gameStateService";
 import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/reviewService";
 import { ensureNotificationPermission, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
@@ -78,7 +80,7 @@ import { ambienceFor } from "./utils/ambience";
 import { playGrowraCue, setGrowraAmbience } from "./utils/growraAudio";
 import { createInitialGameState, createSaveData } from "./utils/initialState";
 
-import { syncRecurringTasks } from "./utils/taskSchedule";
+import { getTodayTasks, syncRecurringTasks } from "./utils/taskSchedule";
 import {
   finishTaskTimer,
   pauseTaskTimer,
@@ -623,6 +625,12 @@ export default function App() {
     await persistGameState({ ...gameState, settings: { ...gameState.settings, confirmExit } });
   };
 
+  const handleTasksSectionChange = async (tasksSection: "choose" | "personal" | "work") => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection } });
+  };
+
   const handleTaskToolsOpenChange = async (taskToolsOpen: boolean) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
@@ -911,9 +919,36 @@ export default function App() {
             }}
           />
         );
-      case "tasks":
+      case "tasks": {
+        // The tutorial always works in Personal, whatever section is remembered.
+        const section = tutorialStep !== "done" ? "personal" : viewState.settings.tasksSection;
+        if (section === "choose") {
+          const now = Date.now();
+          return (
+            <TasksChooser
+              settings={viewState.settings}
+              personalCount={getTodayTasks(gameState.tasks, now).length}
+              workPreview={buildWorkPreview(gameState.workItems, now, viewState.settings)}
+              onChoose={(choice) => {
+                playUiTap();
+                void handleTasksSectionChange(choice);
+              }}
+            />
+          );
+        }
+        if (section === "work") {
+          return (
+            <WorkScreen
+              settings={viewState.settings}
+              onBackToChooser={() => void handleTasksSectionChange("choose")}
+            />
+          );
+        }
         return (
           <TasksScreen
+            onBackToChooser={
+              tutorialStep === "done" ? () => void handleTasksSectionChange("choose") : undefined
+            }
             settings={viewState.settings}
             tasks={gameState.tasks}
             customTaskTemplates={gameState.customTaskTemplates}
@@ -942,6 +977,7 @@ export default function App() {
             onTimerReady={handleTimerReady}
           />
         );
+      }
       case "task-calendar":
         return (
           <TaskCalendarScreen

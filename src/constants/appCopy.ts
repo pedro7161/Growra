@@ -38,6 +38,17 @@ interface AppCopy {
   dashboardNoTasksYet: string;
   dashboardSettings: string;
   tasksTitle: string;
+  tasksBackToChooser: string;
+  tasksChooserTitle: string;
+  tasksChoosePersonal: string;
+  tasksChooseWork: string;
+  tasksChoosePersonalCount: string;
+  tasksChooseWorkShift: string;
+  tasksChooseWorkNone: string;
+  tasksChooseWorkSetup: string;
+  workTitle: string;
+  workComingTitle: string;
+  workComingBody: string;
   tasksActiveToday: string;
   tasksAdd: string;
   tasksFilterAll: string;
@@ -443,6 +454,17 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     dashboardNoTasksYet: "No tasks yet",
     dashboardSettings: "Settings",
     tasksTitle: "Tasks",
+    tasksBackToChooser: "‹ Tasks",
+    tasksChooserTitle: "Tasks",
+    tasksChoosePersonal: "Personal",
+    tasksChooseWork: "Work",
+    tasksChoosePersonalCount: "active today",
+    tasksChooseWorkShift: "Shift",
+    tasksChooseWorkNone: "No shifts today",
+    tasksChooseWorkSetup: "Set up your work schedule",
+    workTitle: "Work",
+    workComingTitle: "Your work schedule",
+    workComingBody: "Your shifts will live here, with a calendar and your companion cheering you on.",
     tasksActiveToday: "active today",
     tasksAdd: "+ Add",
     tasksFilterAll: "All",
@@ -988,6 +1010,17 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     dashboardNoTasksYet: "Ainda sem tarefas",
     dashboardSettings: "Definições",
     tasksTitle: "Tarefas",
+    tasksBackToChooser: "‹ Tarefas",
+    tasksChooserTitle: "Tarefas",
+    tasksChoosePersonal: "Pessoal",
+    tasksChooseWork: "Trabalho",
+    tasksChoosePersonalCount: "ativas hoje",
+    tasksChooseWorkShift: "Turno",
+    tasksChooseWorkNone: "Sem turnos hoje",
+    tasksChooseWorkSetup: "Define o teu horário de trabalho",
+    workTitle: "Trabalho",
+    workComingTitle: "O teu horário de trabalho",
+    workComingBody: "Os teus turnos vão ficar aqui, com um calendário e o teu companheiro a dar-te força.",
     tasksActiveToday: "ativas hoje",
     tasksAdd: "+ Adicionar",
     tasksFilterAll: "Todas",
