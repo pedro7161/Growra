@@ -83,7 +83,6 @@ export function collectableCompanionCount(ownedTemplateIds: ReadonlySet<string>)
 
 export const STARTER_TEMPLATE_IDS = COMPANIONS.filter((c) => c.starter).map((c) => c.templateId);
 
-export const DAILY_COIN_TASK_CAP = 15;
 export const DAILY_BASE_BOND_CAP = 5;
 const BIG_DAY_TASKS = 5;
 const SCHEDULED_AHEAD_DAYS = 3;

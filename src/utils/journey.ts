@@ -163,7 +163,7 @@ function updateDay(days: DayRecord[], now: number, update: (day: DayRecord) => D
 
 export function recordDayCompletion(
   days: DayRecord[],
-  task: Task,
+  task: { name: string },
   facts: CompletionFacts,
   now: number,
 ): DayRecord[] {

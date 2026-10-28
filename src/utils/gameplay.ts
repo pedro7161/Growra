@@ -13,7 +13,7 @@ import { finishTaskTimer } from "./taskTimer";
 import { generateId } from "./idUtils";
 import {
   COMPANIONS,
-  DAILY_COIN_TASK_CAP,
+  CompletionFacts,
   STARTER_TEMPLATE_IDS,
   getActiveCompanion,
   getActiveStyle,
@@ -39,7 +39,7 @@ const FUSION_TASK_MULTIPLIER_STEP = 0.02;
 const EVOLUTION_STAGE_ONE_FUSIONS = 2;
 const EVOLUTION_STAGE_TWO_FUSIONS = 4;
 
-export const BASE_TASK_COIN_REWARD = 10;
+export const BASE_TASK_COIN_REWARD = 15;
 export const BASE_TASK_PLAYER_EXPERIENCE_REWARD = 8;
 export const COMMON_SELL_VALUE = 25;
 export const RARE_SELL_VALUE = 60;
@@ -619,20 +619,35 @@ export function calculateUpdatedStreak(
   };
 }
 
-export function completeTask(gameState: GameState, taskId: string): GameState {
-  const targetTask = gameState.tasks.find((task) => task.id === taskId);
-  // Only a pending task can be completed; a repeat call (e.g. a double tap) must not pay twice.
-  if (!targetTask || targetTask.status !== TaskStatus.PENDING || targetTask.dueDate > Date.now()) {
-    return gameState;
+/** Minutes a task is worth for rewards: its set length, else its timer length, else none. */
+export function getTaskMinutes(task: Task): number | null {
+  if (task.durationMinutes !== undefined) {
+    return task.durationMinutes;
   }
+  return task.timer.enabled ? task.timer.duration / 60000 : null;
+}
 
-  if (targetTask.timer.enabled && targetTask.timer.state !== "ready") {
-    return gameState;
-  }
+/** Longer tasks pay more: +2/3 of the base per hour, counted up to 12 hours. */
+export function getRewardScale(minutes: number | null): number {
+  return 1 + (2 / 3) * Math.min((minutes ?? 0) / 60, 12);
+}
 
-  const completedAt = Date.now();
+export interface CompletionInput {
+  name: string;
+  minutes: number | null;
+  facts: CompletionFacts;
+  /** What counts toward the usage and day stats (the perks read `facts`). */
+  record: { recurring: boolean; custom: boolean; highPriority: boolean; timer: boolean };
+}
+
+/** Pays one completion: streak, coins, XP, stats, Bond, focus find and companion joins. */
+export function applyCompletionRewards(
+  gameState: GameState,
+  input: CompletionInput,
+  completedAt: number,
+): { state: GameState; coins: number; bondGain: number } {
+  const { facts } = input;
   const usageToday = withToday(gameState.usage, completedAt);
-  const facts = getCompletionFacts(targetTask, usageToday, completedAt);
   const activeStyle = getActiveStyle(gameState);
   const nextStreak = calculateUpdatedStreak(gameState.streak, completedAt);
   const equippedPet = gameState.pets.find(
@@ -643,23 +658,23 @@ export function completeTask(gameState: GameState, taskId: string): GameState {
     nextStreak.bonus + getPerkStreakBonus(activeStyle),
     petMultiplier,
   );
-  // Light anti-farming only (§6): coins stop after the daily cap; XP and Bond keep counting.
-  const paysCoins = usageToday.todayCoinTasks < DAILY_COIN_TASK_CAP;
-  const gainedCoins = paysCoins
-    ? Math.round(BASE_TASK_COIN_REWARD * rewardMultiplier) + getPerkCoins(activeStyle, facts)
-    : 0;
+  const scale = getRewardScale(input.minutes);
+  const gainedCoins =
+    Math.round(BASE_TASK_COIN_REWARD * scale * rewardMultiplier) + getPerkCoins(activeStyle, facts);
   const gainedPlayerExperience = Math.round(
-    BASE_TASK_PLAYER_EXPERIENCE_REWARD * rewardMultiplier,
+    BASE_TASK_PLAYER_EXPERIENCE_REWARD * scale * rewardMultiplier,
   );
   const totalExperience = gameState.totalExperience + gainedPlayerExperience;
   const bondGain = getBondGain(activeStyle, facts, usageToday);
+  const recorded = { ...facts, ...input.record };
   const usage = recordCompletion(
     {
       ...usageToday,
-      todayCoinTasks: usageToday.todayCoinTasks + (paysCoins ? 1 : 0),
+      // Kept for save compatibility; coins are no longer capped per day.
+      todayCoinTasks: usageToday.todayCoinTasks + 1,
       todayBaseBond: usageToday.todayBaseBond + (bondGain.countsTowardBaseCap ? 1 : 0),
     },
-    facts,
+    recorded,
     completedAt,
   );
 
@@ -669,22 +684,8 @@ export function completeTask(gameState: GameState, taskId: string): GameState {
     coins: gameState.coins + gainedCoins,
     totalExperience,
     totalTasksCompleted: gameState.totalTasksCompleted + 1,
-    tasks: gameState.tasks.map((task) => {
-      if (task.id !== taskId) {
-        return task;
-      }
-
-      const completedTask: Task = {
-        ...task,
-        status: TaskStatus.COMPLETED,
-        dueDate: getNextAvailableDate(task, completedAt),
-        completedAt,
-      };
-
-      return finishTaskTimer(completedTask);
-    }),
     usage,
-    days: recordDayCompletion(gameState.days, targetTask, facts, completedAt),
+    days: recordDayCompletion(gameState.days, { name: input.name }, recorded, completedAt),
     streak: nextStreak,
     lastPlayedAt: completedAt,
   };
@@ -692,7 +693,7 @@ export function completeTask(gameState: GameState, taskId: string): GameState {
   const withBond = equippedPet
     ? addCompanionBond(afterCompletion, equippedPet.id, bondGain.bond)
     : afterCompletion;
-  const find = facts.timer && equippedPet ? getFocusFind(usage.timersFinished) : null;
+  const find = recorded.timer && equippedPet ? getFocusFind(usage.timersFinished) : null;
   const withFind =
     find && equippedPet
       ? {
@@ -707,7 +708,59 @@ export function completeTask(gameState: GameState, taskId: string): GameState {
           ],
         }
       : withBond;
-  return applyCompanionJoins(withFind);
+  return { state: applyCompanionJoins(withFind), coins: gainedCoins, bondGain: bondGain.bond };
+}
+
+export function completeTask(gameState: GameState, taskId: string): GameState {
+  const targetTask = gameState.tasks.find((task) => task.id === taskId);
+  // Only a pending task can be completed; a repeat call (e.g. a double tap) must not pay twice.
+  if (!targetTask || targetTask.status !== TaskStatus.PENDING || targetTask.dueDate > Date.now()) {
+    return gameState;
+  }
+
+  if (targetTask.timer.enabled && targetTask.timer.state !== "ready") {
+    return gameState;
+  }
+
+  const completedAt = Date.now();
+  const facts = getCompletionFacts(
+    targetTask,
+    withToday(gameState.usage, completedAt),
+    completedAt,
+  );
+  const { state } = applyCompletionRewards(
+    gameState,
+    {
+      name: targetTask.name,
+      minutes: getTaskMinutes(targetTask),
+      facts,
+      record: {
+        recurring: facts.recurring,
+        custom: facts.custom,
+        highPriority: facts.highPriority,
+        timer: facts.timer,
+      },
+    },
+    completedAt,
+  );
+
+  return {
+    ...state,
+    tasks: state.tasks.map((task) => {
+      if (task.id !== taskId) {
+        return task;
+      }
+
+      const completedTask: Task = {
+        ...task,
+        status: TaskStatus.COMPLETED,
+        dueDate: getNextAvailableDate(task, completedAt),
+        completedAt,
+      };
+
+      return finishTaskTimer(completedTask);
+    }),
+  };
 }
 
 /** Creates a companion from a template (every companion exists once; see utils/companions.ts). */

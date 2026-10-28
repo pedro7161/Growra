@@ -89,6 +89,8 @@ export interface Task {
   dueDate: number; // next active timestamp
   createdAt: number;
   completedAt?: number;
+  /** How long the task takes, in minutes; longer tasks pay more. */
+  durationMinutes?: number;
   timer: TaskTimer;
 }
 
