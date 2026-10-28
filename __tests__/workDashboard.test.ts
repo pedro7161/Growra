@@ -1,4 +1,5 @@
-import { getTodayWorkOccurrences, nextFirst } from "../src/utils/workDashboard";
+import { Task, TaskPriority } from "../src/types";
+import { getTodayWorkOccurrences, nextFirst, nextTaskFirst } from "../src/utils/workDashboard";
 import { createWorkItem } from "../src/utils/workSchedule";
 
 const local = (y: number, m: number, d: number, h = 0, min = 0) => new Date(y, m - 1, d, h, min).getTime();
@@ -42,5 +43,30 @@ describe("nextFirst", () => {
     const items = [shift("early", 6 * 60, 8 * 60, "2026-11-03"), shift("now", 9 * 60, 17 * 60, "2026-11-03")];
     const list = getTodayWorkOccurrences(items, local(2026, 11, 3, 10));
     expect(nextFirst(list, local(2026, 11, 3, 10)).map((o) => o.itemId)).toEqual(["now", "early"]);
+  });
+});
+
+describe("nextTaskFirst", () => {
+  const t = (name: string, priority: TaskPriority) => ({ name, priority }) as Task;
+  const names = (tasks: Task[]) => tasks.map((x) => x.name);
+
+  it("puts the highest priority first whatever the input order", () => {
+    const high = t("b", TaskPriority.HIGH);
+    const low = t("a", TaskPriority.LOW);
+    const med = t("c", TaskPriority.MEDIUM);
+    expect(names(nextTaskFirst([high, low, med]))).toEqual(["b", "a", "c"]);
+    expect(names(nextTaskFirst([low, high, med]))).toEqual(["b", "a", "c"]);
+    expect(names(nextTaskFirst([low, med, high]))).toEqual(["b", "a", "c"]);
+    expect(names(nextTaskFirst([low, med]))).toEqual(["c", "a"]);
+  });
+
+  it("breaks ties by name", () => {
+    expect(names(nextTaskFirst([t("z", TaskPriority.MEDIUM), t("m", TaskPriority.MEDIUM), t("x", TaskPriority.MEDIUM)]))[0]).toBe("m");
+  });
+
+  it("handles one task and none", () => {
+    const one = [t("a", TaskPriority.LOW)];
+    expect(nextTaskFirst(one)).toBe(one);
+    expect(nextTaskFirst([])).toEqual([]);
   });
 });

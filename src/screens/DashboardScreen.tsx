@@ -25,7 +25,6 @@ import {
     CustomTaskTemplate,
     GameState,
     Task,
-    TaskPriority,
     TaskStatus,
 } from "../types";
 import {
@@ -39,22 +38,7 @@ import { getRoadPosition } from "../utils/journey";
 import { taskCategoryLabel } from "../utils/taskLabels";
 import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
-import { getTodayWorkOccurrences, nextFirst } from "../utils/workDashboard";
-
-const PRIORITY_RANK: Record<TaskPriority, number> = {
-  [TaskPriority.HIGH]: 0,
-  [TaskPriority.MEDIUM]: 1,
-  [TaskPriority.LOW]: 2,
-};
-
-/** Moves the next task to do (highest priority, then name) to the front; the rest keep their order. */
-function nextTaskFirst(tasks: Task[]): Task[] {
-  if (tasks.length < 2) return tasks;
-  const next = tasks.reduce((best, task) =>
-    PRIORITY_RANK[task.priority] - PRIORITY_RANK[best.priority] || task.name.localeCompare(best.name) < 0 ? task : best,
-  );
-  return [next, ...tasks.filter((task) => task !== next)];
-}
+import { getTodayWorkOccurrences, nextFirst, nextTaskFirst } from "../utils/workDashboard";
 
 interface DashboardScreenProps {
   gameState: GameState;

@@ -1,4 +1,4 @@
-import { WorkOccurrence, WorkItem } from "../types";
+import { Task, TaskPriority, WorkOccurrence, WorkItem } from "../types";
 import { addDaysToKey } from "./workForm";
 import { getOccurrencesBetween, toDateKey, dateKeyToStart } from "./workSchedule";
 
@@ -17,4 +17,19 @@ export function getTodayWorkOccurrences(items: WorkItem[], now: number): WorkOcc
 export function nextFirst(occurrences: WorkOccurrence[], now: number): WorkOccurrence[] {
   const next = occurrences.find((o) => !o.completed && o.end > now);
   return next ? [next, ...occurrences.filter((o) => o !== next)] : occurrences;
+}
+
+const PRIORITY_RANK: Record<TaskPriority, number> = {
+  [TaskPriority.HIGH]: 0,
+  [TaskPriority.MEDIUM]: 1,
+  [TaskPriority.LOW]: 2,
+};
+
+/** Moves the next task to do (highest priority, then name) to the front; the rest keep their order. */
+export function nextTaskFirst(tasks: Task[]): Task[] {
+  if (tasks.length < 2) return tasks;
+  const next = tasks.reduce((best, task) =>
+    (PRIORITY_RANK[task.priority] - PRIORITY_RANK[best.priority] || task.name.localeCompare(best.name)) < 0 ? task : best,
+  );
+  return [next, ...tasks.filter((task) => task !== next)];
 }
