@@ -5,6 +5,7 @@ import {
   getRoomItemSize,
   isFurniture,
   isSetInSeason,
+  scalePrice,
 } from '../src/utils/roomCatalog';
 import { DECORATION_TYPES, buyDecoration, getDecorationType } from '../src/utils/journey';
 import { createInitialGameState } from '../src/utils/initialState';
@@ -18,6 +19,23 @@ describe('room catalog', () => {
     expect(new Set(ROOM_STYLES.filter((s) => s.set).map((s) => s.set))).toEqual(
       new Set(['japanese', 'halloween', 'christmas', 'valentines', 'easter']),
     );
+  });
+
+  it('every priced item costs scalePrice(old)', () => {
+    expect(scalePrice(0)).toBe(0);
+    expect(scalePrice(150)).toBe(230);
+    expect(scalePrice(200)).toBe(300);
+    expect(scalePrice(120)).toBe(180);
+    expect(scalePrice(250)).toBe(380);
+    const price = (id: string) => DECORATION_TYPES.find((t) => t.id === id)?.price;
+    expect(price('tent')).toBe(230);
+    expect(price('star-lamp')).toBe(300);
+    expect(price('bed')).toBe(180);
+    expect(price('shell')).toBe(0);
+    const roomPrice = (id: string) => ROOM_STYLES.find((s) => s.id === id)?.price;
+    expect(roomPrice('greenhouse')).toBe(230);
+    expect(roomPrice('japanese-room')).toBe(380);
+    expect(roomPrice(STARTER_ROOM_STYLE)).toBe(0);
   });
 
   it('marks furniture and gives every furniture item a room size', () => {
