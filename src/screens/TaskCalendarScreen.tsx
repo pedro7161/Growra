@@ -8,6 +8,7 @@ import { getOccurrencesBetween, toDateKey } from "../utils/workSchedule";
 import { getStartOfDay } from "../utils/taskSchedule";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import { getLocaleFromSettings } from "../utils/settings";
+import { readableTextColor } from "../utils/colorContrast";
 import { taskCategoryLabel, taskFrequencyLabel, taskStatusLabel } from "../utils/taskLabels";
 
 interface TaskCalendarScreenProps {
@@ -281,6 +282,7 @@ export default function TaskCalendarScreen({
       })),
     [shown, occurrencesByHolder, selectedDayStart]
   );
+  const title = holder === "personal" ? copy.tasksCalendar : holder === "work" ? copy.workCalendarTitle : holders[0].label;
   const showMarkers = shown.length > 1;
   const dayIsEmpty = dayEntries.every((entry) => entry.occurrences.length === 0 && entry.tasks.length === 0);
   const hasActivity = monthCells.some(
@@ -294,14 +296,14 @@ export default function TaskCalendarScreen({
           <TouchableOpacity onPress={onBack}>
             <Text style={[styles.backButton, { color: theme.accent }]}>{copy.tasksCalendarBack}</Text>
           </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>{holders[0].workItems.length > 0 ? copy.workCalendarTitle : copy.tasksCalendar}</Text>
+          <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>{title}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
         <View style={[styles.monthCard, { backgroundColor: theme.surface }]}>
           {showChips ? (
             <View style={styles.chipsBlock}>
-              <Text style={[styles.showBothLabel, { color: theme.text }]}>{copy.calendarShowHolders}</Text>
+              <Text style={[styles.chipsLabel, { color: theme.text }]}>{copy.calendarShowHolders}</Text>
               <View style={styles.chipRow}>
                 {holders
                   .filter((candidate) => candidate.id === holder || hasItems(candidate))
@@ -321,7 +323,7 @@ export default function TaskCalendarScreen({
                           { borderColor: candidate.color, backgroundColor: on ? candidate.color : theme.surfaceMuted },
                         ]}
                       >
-                        <Text style={[styles.chipText, { color: on ? theme.accentText : theme.text }]} numberOfLines={1}>
+                        <Text style={[styles.chipText, { color: on ? readableTextColor(candidate.color) : theme.text }]} numberOfLines={1}>
                           {candidate.label}
                         </Text>
                       </TouchableOpacity>
@@ -573,6 +575,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: "700",
+    flexShrink: 1,
+    textAlign: "center",
   },
   headerSpacer: {
     width: 40,
@@ -607,7 +611,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  showBothLabel: {
+  chipsLabel: {
     fontSize: 14,
     fontWeight: "600",
   },
