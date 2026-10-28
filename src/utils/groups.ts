@@ -6,7 +6,7 @@ import { canCompleteOccurrence, getOccurrencesBetween } from "./workSchedule";
 
 /** How many groups a player can have (a layout limit, free for everyone). */
 export const MAX_GROUPS = 10;
-const MAX_GROUP_NAME_LENGTH = 24;
+export const MAX_GROUP_NAME_LENGTH = 24;
 
 /** The trimmed name, or null when it is empty or too long. */
 function validName(name: string): string | null {

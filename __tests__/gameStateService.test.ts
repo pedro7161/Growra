@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { gameStateService } from '../src/services/gameStateService';
 import { createCompanion, getSellValue } from '../src/utils/gameplay';
-import { PetRarity, TaskFrequency } from '../src/types';
+import { PetRarity, TaskFrequency, TaskStatus } from '../src/types';
 import { createInitialGameState, createSaveData } from '../src/utils/initialState';
 import { createCustomTask } from '../src/utils/taskFactory';
+import { syncRecurringTasks } from '../src/utils/taskSchedule';
 
 describe('gameStateService.loadGame', () => {
   beforeEach(async () => {
@@ -388,5 +389,34 @@ describe('groups save (v22)', () => {
     if (result.status !== 'loaded') return;
     expect(result.saveData.gameState.groups).toEqual(groups);
     expect(result.saveData.gameState.settings).toEqual(state.settings);
+  });
+
+  it('a malformed groups list keeps only usable groups, and syncing tasks after loading does not crash', async () => {
+    const task = { ...createCustomTask('Read', '', 'study', TaskFrequency.DAILY, '', 0), status: TaskStatus.COMPLETED };
+    const malformed = [
+      null,
+      7,
+      'g0',
+      { name: 'No id', kind: 'list', tasks: [] },
+      { id: 'g1', name: 'Odd kind', kind: 'board', tasks: [] },
+      { id: 'g2', name: 'No lists', color: '#f80', kind: 'list', createdAt: 1 },
+      { id: 'g3', name: 'Bad lists', color: '#08f', kind: 'schedule', createdAt: 2, tasks: 'x', workItems: { a: 1 } },
+      { id: 'g4', name: 'Fine', color: '#0a8', kind: 'list', createdAt: 3, tasks: [task, null, 3], workItems: [] },
+    ];
+    const state = { ...createInitialGameState(), groups: malformed };
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify(createSaveData(state as never)));
+    const result = await gameStateService.loadGame();
+    expect(result.status).toBe('loaded');
+    if (result.status !== 'loaded') return;
+    const groups = result.saveData.gameState.groups;
+    expect(groups.map((group) => group.id)).toEqual(['g2', 'g3', 'g4']);
+    expect(groups[0]).toMatchObject({ tasks: [], workItems: [] });
+    expect(groups[1]).toMatchObject({ tasks: [], workItems: [] });
+    expect(groups[2].tasks).toEqual([task]);
+    expect(() => syncRecurringTasks(result.saveData.gameState, Date.now())).not.toThrow();
+
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify(createSaveData({ ...state, groups: 'nope' } as never)));
+    const again = await gameStateService.loadGame();
+    expect(again.status === 'loaded' && again.saveData.gameState.groups).toEqual([]);
   });
 });

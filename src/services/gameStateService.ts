@@ -282,11 +282,29 @@ function normalizeCalendarShow(stored: PersistedSettings): HolderId[] {
   return stored.calendarShowBoth === true ? ["personal", "work"] : [];
 }
 
+/**
+ * Groups from a save or backup, keeping only entries the app can render: an object with a string id and a known
+ * kind. Missing item lists become empty and non-object items are dropped, so a malformed backup can't crash syncRecurringTasks.
+ */
+function normalizeGroups(stored: unknown): Group[] {
+  if (!Array.isArray(stored)) return [];
+  return stored
+    .filter(
+      (group): group is Record<string, unknown> =>
+        isObject(group) && typeof group.id === "string" && (group.kind === "list" || group.kind === "schedule"),
+    )
+    .map((group) => ({
+      ...(group as unknown as Group),
+      tasks: Array.isArray(group.tasks) ? (group.tasks.filter(isObject) as unknown as Task[]) : [],
+      workItems: Array.isArray(group.workItems) ? (group.workItems.filter(isObject) as unknown as WorkItem[]) : [],
+    }));
+}
+
 function migrateSaveData(saveData: PersistedSaveData): SaveData {
   const equippedPetId = getEquippedPetId(saveData.gameState);
   const persistedSettings: PersistedSettings = saveData.gameState.settings ? saveData.gameState.settings : defaultSettings;
   const { calendarShowBoth: _legacyShowBoth, ...storedSettings } = persistedSettings;
-  const groups = saveData.gameState.groups ?? [];
+  const groups = normalizeGroups(saveData.gameState.groups);
   const timerAlert = storedSettings.timerAlert
     ? {
         mode: storedSettings.timerAlert.mode,
