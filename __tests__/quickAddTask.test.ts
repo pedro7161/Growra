@@ -22,6 +22,7 @@ describe('quick-add task defaults', () => {
       dueDate: getStartOfDay(now),
       timerEnabled: false,
       timerDurationMinutes: 5,
+      durationMinutes: null,
       saveAsTemplate: false,
     });
   });

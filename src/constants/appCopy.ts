@@ -58,6 +58,10 @@ interface AppCopy {
   tasksDelete: string;
   tasksPriority: string;
   tasksPriorityLow: string;
+  tasksDuration: string;
+  tasksDurationNone: string;
+  tasksDurationMinutesUnit: string;
+  tasksDurationHoursUnit: string;
   tasksPriorityMedium: string;
   tasksPriorityHigh: string;
   tasksCalendarColor: string;
@@ -459,6 +463,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksDelete: "Delete",
     tasksPriority: "Priority",
     tasksPriorityLow: "Low",
+    tasksDuration: "How long?",
+    tasksDurationNone: "None",
+    tasksDurationMinutesUnit: "min",
+    tasksDurationHoursUnit: "h",
     tasksPriorityMedium: "Medium",
     tasksPriorityHigh: "High",
     tasksCalendarColor: "Calendar Color",
@@ -1000,6 +1008,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksDelete: "Eliminar",
     tasksPriority: "Prioridade",
     tasksPriorityLow: "Baixa",
+    tasksDuration: "Quanto tempo?",
+    tasksDurationNone: "Sem",
+    tasksDurationMinutesUnit: "min",
+    tasksDurationHoursUnit: "h",
     tasksPriorityMedium: "Média",
     tasksPriorityHigh: "Alta",
     tasksCalendarColor: "Cor no calendário",

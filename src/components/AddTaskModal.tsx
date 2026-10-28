@@ -16,7 +16,7 @@ import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, CustomTaskTemplate, Task, TaskType, TaskFrequency, TaskPriority } from "../types";
 import { getPredefinedTask, getPredefinedTaskGroups, localizePredefinedTask, predefinedTasks } from "../constants/predefinedTasks";
-import { taskPriorityOptions } from "../constants/taskConfig";
+import { formatTaskDuration, taskDurationOptions, taskPriorityOptions } from "../constants/taskConfig";
 import { getStartOfDay } from "../utils/taskSchedule";
 import TaskDatePicker from "./TaskDatePicker";
 import { getCustomTaskTemplateGroups } from "../utils/customTaskTemplates";
@@ -41,6 +41,7 @@ interface TaskFormValues {
   dueDate: number;
   timerEnabled: boolean;
   timerDurationMinutes: number;
+  durationMinutes: number | null;
   saveAsTemplate: boolean;
 }
 
@@ -77,6 +78,7 @@ export default function AddTaskModal({
   onSubmit,
 }: AddTaskModalProps) {
   const copy = getAppCopy(settings.language);
+  const durationUnits = { minutes: copy.tasksDurationMinutesUnit, hours: copy.tasksDurationHoursUnit };
   const theme = getAppTheme(settings.theme);
   const predefinedTaskGroups = getPredefinedTaskGroups().map((group) => ({
     ...group,
@@ -104,6 +106,7 @@ export default function AddTaskModal({
     Object.fromEntries(customTaskGroups.map((group) => [group.category, false]))
   );
   const [priority, setPriority] = useState<TaskPriority>(TaskPriority.MEDIUM);
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timerDurationMinutes, setTimerDurationMinutes] = useState(5);
   const [dueDate, setDueDate] = useState(() => getStartOfDay(Date.now()));
@@ -166,6 +169,7 @@ export default function AddTaskModal({
         dueDate,
         timerEnabled,
         timerDurationMinutes,
+        durationMinutes,
         saveAsTemplate,
       });
       resetForm();
@@ -185,6 +189,7 @@ export default function AddTaskModal({
         dueDate,
         timerEnabled,
         timerDurationMinutes,
+        durationMinutes,
         saveAsTemplate: false,
       });
       resetForm();
@@ -200,6 +205,7 @@ export default function AddTaskModal({
     setType(TaskType.CUSTOM);
     setFrequency(TaskFrequency.ONCE);
     setPriority(TaskPriority.MEDIUM);
+    setDurationMinutes(null);
     setCollapsedCategories(Object.fromEntries(predefinedTaskGroups.map((group) => [group.category, false])));
     setCollapsedCustomCategories(Object.fromEntries(customTaskGroups.map((group) => [group.category, false])));
     setTimerEnabled(false);
@@ -599,6 +605,29 @@ export default function AddTaskModal({
                     label={getPriorityLabel(copy, priorityOption)}
                     active={priority === priorityOption}
                     onPress={() => setPriority(priorityOption)}
+                    settings={settings}
+                    disabled={tutorialOn}
+                  />
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: theme.text }]}>{copy.tasksDuration}</Text>
+              <View style={[styles.row, tutorialOn && styles.tutorialDisabled]}>
+                <ChipButton
+                  label={copy.tasksDurationNone}
+                  active={durationMinutes === null}
+                  onPress={() => setDurationMinutes(null)}
+                  settings={settings}
+                  disabled={tutorialOn}
+                />
+                {taskDurationOptions.map((option) => (
+                  <ChipButton
+                    key={option}
+                    label={formatTaskDuration(option, durationUnits)}
+                    active={durationMinutes === option}
+                    onPress={() => setDurationMinutes(option)}
                     settings={settings}
                     disabled={tutorialOn}
                   />
