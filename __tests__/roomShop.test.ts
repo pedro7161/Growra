@@ -9,7 +9,7 @@ describe('room shop', () => {
   it('buys a coin style once and takes the coins', () => {
     const next = buyRoomStyle(rich(), 'library', at(2026, 7, 1));
     expect(next.ownedRoomStyles).toContain('library');
-    expect(next.coins).toBe(800);
+    expect(next.coins).toBe(700);
     expect(getStyleShopStatus(next, 'library', at(2026, 7, 1))).toBe('owned');
     expect(buyRoomStyle(next, 'library', at(2026, 7, 1))).toBe(next);
   });

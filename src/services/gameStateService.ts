@@ -18,6 +18,7 @@ import {
   CompanionEvent,
   GameNotice,
   UsageStats,
+  WorkItem,
 } from "../types";
 import { DEFAULT_TASK_CALENDAR_COLOR } from "../constants/taskConfig";
 import { getPredefinedTask } from "../constants/predefinedTasks";
@@ -143,6 +144,7 @@ type PersistedGameState = Omit<
   | "roomShareFooter"
   | "backupNudgeShown"
   | "whatsNewHiddenFor"
+  | "workItems"
 > & {
   days?: DayRecord[];
   decorations?: Decoration[];
@@ -153,6 +155,7 @@ type PersistedGameState = Omit<
   roomShareFooter?: boolean;
   backupNudgeShown?: boolean;
   whatsNewHiddenFor?: string;
+  workItems?: WorkItem[];
   usage?: UsageStats;
   companionEvents?: CompanionEvent[];
   notices?: GameNotice[];
@@ -363,6 +366,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     roomShareFooter: saveData.gameState.roomShareFooter ?? true,
     backupNudgeShown: saveData.gameState.backupNudgeShown === true,
     whatsNewHiddenFor: saveData.gameState.whatsNewHiddenFor ?? "",
+    workItems: saveData.gameState.workItems ?? [],
     totalTasksCompleted:
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted
@@ -388,6 +392,16 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       musicEnabled: storedSettings.musicEnabled === true,
       sfxEnabled: storedSettings.sfxEnabled === true,
       timerAlert,
+      tasksSection:
+        storedSettings.tasksSection === "personal" || storedSettings.tasksSection === "work"
+          ? storedSettings.tasksSection
+          : "choose",
+      workView: storedSettings.workView === "week" ? "week" : "day",
+      dashboardCollapsed: {
+        personal: storedSettings.dashboardCollapsed?.personal === true,
+        work: storedSettings.dashboardCollapsed?.work === true,
+      },
+      calendarShowBoth: storedSettings.calendarShowBoth === true,
     },
     customTaskTemplates: saveData.gameState.customTaskTemplates
       ? saveData.gameState.customTaskTemplates.map((template) => ({

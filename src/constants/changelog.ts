@@ -13,6 +13,16 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      version: "1.10.0",
+      dateLabel: "Version 1.10.0 · November 2026",
+      items: [
+        "New Work schedule: add shifts with start and end times and repeats, see them in day and week views, and your companion cheers you on during a shift.",
+        "Every task can now have a length, and longer tasks pay more.",
+        "No more daily coin limit: the more you do, the more you earn.",
+        "New shop prices to match the new rewards.",
+      ],
+    },
+    {
       version: "1.9.1",
       dateLabel: "Version 1.9.1 · October 26, 2026",
       items: [
@@ -169,6 +179,16 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      version: "1.10.0",
+      dateLabel: "Versão 1.10.0 · novembro de 2026",
+      items: [
+        "Novo horário de trabalho: adiciona turnos com hora de início e fim e repetições, vê-os nas vistas de dia e semana, e o teu companheiro anima-te durante o turno.",
+        "Cada tarefa pode agora ter uma duração, e as tarefas mais longas pagam mais.",
+        "Acabou o limite diário de moedas: quanto mais fazes, mais ganhas.",
+        "Novos preços na loja para acompanhar as novas recompensas.",
+      ],
+    },
     {
       version: "1.9.1",
       dateLabel: "Versão 1.9.1 · 26 de outubro de 2026",

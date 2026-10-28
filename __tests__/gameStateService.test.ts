@@ -267,3 +267,53 @@ describe('daily reminder setting (#39)', () => {
     expect(again.status === 'loaded' && again.saveData.gameState.settings.dailyReminder).toEqual({ enabled: true, hour: 7, minute: 30 });
   });
 });
+
+describe('work schedule save (v21)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('v20 save gains workItems [] and default work settings, keeps tasks/coins/pets', async () => {
+    const task = createCustomTask('Water', '', 'health', TaskFrequency.ONCE, '', 0);
+    const base = { ...createInitialGameState(), coins: 77, tasks: [task], pets: [createCompanion('sprout')] };
+    const { workItems: _w, ...gameState } = base;
+    const { tasksSection: _a, workView: _b, dashboardCollapsed: _c, calendarShowBoth: _d, ...settings } = base.settings;
+    await AsyncStorage.setItem(
+      'growra_save_data',
+      JSON.stringify({ ...createSaveData({ ...gameState, settings } as never), version: 20 }),
+    );
+    const result = await gameStateService.loadGame();
+    expect(result.status).toBe('loaded');
+    if (result.status !== 'loaded') return;
+    const loaded = result.saveData.gameState;
+    expect(loaded.workItems).toEqual([]);
+    expect(loaded.settings).toMatchObject({
+      tasksSection: 'choose',
+      workView: 'day',
+      dashboardCollapsed: { personal: false, work: false },
+      calendarShowBoth: false,
+    });
+    expect(loaded.coins).toBe(77);
+    expect(loaded.tasks).toHaveLength(1);
+    expect(loaded.pets).toHaveLength(base.pets.length);
+  });
+
+  it('v21 save loads unchanged', async () => {
+    const item = {
+      id: 'w1', name: 'Shift', description: '', calendarColor: '#fff', startMinutes: 540, endMinutes: 1020,
+      startDateKey: '2026-10-28', repeat: { kind: 'none' }, end: { kind: 'never' }, exceptions: {},
+      completedDateKeys: [], createdAt: 1,
+    };
+    const state = {
+      ...createInitialGameState(),
+      workItems: [item],
+      settings: { ...createInitialGameState().settings, tasksSection: 'work' as const, workView: 'week' as const, calendarShowBoth: true },
+    };
+    await gameStateService.saveGame(createSaveData(state as never));
+    const result = await gameStateService.loadGame();
+    expect(result.status === 'loaded' && result.saveData.gameState.workItems).toEqual([item]);
+    expect(result.status === 'loaded' && result.saveData.gameState.settings).toMatchObject({
+      tasksSection: 'work', workView: 'week', calendarShowBoth: true,
+    });
+  });
+});

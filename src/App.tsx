@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, AppState, BackHandler, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
+import { Alert, AlertButton, AppState, BackHandler, Platform, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
@@ -23,7 +23,7 @@ import { getActiveCompanion } from "./utils/companions";
 import { syncRooms } from "./utils/rooms";
 import { buildRoomShareMessage, shareRoomPicture } from "./utils/roomShare";
 import { resolveTheme, withResolvedTheme } from "./utils/plus";
-import { buildCompletionsCsv, buildTasksCsv } from "./utils/historyCsv";
+import { buildCompletionsCsv, buildTasksCsv, buildWorkCsv, getWorkExportRange } from "./utils/historyCsv";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import CompanionRevealModal from "./components/CompanionRevealModal";
@@ -44,6 +44,9 @@ import CompanionsScreen from "./screens/CompanionsScreen";
 import JourneyScreen from "./screens/JourneyScreen";
 import TaskCalendarScreen from "./screens/TaskCalendarScreen";
 import TasksScreen from "./screens/TasksScreen";
+import WorkScreen from "./screens/WorkScreen";
+import TasksChooser from "./components/TasksChooser";
+import { buildWorkPreview } from "./utils/workPreview";
 import { gameStateService } from "./services/gameStateService";
 import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/reviewService";
 import { ensureNotificationPermission, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
@@ -58,6 +61,8 @@ import {
   TaskType,
   TimerAlertMode,
   Room,
+  WorkEditScope,
+  WorkItem,
 } from "./types";
 import { upsertCustomTaskTemplate } from "./utils/customTaskTemplates";
 import {
@@ -66,8 +71,13 @@ import {
   applyTaskDeleted,
   applyTaskUpdated,
   completeTask,
+  completeWorkOccurrence,
   equipPet,
+  upsertWorkItems,
 } from "./utils/gameplay";
+import { deleteOccurrence, editOccurrence, getOccurrencesBetween } from "./utils/workSchedule";
+import { addDaysToKey, occurrenceChange, WorkItemFields } from "./utils/workForm";
+import { generateId } from "./utils/idUtils";
 import {
   buyDecoration,
   getRoadPosition,
@@ -78,7 +88,7 @@ import { ambienceFor } from "./utils/ambience";
 import { playGrowraCue, setGrowraAmbience } from "./utils/growraAudio";
 import { createInitialGameState, createSaveData } from "./utils/initialState";
 
-import { syncRecurringTasks } from "./utils/taskSchedule";
+import { getTodayTasks, syncRecurringTasks } from "./utils/taskSchedule";
 import {
   finishTaskTimer,
   pauseTaskTimer,
@@ -94,7 +104,7 @@ import {
 const plusService = createPlusService(expoIapClient);
 const adsService = createAdsService(googleAdsClient, REWARDED_AD_UNIT_ID);
 
-type Screen = "dashboard" | "tasks" | "task-calendar" | "journey" | "companions";
+type Screen = "dashboard" | "tasks" | "task-calendar" | "work-calendar" | "journey" | "companions";
 
 interface TaskTutorialUiState {
   modalVisible: boolean;
@@ -158,7 +168,7 @@ export default function App() {
     selectedPredefinedTaskId: "",
   });
   const tutorialStep = gameState
-    ? getTutorialStep(gameState, activeScreen, taskTutorialUiState.modalVisible)
+    ? getTutorialStep(gameState, activeScreen === "work-calendar" ? "task-calendar" : activeScreen, taskTutorialUiState.modalVisible)
     : "done";
   const [plusVisible, setPlusVisible] = useState(false);
   const [exploreBusy, setExploreBusy] = useState(false);
@@ -166,6 +176,17 @@ export default function App() {
   const [roomEditorId, setRoomEditorId] = useState<string | null>(null);
   const [appActive, setAppActive] = useState(true);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
+  // The Work screen's and dashboard Work section's clock: it moves the running shift and its encouragement along while shown.
+  const [workNow, setWorkNow] = useState(() => Date.now());
+  const workScreenOpen =
+    (activeScreen === "tasks" && gameState?.settings.tasksSection === "work") ||
+    (activeScreen === "dashboard" && (gameState?.workItems.length ?? 0) > 0);
+  useEffect(() => {
+    if (!workScreenOpen || !appActive) return;
+    setWorkNow(Date.now());
+    const interval = setInterval(() => setWorkNow(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, [workScreenOpen, appActive]);
 
   // Android Back: close the room editor, then return to the dashboard, then (optionally) ask
   // before leaving. Open modals handle Back themselves (onRequestClose) and never reach this.
@@ -224,7 +245,7 @@ export default function App() {
   // The ambience follows the screen (home / journey / room editor) and pauses while the app is inactive.
   useEffect(() => {
     const musicEnabled = appActive && (gameState?.settings.musicEnabled ?? false);
-    void setGrowraAmbience(ambienceFor(activeScreen, roomEditorId !== null, musicEnabled));
+    void setGrowraAmbience(ambienceFor(activeScreen === "work-calendar" ? "task-calendar" : activeScreen, roomEditorId !== null, musicEnabled));
   }, [appActive, activeScreen, roomEditorId, gameState?.settings.musicEnabled]);
 
   useEffect(() => () => void setGrowraAmbience(null), []);
@@ -405,6 +426,11 @@ export default function App() {
 
     const updated = completeTask(gameState, taskId);
     if (updated === gameState) return;
+    await persistCompletion(gameState, updated);
+  };
+
+  /** Saves a completed task or shift and plays the moment's cue (the biggest milestone it reached wins). */
+  const persistCompletion = async (gameState: GameState, updated: GameState) => {
     const companionCue = newCompanionAudioCue(gameState, updated);
     const tilesBefore = getRoadPosition(gameState.days).tiles;
     const tilesAfter = getRoadPosition(updated.days).tiles;
@@ -595,7 +621,7 @@ export default function App() {
   // welcome gift and show the finish card.
   useEffect(() => {
     const current = gameStateRef.current;
-    if (!current || !tutorialVisible || !shouldFinishTutorial(current, activeScreen)) return;
+    if (!current || !tutorialVisible || !shouldFinishTutorial(current, activeScreen === "work-calendar" ? "task-calendar" : activeScreen)) return;
     setTutorialVisible(false);
     setTutorialCard("finish");
     void persistGameState(finishTutorial(current));
@@ -621,6 +647,103 @@ export default function App() {
     const gameState = gameStateRef.current;
     if (!gameState) return;
     await persistGameState({ ...gameState, settings: { ...gameState.settings, confirmExit } });
+  };
+
+  const handleTasksSectionChange = async (tasksSection: "choose" | "personal" | "work") => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection } });
+  };
+
+  const persistWorkItems = async (items: WorkItem[]) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState(upsertWorkItems(gameState, items));
+  };
+
+  const handleSaveWorkItem = async (item: WorkItem) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const exists = gameState.workItems.some((candidate) => candidate.id === item.id);
+    await persistWorkItems(
+      exists ? gameState.workItems.map((candidate) => (candidate.id === item.id ? item : candidate)) : [...gameState.workItems, item],
+    );
+    void playGrowraCue(exists ? "task-saved" : "task-added", gameState.settings.sfxEnabled);
+  };
+
+  const handleEditWorkOccurrence = async (itemId: string, dateKey: string, fields: WorkItemFields, scope: WorkEditScope) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const original = gameState.workItems.find((item) => item.id === itemId);
+    if (!original) return;
+    const occurrence = getOccurrencesBetween([original], dateKey, addDaysToKey(dateKey, 1))[0];
+    // "Only this one" writes just what changed on that date; "following" carries all values into the new series.
+    const change =
+      scope === "one" && occurrence
+        ? occurrenceChange(occurrence, fields)
+        : { name: fields.name, description: fields.description, startMinutes: fields.startMinutes, endMinutes: fields.endMinutes };
+    if (Object.keys(change).length === 0 && scope === "one") return;
+    let continuedId: string | null = null;
+    const edited = editOccurrence(gameState.workItems, itemId, dateKey, change, scope, () => (continuedId = generateId()));
+    // "This and all following" may also change the colour and the repeat rule; an unchanged end rule keeps the
+    // remaining count editOccurrence worked out.
+    const endChanged = JSON.stringify(fields.end) !== JSON.stringify(original.end);
+    const items = edited.map((item) =>
+      item.id === continuedId
+        ? { ...item, calendarColor: fields.calendarColor, repeat: fields.repeat, end: endChanged ? fields.end : item.end }
+        : item,
+    );
+    await persistWorkItems(items);
+    void playGrowraCue("task-saved", gameState.settings.sfxEnabled);
+  };
+
+  const handleDeleteWorkOccurrence = async (itemId: string, dateKey: string, scope: WorkEditScope) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistWorkItems(deleteOccurrence(gameState.workItems, itemId, dateKey, scope));
+    void playGrowraCue("task-removed", gameState.settings.sfxEnabled);
+  };
+
+  const handleCompleteWorkOccurrence = async (itemId: string, dateKey: string) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const updated = completeWorkOccurrence(gameState, itemId, dateKey);
+    if (updated === gameState) return;
+    setWorkNow(Date.now());
+    await persistCompletion(gameState, updated);
+  };
+
+  const openWorkScreen = async () => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection: "work" } });
+    setActiveScreen("tasks");
+    playUiTap();
+  };
+
+  const handleToggleDashboardSection = async (section: "personal" | "work") => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const dashboardCollapsed = {
+      ...gameState.settings.dashboardCollapsed,
+      [section]: !gameState.settings.dashboardCollapsed[section],
+    };
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, dashboardCollapsed } });
+    playUiTap();
+  };
+
+  const handleWorkViewChange = async (workView: GameState["settings"]["workView"]) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, workView } });
+    playUiTap();
+  };
+
+  const handleCalendarShowBothChange = async (calendarShowBoth: boolean) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, calendarShowBoth } });
+    playUiTap();
   };
 
   const handleTaskToolsOpenChange = async (taskToolsOpen: boolean) => {
@@ -816,14 +939,24 @@ export default function App() {
         Alert.alert(copy.settingsExportCsv, copy.csvExportError);
       }
     };
-    Alert.alert(copy.settingsExportCsv, copy.csvExportChoose, [
+    // Work export range: the earliest work item start to today, both included.
+    const workRange = getWorkExportRange(current.workItems, Date.now());
+    const buttons: AlertButton[] = [
       { text: copy.csvExportTasks, onPress: () => void share("growra-tasks.csv", buildTasksCsv(current.tasks)) },
       {
         text: copy.csvExportCompletions,
         onPress: () => void share("growra-completions.csv", buildCompletionsCsv(current.days)),
       },
-      { text: copy.addTaskCancel, style: "cancel" },
-    ]);
+    ];
+    if (workRange) {
+      buttons.push({
+        text: copy.csvExportWork,
+        onPress: () => void share("growra-work.csv", buildWorkCsv(current.workItems, workRange.fromKey, workRange.toKey)),
+      });
+    }
+    // Android shows at most three buttons: with the Work file the dialog closes through Back or a tap outside.
+    if (!workRange || Platform.OS !== "android") buttons.push({ text: copy.addTaskCancel, style: "cancel" });
+    Alert.alert(copy.settingsExportCsv, copy.csvExportChoose, buttons, { cancelable: true });
   };
 
   const handleExportData = async (): Promise<string> => {
@@ -897,6 +1030,10 @@ export default function App() {
               setReturnRecap(null);
               playUiTap();
             }}
+            onCompleteWorkOccurrence={(itemId, dateKey) => void handleCompleteWorkOccurrence(itemId, dateKey)}
+            onOpenWork={() => void openWorkScreen()}
+            onToggleSection={(section) => void handleToggleDashboardSection(section)}
+            workNow={workNow}
             backupNudgeVisible={backupNudgeVisible}
             onShareBackup={() => {
               setBackupNudgeVisible(false);
@@ -911,9 +1048,44 @@ export default function App() {
             }}
           />
         );
-      case "tasks":
+      case "tasks": {
+        // The tutorial always works in Personal, whatever section is remembered.
+        const section = tutorialStep !== "done" ? "personal" : viewState.settings.tasksSection;
+        if (section === "choose") {
+          const now = Date.now();
+          return (
+            <TasksChooser
+              settings={viewState.settings}
+              personalCount={getTodayTasks(gameState.tasks, now).length}
+              workPreview={buildWorkPreview(gameState.workItems, now, viewState.settings)}
+              onChoose={(choice) => {
+                playUiTap();
+                void handleTasksSectionChange(choice);
+              }}
+            />
+          );
+        }
+        if (section === "work") {
+          return (
+            <WorkScreen
+              gameState={viewState}
+              settings={viewState.settings}
+              now={workNow}
+              onBackToChooser={() => void handleTasksSectionChange("choose")}
+              onSaveItem={(item) => void handleSaveWorkItem(item)}
+              onEditOccurrence={(itemId, dateKey, fields, scope) => void handleEditWorkOccurrence(itemId, dateKey, fields, scope)}
+              onDeleteOccurrence={(itemId, dateKey, scope) => void handleDeleteWorkOccurrence(itemId, dateKey, scope)}
+              onCompleteOccurrence={(itemId, dateKey) => void handleCompleteWorkOccurrence(itemId, dateKey)}
+              onSetView={(view) => void handleWorkViewChange(view)}
+              onOpenCalendar={() => handleNavigate("work-calendar")}
+            />
+          );
+        }
         return (
           <TasksScreen
+            onBackToChooser={
+              tutorialStep === "done" ? () => void handleTasksSectionChange("choose") : undefined
+            }
             settings={viewState.settings}
             tasks={gameState.tasks}
             customTaskTemplates={gameState.customTaskTemplates}
@@ -942,11 +1114,26 @@ export default function App() {
             onTimerReady={handleTimerReady}
           />
         );
+      }
       case "task-calendar":
         return (
           <TaskCalendarScreen
             settings={viewState.settings}
             tasks={gameState.tasks}
+            workItems={gameState.workItems}
+            mode="personal"
+            onToggleShowBoth={(showBoth) => void handleCalendarShowBothChange(showBoth)}
+            onBack={() => handleNavigate("tasks")}
+          />
+        );
+      case "work-calendar":
+        return (
+          <TaskCalendarScreen
+            settings={viewState.settings}
+            tasks={gameState.tasks}
+            workItems={gameState.workItems}
+            mode="work"
+            onToggleShowBoth={(showBoth) => void handleCalendarShowBothChange(showBoth)}
             onBack={() => handleNavigate("tasks")}
           />
         );
@@ -997,7 +1184,7 @@ export default function App() {
         {renderScreen()}
         <BottomNavigation
           activeScreen={
-            activeScreen === "task-calendar" ? "tasks" : activeScreen
+            activeScreen === "task-calendar" || activeScreen === "work-calendar" ? "tasks" : activeScreen
           }
           onNavigate={handleNavigate}
           settings={viewState.settings}

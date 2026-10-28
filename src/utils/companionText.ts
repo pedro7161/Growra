@@ -1,4 +1,5 @@
 import { getAppCopy } from "../constants/appCopy";
+import type { WorkOccurrence } from "../types";
 import type { CompanionMood } from "./companions";
 import { currentSeason, holidayOn } from "./seasons";
 
@@ -23,4 +24,27 @@ export function companionLine(copy: AppCopy, mood: CompanionMood, name: string, 
         ? copy.companionSeasonMood[season][mood]
         : copy.companionMood[mood];
   return line.replace("{name}", name);
+}
+
+export type ShiftStage = "start" | "middle" | "last-hour";
+
+const HOUR_MS = 60 * 60 * 1000;
+const SHIFT_LINE_ROTATION_MS = 15 * 60 * 1000;
+
+/**
+ * Where a running shift is: its first hour, its final hour, or between. The final hour wins, so a
+ * shift of 2 hours or less is "start" until its last hour begins and "last-hour" from then on.
+ */
+export function getShiftStage(o: WorkOccurrence, now: number): ShiftStage {
+  if (o.end - now <= HOUR_MS) return "last-hour";
+  if (now - o.start < HOUR_MS) return "start";
+  return "middle";
+}
+
+/** The companion's encouragement for a shift stage; the line changes every 15 minutes. */
+export function shiftEncouragement(copy: AppCopy, stage: ShiftStage, petName: string, now: number): string {
+  const lines =
+    stage === "start" ? copy.shiftLinesStart : stage === "last-hour" ? copy.shiftLinesLastHour : copy.shiftLinesMiddle;
+  const slot = Math.floor(now / SHIFT_LINE_ROTATION_MS);
+  return lines[slot % lines.length].replace("{name}", petName);
 }

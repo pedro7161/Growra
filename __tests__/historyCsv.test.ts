@@ -1,6 +1,6 @@
-import { buildCompletionsCsv, buildTasksCsv, csvField } from '../src/utils/historyCsv';
+import { buildCompletionsCsv, buildTasksCsv, buildWorkCsv, csvField } from '../src/utils/historyCsv';
 import { createCustomTask } from '../src/utils/taskFactory';
-import { TaskFrequency } from '../src/types';
+import { TaskFrequency, WorkItem } from '../src/types';
 
 describe('history CSV', () => {
   it('escapes commas, quotes and newlines (RFC 4180)', () => {
@@ -40,5 +40,25 @@ describe('history CSV', () => {
       },
     ]);
     expect(csv).toBe('date,time,task\r\n2026-10-01,08:00,Early\r\n2026-10-01,21:05,Late\r\n');
+  });
+
+  it('buildWorkCsv lists occurrences with completion', () => {
+    const shift: WorkItem = {
+      id: 'w1', name: 'Shift, early', description: '', calendarColor: '#123456',
+      startMinutes: 9 * 60 + 5, endMinutes: 17 * 60, startDateKey: '2026-10-05',
+      repeat: { kind: 'days', interval: 1 }, end: { kind: 'never' },
+      exceptions: { '2026-10-06': { kind: 'skip' } }, completedDateKeys: ['2026-10-05'], createdAt: 0,
+    };
+    const csv = buildWorkCsv([shift], '2026-10-05', '2026-10-07');
+    expect(csv).toBe(
+      'date,start,end,name,completed\r\n' +
+        '2026-10-05,09:05,17:00,"Shift, early",yes\r\n' +
+        '2026-10-07,09:05,17:00,"Shift, early",no\r\n',
+    );
+    const night = { ...shift, startMinutes: 22 * 60, endMinutes: 6 * 60, exceptions: {}, completedDateKeys: [] };
+    expect(buildWorkCsv([night], '2026-10-05', '2026-10-05')).toBe(
+      'date,start,end,name,completed\r\n2026-10-05,22:00,06:00 (+1),"Shift, early",no\r\n',
+    );
+    expect(buildWorkCsv([], '2026-10-05', '2026-10-07')).toBe('date,start,end,name,completed\r\n');
   });
 });

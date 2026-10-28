@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { AppSettings, Task, TaskPriority, TaskStatus } from "../types";
+import { AppSettings, Task, TaskPriority, TaskStatus, WorkItem, WorkOccurrence } from "../types";
+import { getOccurrencesBetween, toDateKey } from "../utils/workSchedule";
 import { getStartOfDay } from "../utils/taskSchedule";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import { getLocaleFromSettings } from "../utils/settings";
@@ -12,6 +13,9 @@ import { taskCategoryLabel, taskFrequencyLabel, taskStatusLabel } from "../utils
 interface TaskCalendarScreenProps {
   settings: AppSettings;
   tasks: Task[];
+  workItems: WorkItem[];
+  mode: "personal" | "work";
+  onToggleShowBoth: (showBoth: boolean) => void;
   onBack: () => void;
 }
 
@@ -54,7 +58,15 @@ function addMonths(date: Date, amount: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + amount, 1);
 }
 
-function getDayActivity(tasks: Task[], dayStart: number) {
+interface DayActivity {
+  scheduledCount: number;
+  completedCount: number;
+  calendarColor: string;
+}
+
+const EMPTY_COLOR = "#d9e3e0";
+
+function getDayActivity(tasks: Task[], dayStart: number): DayActivity {
   const scheduledTasks = tasks.filter((task) => getStartOfDay(task.dueDate) === dayStart);
   const completedTasks = tasks.filter(
     (task) => task.completedAt && getStartOfDay(task.completedAt) === dayStart
@@ -64,11 +76,43 @@ function getDayActivity(tasks: Task[], dayStart: number) {
   return {
     scheduledCount: scheduledTasks.length,
     completedCount: completedTasks.length,
-    calendarColor: primaryTask ? primaryTask.calendarColor : "#d9e3e0",
+    calendarColor: primaryTask ? primaryTask.calendarColor : EMPTY_COLOR,
   };
 }
 
-function buildMonthGrid(tasks: Task[], monthStart: Date): DayCellData[] {
+function getWorkDayActivity(occurrences: WorkOccurrence[]): DayActivity {
+  const done = occurrences.filter((occurrence) => occurrence.completed);
+  const pending = occurrences.filter((occurrence) => !occurrence.completed);
+  const primary = pending[0] ?? done[0];
+  return {
+    scheduledCount: pending.length,
+    completedCount: done.length,
+    calendarColor: primary ? primary.calendarColor : EMPTY_COLOR,
+  };
+}
+
+/** Merges the day's activity of the mode's own items with the other kind's; the own colour wins. */
+function mergeActivity(own: DayActivity, other: DayActivity): DayActivity {
+  return {
+    scheduledCount: own.scheduledCount + other.scheduledCount,
+    completedCount: own.completedCount + other.completedCount,
+    calendarColor: own.scheduledCount + own.completedCount > 0 ? own.calendarColor : other.calendarColor,
+  };
+}
+
+function timeLabel(timestamp: number): string {
+  const date = new Date(timestamp);
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function buildMonthGrid(
+  tasks: Task[],
+  workByDay: Map<string, WorkOccurrence[]>,
+  mode: "personal" | "work",
+  showPersonal: boolean,
+  showWork: boolean,
+  monthStart: Date
+): DayCellData[] {
   const firstDayOfMonth = new Date(monthStart.getFullYear(), monthStart.getMonth(), 1);
   const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
   const mondayOffset = (firstDayOfMonth.getDay() + 6) % 7;
@@ -89,7 +133,9 @@ function buildMonthGrid(tasks: Task[], monthStart: Date): DayCellData[] {
   for (let day = 1; day <= daysInMonth; day += 1) {
     const currentDate = new Date(monthStart.getFullYear(), monthStart.getMonth(), day);
     const dayStart = getStartOfDay(currentDate.getTime());
-    const activity = getDayActivity(tasks, dayStart);
+    const personal = showPersonal ? getDayActivity(tasks, dayStart) : getDayActivity([], dayStart);
+    const work = showWork ? getWorkDayActivity(workByDay.get(toDateKey(dayStart)) ?? []) : getWorkDayActivity([]);
+    const activity = mode === "work" ? mergeActivity(work, personal) : mergeActivity(personal, work);
 
     cells.push({
       key: `${monthStart.getFullYear()}-${monthStart.getMonth()}-${day}`,
@@ -120,6 +166,9 @@ function buildMonthGrid(tasks: Task[], monthStart: Date): DayCellData[] {
 export default function TaskCalendarScreen({
   settings,
   tasks,
+  workItems,
+  mode,
+  onToggleShowBoth,
   onBack,
 }: TaskCalendarScreenProps) {
   const copy = getAppCopy(settings.language);
@@ -129,10 +178,26 @@ export default function TaskCalendarScreen({
   const [selectedDayStart, setSelectedDayStart] = useState(() => getStartOfDay(Date.now()));
 
   const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
-  const monthCells = useMemo(() => buildMonthGrid(tasks, activeMonth), [tasks, activeMonth]);
+  const showBoth = settings.calendarShowBoth;
+  const showPersonal = mode === "personal" || showBoth;
+  const showWork = mode === "work" || showBoth;
+  const workByDay = useMemo(() => {
+    const byDay = new Map<string, WorkOccurrence[]>();
+    if (!showWork) return byDay;
+    const nextMonth = addMonths(activeMonth, 1);
+    for (const occurrence of getOccurrencesBetween(workItems, toDateKey(activeMonth.getTime()), toDateKey(nextMonth.getTime()))) {
+      byDay.set(occurrence.dateKey, [...(byDay.get(occurrence.dateKey) ?? []), occurrence]);
+    }
+    return byDay;
+  }, [workItems, activeMonth, showWork]);
+  const monthCells = useMemo(
+    () => buildMonthGrid(tasks, workByDay, mode, showPersonal, showWork, activeMonth),
+    [tasks, workByDay, mode, showPersonal, showWork, activeMonth]
+  );
+  const selectedDayWork = workByDay.get(toDateKey(selectedDayStart)) ?? [];
   const selectedDayTasks = useMemo(
     () =>
-      [...tasks]
+      (showPersonal ? [...tasks] : [])
         .filter(
           (task) =>
             getStartOfDay(task.dueDate) === selectedDayStart ||
@@ -155,7 +220,7 @@ export default function TaskCalendarScreen({
 
           return leftTask.createdAt - rightTask.createdAt;
         }),
-    [tasks, selectedDayStart]
+    [tasks, selectedDayStart, showPersonal]
   );
   const hasActivity = monthCells.some(
     (cell) => cell.inMonth && (cell.scheduledCount > 0 || cell.completedCount > 0)
@@ -168,11 +233,23 @@ export default function TaskCalendarScreen({
           <TouchableOpacity onPress={onBack}>
             <Text style={[styles.backButton, { color: theme.accent }]}>{copy.tasksCalendarBack}</Text>
           </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>{copy.tasksCalendar}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{mode === "work" ? copy.workCalendarTitle : copy.tasksCalendar}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
         <View style={[styles.monthCard, { backgroundColor: theme.surface }]}>
+          {workItems.length > 0 ? (
+            <View style={styles.showBothRow}>
+              <Text style={[styles.showBothLabel, { color: theme.text }]}>{copy.calendarShowBoth}</Text>
+              <Switch
+                value={showBoth}
+                onValueChange={onToggleShowBoth}
+                accessibilityLabel={copy.calendarShowBoth}
+                thumbColor={showBoth ? theme.accent : theme.border}
+                trackColor={{ false: theme.surfaceMuted, true: theme.accentSoft }}
+              />
+            </View>
+          ) : null}
           <View style={styles.monthHeader}>
             <TouchableOpacity
               style={[styles.monthButton, { backgroundColor: theme.surfaceMuted }]}
@@ -295,11 +372,40 @@ export default function TaskCalendarScreen({
             }).format(new Date(selectedDayStart))}
           </Text>
 
-          {selectedDayTasks.length === 0 ? (
+          {selectedDayTasks.length === 0 && selectedDayWork.length === 0 ? (
             <Text style={[styles.noActivityText, { color: theme.mutedText }]}>
               {copy.tasksNoTasksOnDay}
             </Text>
-          ) : (
+          ) : null}
+
+          {selectedDayWork.map((occurrence) => (
+            <View
+              key={`${occurrence.itemId}-${occurrence.dateKey}`}
+              style={[styles.dayTaskItem, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
+            >
+              <View style={styles.dayTaskTopRow}>
+                <View style={styles.dayTaskTitleRow}>
+                  <View style={[styles.dayTaskColorDot, { backgroundColor: occurrence.calendarColor }]} />
+                  <Text style={[styles.dayTaskName, { color: theme.text }]}>{occurrence.name}</Text>
+                </View>
+                <Text style={[styles.dayTaskStatus, { color: occurrence.completed ? theme.success : theme.accent }]}>
+                  {occurrence.completed ? copy.workDone : timeLabel(occurrence.start)}
+                </Text>
+              </View>
+              <View style={styles.workMetaRow}>
+                <Text style={[styles.dayTaskMeta, { color: theme.mutedText }]}>
+                  {timeLabel(occurrence.start)} - {timeLabel(occurrence.end)}
+                </Text>
+                {showBoth ? (
+                  <Text style={[styles.workMarker, { color: occurrence.calendarColor, borderColor: occurrence.calendarColor }]}>
+                    {copy.calendarWorkMarker}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ))}
+
+          {selectedDayTasks.length > 0 ? (
             selectedDayTasks.map((task) => {
               const predefinedTask = task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId) : null;
 
@@ -328,7 +434,7 @@ export default function TaskCalendarScreen({
                 </View>
               );
             })
-          )}
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -383,6 +489,30 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 18,
     elevation: 2,
+  },
+  showBothRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  showBothLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  workMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  workMarker: {
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
   },
   monthHeader: {
     flexDirection: "row",

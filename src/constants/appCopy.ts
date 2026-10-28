@@ -38,6 +38,67 @@ interface AppCopy {
   dashboardNoTasksYet: string;
   dashboardSettings: string;
   tasksTitle: string;
+  tasksBackToChooser: string;
+  tasksChooserTitle: string;
+  tasksChoosePersonal: string;
+  tasksChooseWork: string;
+  tasksChoosePersonalCount: string;
+  tasksChooseWorkShift: string;
+  tasksChooseWorkNone: string;
+  tasksChooseWorkSetup: string;
+  workTitle: string;
+  tasksChooseWorkNoMore: string;
+  workEmptyTitle: string;
+  workEmptyBody: string;
+  workEmptyAdd: string;
+  workAdd: string;
+  workCalendar: string;
+  workViewDay: string;
+  workViewWeek: string;
+  workToday: string;
+  workPrevious: string;
+  workNext: string;
+  workNoShiftsDay: string;
+  workDone: string;
+  workMarkDone: string;
+  workNow: string;
+  workFormNewTitle: string;
+  workFormEditTitle: string;
+  workFormSave: string;
+  workFormName: string;
+  workFormNamePlaceholder: string;
+  workFormNameMissing: string;
+  workFormDescriptionPlaceholder: string;
+  workFormStartTime: string;
+  workFormEndTime: string;
+  workFormTimeInvalid: string;
+  workFormOvernight: string;
+  workFormStartsOn: string;
+  workFormRepeat: string;
+  workRepeatNone: string;
+  workRepeatDaily: string;
+  workRepeatEveryDays: string;
+  workRepeatWeekly: string;
+  workRepeatEveryWeeks: string;
+  workRepeatMonthly: string;
+  workFormEvery: string;
+  workFormDays: string;
+  workFormWeeks: string;
+  workFormOnDays: string;
+  workFormEndsRule: string;
+  workEndsNever: string;
+  workEndsCount: string;
+  workEndsUntil: string;
+  workFormTimes: string;
+  workFormNumberInvalid: string;
+  workFormUntilInvalid: string;
+  workScopeEditTitle: string;
+  workScopeEditBody: string;
+  workScopeDeleteTitle: string;
+  workScopeDeleteBody: string;
+  workScopeOne: string;
+  workScopeFollowing: string;
+  workScopeRuleHint: string;
   tasksActiveToday: string;
   tasksAdd: string;
   tasksFilterAll: string;
@@ -58,6 +119,10 @@ interface AppCopy {
   tasksDelete: string;
   tasksPriority: string;
   tasksPriorityLow: string;
+  tasksDuration: string;
+  tasksDurationNone: string;
+  tasksDurationMinutesUnit: string;
+  tasksDurationHoursUnit: string;
   tasksPriorityMedium: string;
   tasksPriorityHigh: string;
   tasksCalendarColor: string;
@@ -222,6 +287,10 @@ interface AppCopy {
   companionSeasonMood: Record<Season, Record<CompanionMood, string>>;
   /** Greetings on the day itself (shown instead of the mood line, unless the companion is asleep). */
   companionHolidayGreeting: Record<Holiday, string>;
+  /** Companion encouragement while a work shift runs, by stage; each line holds the {name} placeholder. */
+  shiftLinesStart: string[];
+  shiftLinesMiddle: string[];
+  shiftLinesLastHour: string[];
   companionStyles: Record<CompanionStyle, CompanionStyleCopy>;
   /** Companion descriptions by companion id; a missing entry falls back to the English original in utils/gameplay.ts. */
   companionBios: Partial<Record<string, string>>;
@@ -392,6 +461,10 @@ interface AppCopy {
   csvExportChoose: string;
   csvExportTasks: string;
   csvExportCompletions: string;
+  csvExportWork: string;
+  calendarShowBoth: string;
+  calendarWorkMarker: string;
+  workCalendarTitle: string;
   csvExportError: string;
   timerLabel: string;
   taskStatusPending: string;
@@ -435,6 +508,67 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     dashboardNoTasksYet: "No tasks yet",
     dashboardSettings: "Settings",
     tasksTitle: "Tasks",
+    tasksBackToChooser: "‹ Tasks",
+    tasksChooserTitle: "Tasks",
+    tasksChoosePersonal: "Personal",
+    tasksChooseWork: "Work",
+    tasksChoosePersonalCount: "active today",
+    tasksChooseWorkShift: "Shift",
+    tasksChooseWorkNone: "No shifts today",
+    tasksChooseWorkSetup: "Set up your work schedule",
+    workTitle: "Work",
+    tasksChooseWorkNoMore: "No more shifts today",
+    workEmptyTitle: "Your work schedule",
+    workEmptyBody: "Add your shifts and meetings, one-off or repeating. Tick a shift off once you've worked it, and your companion cheers you on while it runs.",
+    workEmptyAdd: "Add your first shift",
+    workAdd: "+ Add",
+    workCalendar: "Calendar",
+    workViewDay: "Day",
+    workViewWeek: "Week",
+    workToday: "Today",
+    workPrevious: "Previous",
+    workNext: "Next",
+    workNoShiftsDay: "No shifts this day",
+    workDone: "Done",
+    workMarkDone: "Mark as worked",
+    workNow: "Now",
+    workFormNewTitle: "New shift",
+    workFormEditTitle: "Edit shift",
+    workFormSave: "Save",
+    workFormName: "Name",
+    workFormNamePlaceholder: "e.g. Morning shift, Ward 3",
+    workFormNameMissing: "Give the shift a name.",
+    workFormDescriptionPlaceholder: "Notes (optional)",
+    workFormStartTime: "Starts at",
+    workFormEndTime: "Ends at",
+    workFormTimeInvalid: "Write the time as HH:MM, e.g. 07:00.",
+    workFormOvernight: "Ends the next day",
+    workFormStartsOn: "First day: {date}",
+    workFormRepeat: "Repeat",
+    workRepeatNone: "Doesn't repeat",
+    workRepeatDaily: "Every day",
+    workRepeatEveryDays: "Every X days",
+    workRepeatWeekly: "Weekly",
+    workRepeatEveryWeeks: "Every X weeks",
+    workRepeatMonthly: "Monthly",
+    workFormEvery: "Every",
+    workFormDays: "days",
+    workFormWeeks: "weeks",
+    workFormOnDays: "On these days",
+    workFormEndsRule: "Stops repeating",
+    workEndsNever: "Never",
+    workEndsCount: "After N times",
+    workEndsUntil: "On a date",
+    workFormTimes: "times",
+    workFormNumberInvalid: "Use a whole number, 1 or more.",
+    workFormUntilInvalid: "The end date is before the first day.",
+    workScopeEditTitle: "This shift repeats",
+    workScopeEditBody: "Change only this one, or this and all the following ones?",
+    workScopeDeleteTitle: "Delete a repeating shift",
+    workScopeDeleteBody: "Delete only this one, or this and all the following ones?",
+    workScopeOne: "Only this one",
+    workScopeFollowing: "This and all following",
+    workScopeRuleHint: "Colour and repeat changes apply to this and all following.",
     tasksActiveToday: "active today",
     tasksAdd: "+ Add",
     tasksFilterAll: "All",
@@ -455,6 +589,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksDelete: "Delete",
     tasksPriority: "Priority",
     tasksPriorityLow: "Low",
+    tasksDuration: "How long?",
+    tasksDurationNone: "None",
+    tasksDurationMinutesUnit: "min",
+    tasksDurationHoursUnit: "h",
     tasksPriorityMedium: "Medium",
     tasksPriorityHigh: "High",
     tasksCalendarColor: "Calendar Color",
@@ -639,6 +777,22 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       newYear: "{name} says: Happy New Year! ✨",
     },
     companionBios: {},
+    shiftLinesStart: [
+      "{name} is by your side. Have a good start!",
+      "Shift on! {name} is cheering you on.",
+      "{name} says: one step at a time, you've got this.",
+    ],
+    shiftLinesMiddle: [
+      "Halfway there, {name} is cheering!",
+      "{name} is proud of how steady you are.",
+      "Keep going, {name} is right here with you.",
+      "A little water and a stretch? {name} says you earned it.",
+    ],
+    shiftLinesLastHour: [
+      "Last hour, you've got this.",
+      "{name} can see the finish line. Almost there!",
+      "Final stretch! {name} is cheering for you.",
+    ],
     companionStyles: {
       "getting-started": { loves: "getting started", perk: "+2 coins on your first task each day", joins: "Joins after {target} active days" },
       flow: { loves: "going with the flow", perk: "+1 Bond when you move a task to later", joins: "Joins when you move a task to a later day" },
@@ -756,6 +910,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     csvExportChoose: "Which file do you want to share?",
     csvExportTasks: "Tasks",
     csvExportCompletions: "Completions",
+    csvExportWork: "Work",
+    calendarShowBoth: "Show both",
+    calendarWorkMarker: "Work",
+    workCalendarTitle: "Work calendar",
     csvExportError: "The file couldn't be created or shared. Please try again.",
     exploreButton: "Send {name} exploring",
     exploreAdHint: "Watch a short ad · {left} left today",
@@ -960,6 +1118,67 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     dashboardNoTasksYet: "Ainda sem tarefas",
     dashboardSettings: "Definições",
     tasksTitle: "Tarefas",
+    tasksBackToChooser: "‹ Tarefas",
+    tasksChooserTitle: "Tarefas",
+    tasksChoosePersonal: "Pessoal",
+    tasksChooseWork: "Trabalho",
+    tasksChoosePersonalCount: "ativas hoje",
+    tasksChooseWorkShift: "Turno",
+    tasksChooseWorkNone: "Sem turnos hoje",
+    tasksChooseWorkSetup: "Define o teu horário de trabalho",
+    workTitle: "Trabalho",
+    tasksChooseWorkNoMore: "Sem mais turnos hoje",
+    workEmptyTitle: "O teu horário de trabalho",
+    workEmptyBody: "Adiciona os teus turnos e reuniões, únicos ou repetidos. Marca um turno quando o fizeres, e o teu companheiro dá-te força enquanto decorre.",
+    workEmptyAdd: "Adicionar o primeiro turno",
+    workAdd: "+ Adicionar",
+    workCalendar: "Calendário",
+    workViewDay: "Dia",
+    workViewWeek: "Semana",
+    workToday: "Hoje",
+    workPrevious: "Anterior",
+    workNext: "Seguinte",
+    workNoShiftsDay: "Sem turnos neste dia",
+    workDone: "Feito",
+    workMarkDone: "Marcar como feito",
+    workNow: "Agora",
+    workFormNewTitle: "Novo turno",
+    workFormEditTitle: "Editar turno",
+    workFormSave: "Guardar",
+    workFormName: "Nome",
+    workFormNamePlaceholder: "ex.: Turno da manhã, Piso 3",
+    workFormNameMissing: "Dá um nome ao turno.",
+    workFormDescriptionPlaceholder: "Notas (opcional)",
+    workFormStartTime: "Começa às",
+    workFormEndTime: "Acaba às",
+    workFormTimeInvalid: "Escreve a hora como HH:MM, ex.: 07:00.",
+    workFormOvernight: "Acaba no dia seguinte",
+    workFormStartsOn: "Primeiro dia: {date}",
+    workFormRepeat: "Repetir",
+    workRepeatNone: "Não repete",
+    workRepeatDaily: "Todos os dias",
+    workRepeatEveryDays: "De X em X dias",
+    workRepeatWeekly: "Todas as semanas",
+    workRepeatEveryWeeks: "De X em X semanas",
+    workRepeatMonthly: "Todos os meses",
+    workFormEvery: "A cada",
+    workFormDays: "dias",
+    workFormWeeks: "semanas",
+    workFormOnDays: "Nestes dias",
+    workFormEndsRule: "Deixa de repetir",
+    workEndsNever: "Nunca",
+    workEndsCount: "Após N vezes",
+    workEndsUntil: "Numa data",
+    workFormTimes: "vezes",
+    workFormNumberInvalid: "Usa um número inteiro, 1 ou mais.",
+    workFormUntilInvalid: "A data final é antes do primeiro dia.",
+    workScopeEditTitle: "Este turno repete-se",
+    workScopeEditBody: "Alterar só este, ou este e todos os seguintes?",
+    workScopeDeleteTitle: "Eliminar um turno que se repete",
+    workScopeDeleteBody: "Eliminar só este, ou este e todos os seguintes?",
+    workScopeOne: "Só este",
+    workScopeFollowing: "Este e todos os seguintes",
+    workScopeRuleHint: "Mudanças de cor e de repetição aplicam-se a este e a todos os seguintes.",
     tasksActiveToday: "ativas hoje",
     tasksAdd: "+ Adicionar",
     tasksFilterAll: "Todas",
@@ -980,6 +1199,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksDelete: "Eliminar",
     tasksPriority: "Prioridade",
     tasksPriorityLow: "Baixa",
+    tasksDuration: "Quanto tempo?",
+    tasksDurationNone: "Sem",
+    tasksDurationMinutesUnit: "min",
+    tasksDurationHoursUnit: "h",
     tasksPriorityMedium: "Média",
     tasksPriorityHigh: "Alta",
     tasksCalendarColor: "Cor no calendário",
@@ -1180,6 +1403,22 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       gloam: "Um fantasma-abóbora com um manto roxo, que brilha mais nas noites mais escuras de outono.",
       holly: "Uma pequena corça de inverno com hastes de azevinho e um cachecol vermelho, que toca um sininho dourado.",
     },
+    shiftLinesStart: [
+      "{name} está ao teu lado. Bom começo!",
+      "Turno a começar! {name} está a torcer por ti.",
+      "{name} diz: um passo de cada vez, tu consegues.",
+    ],
+    shiftLinesMiddle: [
+      "Já vais a meio, {name} está a torcer por ti!",
+      "{name} tem orgulho na tua calma.",
+      "Continua, {name} está aqui contigo.",
+      "Um copo de água e um alongamento? {name} diz que mereces.",
+    ],
+    shiftLinesLastHour: [
+      "Última hora, tu consegues.",
+      "{name} já vê a meta. Quase lá!",
+      "Reta final! {name} está a torcer por ti.",
+    ],
     companionStyles: {
       "getting-started": { loves: "começar", perk: "+2 moedas na primeira tarefa de cada dia", joins: "Junta-se após {target} dias ativos" },
       flow: { loves: "ir com a corrente", perk: "+1 de Laço quando adias uma tarefa", joins: "Junta-se quando adias uma tarefa para outro dia" },
@@ -1297,6 +1536,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     csvExportChoose: "Que ficheiro queres partilhar?",
     csvExportTasks: "Tarefas",
     csvExportCompletions: "Conclusões",
+    csvExportWork: "Trabalho",
+    calendarShowBoth: "Mostrar ambos",
+    calendarWorkMarker: "Trabalho",
+    workCalendarTitle: "Calendário de trabalho",
     csvExportError: "Não foi possível criar ou partilhar o ficheiro. Tenta outra vez.",
     exploreButton: "Enviar {name} a explorar",
     exploreAdHint: "Vê um anúncio curto · faltam {left} hoje",

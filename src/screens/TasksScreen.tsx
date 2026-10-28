@@ -35,6 +35,7 @@ interface TasksScreenProps {
   settings: AppSettings;
   tasks: Task[];
   customTaskTemplates: CustomTaskTemplate[];
+  onBackToChooser?: () => void;
   tutorialTarget:
     | "add-button"
     | "modal-type-predefined"
@@ -64,6 +65,7 @@ export default function TasksScreen({
   settings,
   tasks,
   customTaskTemplates,
+  onBackToChooser,
   tutorialTarget,
   onTutorialStateChange,
   onAddTask,
@@ -159,6 +161,18 @@ export default function TasksScreen({
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <View>
+          {onBackToChooser && !tutorialOn ? (
+            <TouchableOpacity
+              onPress={() => {
+                onUiTap();
+                onBackToChooser();
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.backLink, { color: theme.accent }]}>{copy.tasksBackToChooser}</Text>
+            </TouchableOpacity>
+          ) : null}
           <Text style={[styles.title, { color: theme.text }]}>{copy.tasksTitle}</Text>
           <Text style={[styles.subtitle, { color: theme.mutedText }]}>
             {todayTasks.length} {copy.tasksActiveToday}
@@ -565,6 +579,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
+  },
+  backLink: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 2,
   },
   title: {
     fontSize: 24,

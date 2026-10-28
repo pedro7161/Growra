@@ -8,20 +8,28 @@ export interface RoomStyle {
   set?: RoomSetId; // Plus set
 }
 
+/** Shop prices were rewritten from the old values with this scale (work schedule spec §8). */
+export const PRICE_SCALE = 1.5;
+
+/** Price after the x1.5 economy rebalance, rounded up to the nearest 10 coins. Free stays free. */
+export function scalePrice(old: number): number {
+  return old === 0 ? 0 : Math.ceil((old * PRICE_SCALE) / 10) * 10;
+}
+
 export const STARTER_ROOM_STYLE = "wooden-bedroom";
 
 export const ROOM_STYLES: RoomStyle[] = [
   { id: STARTER_ROOM_STYLE, price: 0 },
-  { id: "greenhouse", price: 150 },
-  { id: "starry-attic", price: 150 },
-  { id: "beach-hut", price: 150 },
-  { id: "library", price: 200 },
-  { id: "mushroom-cottage", price: 200 },
-  { id: "japanese-room", price: 250, set: "japanese" },
-  { id: "spooky-attic", price: 200, set: "halloween" },
-  { id: "snowy-cabin", price: 200, set: "christmas" },
-  { id: "pastel-cafe", price: 200, set: "valentines" },
-  { id: "spring-garden", price: 200, set: "easter" },
+  { id: "greenhouse", price: 230 },
+  { id: "starry-attic", price: 230 },
+  { id: "beach-hut", price: 230 },
+  { id: "library", price: 300 },
+  { id: "mushroom-cottage", price: 300 },
+  { id: "japanese-room", price: 380, set: "japanese" },
+  { id: "spooky-attic", price: 300, set: "halloween" },
+  { id: "snowy-cabin", price: 300, set: "christmas" },
+  { id: "pastel-cafe", price: 300, set: "valentines" },
+  { id: "spring-garden", price: 300, set: "easter" },
 ];
 
 export const DEFAULT_ROOM_ITEM_SIZE = 0.2;
