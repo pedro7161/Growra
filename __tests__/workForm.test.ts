@@ -4,10 +4,11 @@ import {
   draftFromItem,
   draftToFields,
   newWorkDraft,
+  occurrenceChange,
   parseClock,
   weekStartKey,
 } from "../src/utils/workForm";
-import { createWorkItem, getOccurrencesBetween } from "../src/utils/workSchedule";
+import { createWorkItem, editOccurrence, getOccurrencesBetween } from "../src/utils/workSchedule";
 
 const local = (y: number, m: number, d: number, h = 0, min = 0) => new Date(y, m - 1, d, h, min).getTime();
 
@@ -92,5 +93,36 @@ describe("work drafts", () => {
     expect(changesSeriesRule(item, result.fields)).toBe(false);
     expect(changesSeriesRule(item, { ...result.fields, calendarColor: "#c05a2f" })).toBe(true);
     expect(changesSeriesRule(item, { ...result.fields, end: { kind: "never" } })).toBe(true);
+  });
+});
+
+describe("only this one, then this and all following", () => {
+  it("a date whose time was changed still takes a later rename of the series", () => {
+    const daily = createWorkItem(
+      { name: "Shift", description: "", calendarColor: "#2d6ea8", startMinutes: 9 * 60, endMinutes: 17 * 60, startDateKey: "2026-11-02", repeat: { kind: "days", interval: 1 }, end: { kind: "never" } },
+      "w1",
+      local(2026, 11, 1),
+    );
+    const on = (items: typeof daily[], key: string) => getOccurrencesBetween(items, key, addDaysToKey(key, 1))[0];
+
+    // Only this one: 5 Nov starts at 10:00; nothing else typed differently.
+    const nov5 = on([daily], "2026-11-05");
+    const fifth = draftToFields({ ...draftFromItem(daily, nov5), startText: "10:00" });
+    if (!("fields" in fifth)) throw new Error("expected fields");
+    const change = occurrenceChange(nov5, fifth.fields);
+    expect(change).toEqual({ startMinutes: 600 });
+    const afterOne = editOccurrence([daily], "w1", "2026-11-05", change, "one", () => "unused");
+
+    // This and all following from 3 Nov: renamed.
+    const ids = ["w2"];
+    const afterFollowing = editOccurrence(afterOne, "w1", "2026-11-03", { name: "Ward 3" }, "following", () => ids.shift()!);
+    const renamed = on(afterFollowing, "2026-11-05");
+    expect(renamed.name).toBe("Ward 3");
+    expect(new Date(renamed.start).getHours()).toBe(10);
+  });
+
+  it("a weekly repeat with no weekday chosen keeps the first day's weekday", () => {
+    const result = draftToFields({ ...newWorkDraft("2026-11-04"), name: "Gym", repeatChoice: "weekly", weekdays: [] });
+    expect(result).toEqual({ fields: expect.objectContaining({ repeat: { kind: "weeks", interval: 1, weekdays: [3] } }) });
   });
 });

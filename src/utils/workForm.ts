@@ -28,6 +28,8 @@ export type WorkDraftError = "workFormNameMissing" | "workFormTimeInvalid" | "wo
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
+const minutesOf = (ts: number) => new Date(ts).getHours() * 60 + new Date(ts).getMinutes();
+
 /** Monday-first weekday order (Portugal). */
 export const WEEKDAYS_MONDAY_FIRST = [1, 2, 3, 4, 5, 6, 0];
 
@@ -86,8 +88,8 @@ function repeatChoiceOf(repeat: WorkRepeat): RepeatChoice {
 /** A draft of an existing item; the occurrence (when given) supplies that date's own name, notes and times. */
 export function draftFromItem(item: WorkItem, occurrence?: WorkOccurrence): WorkDraft {
   const base = newWorkDraft(item.startDateKey);
-  const startMinutes = occurrence ? new Date(occurrence.start).getHours() * 60 + new Date(occurrence.start).getMinutes() : item.startMinutes;
-  const endMinutes = occurrence ? new Date(occurrence.end).getHours() * 60 + new Date(occurrence.end).getMinutes() : item.endMinutes;
+  const startMinutes = occurrence ? minutesOf(occurrence.start) : item.startMinutes;
+  const endMinutes = occurrence ? minutesOf(occurrence.end) : item.endMinutes;
   const repeat = item.repeat;
   return {
     ...base,
@@ -115,7 +117,8 @@ export function draftToFields(draft: WorkDraft): { fields: WorkItemFields } | { 
 
   const interval = draft.repeatChoice === "xdays" || draft.repeatChoice === "xweeks" ? parseCount(draft.intervalText) : 1;
   if (interval === null) return { error: "workFormNumberInvalid" };
-  const weekdays = [...new Set(draft.weekdays)].sort((a, b) => a - b);
+  const chosenDays = draft.weekdays.length > 0 ? draft.weekdays : [new Date(dateKeyToStart(draft.startDateKey)).getDay()];
+  const weekdays = [...new Set(chosenDays)].sort((a, b) => a - b);
   const repeat: WorkRepeat =
     draft.repeatChoice === "none"
       ? { kind: "none" }
@@ -147,6 +150,19 @@ export function draftToFields(draft: WorkDraft): { fields: WorkItemFields } | { 
       end,
     },
   };
+}
+
+/**
+ * The "Only this one" change: just the fields that differ from what the date shows now, so a time change
+ * doesn't also pin that date's name and notes (a later "following" rename must still reach it).
+ */
+export function occurrenceChange(occurrence: WorkOccurrence, fields: WorkItemFields) {
+  const change: { name?: string; description?: string; startMinutes?: number; endMinutes?: number } = {};
+  if (fields.name !== occurrence.name) change.name = fields.name;
+  if (fields.description !== occurrence.description) change.description = fields.description;
+  if (fields.startMinutes !== minutesOf(occurrence.start)) change.startMinutes = fields.startMinutes;
+  if (fields.endMinutes !== minutesOf(occurrence.end)) change.endMinutes = fields.endMinutes;
+  return change;
 }
 
 /** True when the fields change something only a whole series can hold (colour, repeat rule or end rule). */

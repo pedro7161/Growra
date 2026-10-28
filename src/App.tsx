@@ -75,8 +75,8 @@ import {
   equipPet,
   upsertWorkItems,
 } from "./utils/gameplay";
-import { deleteOccurrence, editOccurrence } from "./utils/workSchedule";
-import { WorkItemFields } from "./utils/workForm";
+import { deleteOccurrence, editOccurrence, getOccurrencesBetween } from "./utils/workSchedule";
+import { addDaysToKey, occurrenceChange, WorkItemFields } from "./utils/workForm";
 import { generateId } from "./utils/idUtils";
 import {
   buyDecoration,
@@ -674,12 +674,13 @@ export default function App() {
     if (!gameState) return;
     const original = gameState.workItems.find((item) => item.id === itemId);
     if (!original) return;
-    const change = {
-      name: fields.name,
-      description: fields.description,
-      startMinutes: fields.startMinutes,
-      endMinutes: fields.endMinutes,
-    };
+    const occurrence = getOccurrencesBetween([original], dateKey, addDaysToKey(dateKey, 1))[0];
+    // "Only this one" writes just what changed on that date; "following" carries all values into the new series.
+    const change =
+      scope === "one" && occurrence
+        ? occurrenceChange(occurrence, fields)
+        : { name: fields.name, description: fields.description, startMinutes: fields.startMinutes, endMinutes: fields.endMinutes };
+    if (Object.keys(change).length === 0 && scope === "one") return;
     let continuedId: string | null = null;
     const edited = editOccurrence(gameState.workItems, itemId, dateKey, change, scope, () => (continuedId = generateId()));
     // "This and all following" may also change the colour and the repeat rule; an unchanged end rule keeps the
