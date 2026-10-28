@@ -48,12 +48,14 @@ function* repeatDates(item: WorkItem): Generator<string> {
     return;
   }
   if (repeat.kind === "weeks") {
-    const chosen = [...new Set(repeat.weekdays.filter((day) => day >= 0 && day <= 6))].sort((a, b) => a - b);
+    const chosen = [...new Set(repeat.weekdays.filter((day) => day >= 0 && day <= 6))].sort(
+      (a, b) => ((a + 6) % 7) - ((b + 6) % 7),
+    );
     const weekdays = chosen.length > 0 ? chosen : [new Date(y, m, d).getDay()];
-    const sunday = d - new Date(y, m, d).getDay(); // weeks are counted from the start date's week
+    const monday = d - ((new Date(y, m, d).getDay() + 6) % 7); // weeks run Monday-Sunday, counted from the start date's week
     for (let week = 0; week * 7 < MAX_STEPS; week += interval) {
       for (const weekday of weekdays) {
-        const key = keyOf(new Date(y, m, sunday + week * 7 + weekday));
+        const key = keyOf(new Date(y, m, monday + week * 7 + ((weekday + 6) % 7)));
         if (key >= item.startDateKey) yield key;
       }
     }
@@ -155,6 +157,13 @@ export function createWorkItem(
   now: number,
 ): WorkItem {
   return { ...fields, id, exceptions: {}, completedDateKeys: [], createdAt: now };
+}
+
+/** The item keeping only the completions that are still occurrences (after its start date or repeat rule changed). */
+export function withValidCompletions(item: WorkItem): WorkItem {
+  if (item.completedDateKeys.length === 0) return item;
+  const valid = new Set(seriesDates(item));
+  return { ...item, completedDateKeys: item.completedDateKeys.filter((key) => valid.has(key)) };
 }
 
 /** Only the fields actually given, so a change never writes `undefined` over an earlier value. */

@@ -9,6 +9,7 @@ import {
   getOccurrencesBetween,
   getRunningOccurrence,
   toDateKey,
+  withValidCompletions,
 } from "../src/utils/workSchedule";
 
 // jest.config.js runs in Europe/Lisbon; DST changes on 2026-03-29 and 2026-10-25.
@@ -63,6 +64,24 @@ describe("repeat rules", () => {
       "2026-11-05",
       "2026-11-16",
       "2026-11-19",
+    ]);
+  });
+
+  it("every 2 weeks is anchored on Monday (Sat+Sun from a Saturday)", () => {
+    const w = item({ startDateKey: "2026-01-10", repeat: { kind: "weeks", interval: 2, weekdays: [6, 0] } });
+    expect(keys([w], "2026-01-01", "2026-02-01")).toEqual(["2026-01-10", "2026-01-11", "2026-01-24", "2026-01-25"]);
+  });
+
+  it("every 2 weeks Mon+Sun from a Monday", () => {
+    const w = item({ startDateKey: "2026-01-05", repeat: { kind: "weeks", interval: 2, weekdays: [1, 0] } });
+    expect(keys([w], "2026-01-01", "2026-01-31")).toEqual(["2026-01-05", "2026-01-11", "2026-01-19", "2026-01-25"]);
+  });
+
+  it("'this and following' on a every-2-weeks series keeps alignment", () => {
+    const w = item({ startDateKey: "2026-01-05", repeat: { kind: "weeks", interval: 2, weekdays: [1, 0] } });
+    const out = editOccurrence([w], "w1", "2026-01-19", { name: "Late" }, "following", ids("n"));
+    expect(keys(out, "2026-01-01", "2026-02-10")).toEqual([
+      "2026-01-05", "2026-01-11", "2026-01-19", "2026-01-25", "2026-02-02", "2026-02-08",
     ]);
   });
 
@@ -289,5 +308,14 @@ describe("now-based lookups", () => {
   it("next occurrence finds a far-off one-off item", () => {
     const w = item({ startDateKey: "2027-06-01", repeat: { kind: "none" } });
     expect(getNextOccurrence([w], local(2026, 11, 3))?.dateKey).toBe("2027-06-01");
+  });
+});
+
+describe("withValidCompletions", () => {
+  it("drops completions that no longer match an occurrence", () => {
+    const w = { ...item({ startDateKey: "2026-11-09", repeat: { kind: "none" } }), completedDateKeys: ["2026-11-02"] };
+    expect(withValidCompletions(w).completedDateKeys).toEqual([]);
+    const kept = { ...w, startDateKey: "2026-11-02" };
+    expect(withValidCompletions(kept).completedDateKeys).toEqual(["2026-11-02"]);
   });
 });

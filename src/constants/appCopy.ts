@@ -1410,7 +1410,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     ],
     shiftLinesMiddle: [
       "Já vais a meio, {name} está a torcer por ti!",
-      "{name} está orgulhoso da tua calma.",
+      "{name} tem orgulho na tua calma.",
       "Continua, {name} está aqui contigo.",
       "Um copo de água e um alongamento? {name} diz que mereces.",
     ],

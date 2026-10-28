@@ -55,6 +55,10 @@ describe('history CSV', () => {
         '2026-10-05,09:05,17:00,"Shift, early",yes\r\n' +
         '2026-10-07,09:05,17:00,"Shift, early",no\r\n',
     );
+    const night = { ...shift, startMinutes: 22 * 60, endMinutes: 6 * 60, exceptions: {}, completedDateKeys: [] };
+    expect(buildWorkCsv([night], '2026-10-05', '2026-10-05')).toBe(
+      'date,start,end,name,completed\r\n2026-10-05,22:00,06:00 (+1),"Shift, early",no\r\n',
+    );
     expect(buildWorkCsv([], '2026-10-05', '2026-10-07')).toBe('date,start,end,name,completed\r\n');
   });
 });

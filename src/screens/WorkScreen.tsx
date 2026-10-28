@@ -18,6 +18,7 @@ import {
   getOccurrencesBetween,
   getRunningOccurrence,
   toDateKey,
+  withValidCompletions,
 } from "../utils/workSchedule";
 
 interface WorkScreenProps {
@@ -90,7 +91,7 @@ export default function WorkScreen({
 
   const handleSave = (fields: WorkItemFields, scope: WorkEditScope | null) => {
     if (!editing) onSaveItem(createWorkItem(fields, generateId(), Date.now()));
-    else if (scope === null) onSaveItem({ ...editing.item, ...fields });
+    else if (scope === null) onSaveItem(withValidCompletions({ ...editing.item, ...fields }));
     else onEditOccurrence(editing.item.id, editing.occurrence.dateKey, fields, scope);
     closeModal();
   };
@@ -163,7 +164,9 @@ export default function WorkScreen({
           <TouchableOpacity onPress={onBackToChooser} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button">
             <Text style={[styles.back, { color: theme.accent }]}>{copy.tasksBackToChooser}</Text>
           </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>{copy.workTitle}</Text>
+          <Text style={[styles.title, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+            {copy.workTitle}
+          </Text>
         </View>
         {onOpenCalendar ? (
           <TouchableOpacity style={[styles.headerButton, { borderColor: theme.border }]} onPress={onOpenCalendar} accessibilityRole="button">
@@ -250,7 +253,7 @@ export default function WorkScreen({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  headerText: { flex: 1 },
+  headerText: { flex: 1, minWidth: 0 },
   back: { fontSize: 13, fontWeight: "600", marginBottom: 2 },
   title: { fontSize: 24, fontWeight: "700" },
   headerButton: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },

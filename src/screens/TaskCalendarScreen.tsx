@@ -238,16 +238,18 @@ export default function TaskCalendarScreen({
         </View>
 
         <View style={[styles.monthCard, { backgroundColor: theme.surface }]}>
-          <View style={styles.showBothRow}>
-            <Text style={[styles.showBothLabel, { color: theme.text }]}>{copy.calendarShowBoth}</Text>
-            <Switch
-              value={showBoth}
-              onValueChange={onToggleShowBoth}
-              accessibilityLabel={copy.calendarShowBoth}
-              thumbColor={showBoth ? theme.accent : theme.border}
-              trackColor={{ false: theme.surfaceMuted, true: theme.accentSoft }}
-            />
-          </View>
+          {workItems.length > 0 ? (
+            <View style={styles.showBothRow}>
+              <Text style={[styles.showBothLabel, { color: theme.text }]}>{copy.calendarShowBoth}</Text>
+              <Switch
+                value={showBoth}
+                onValueChange={onToggleShowBoth}
+                accessibilityLabel={copy.calendarShowBoth}
+                thumbColor={showBoth ? theme.accent : theme.border}
+                trackColor={{ false: theme.surfaceMuted, true: theme.accentSoft }}
+              />
+            </View>
+          ) : null}
           <View style={styles.monthHeader}>
             <TouchableOpacity
               style={[styles.monthButton, { backgroundColor: theme.surfaceMuted }]}

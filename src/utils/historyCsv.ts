@@ -53,6 +53,6 @@ export function buildWorkCsv(items: WorkItem[], fromKey: string, toKey: string):
   const occurrences = getOccurrencesBetween(items, fromKey, toDateKey(dayAfterTo.getTime()));
   return toCsv([
     ["date", "start", "end", "name", "completed"],
-    ...occurrences.map((o) => [o.dateKey, localTime(o.start), localTime(o.end), o.name, o.completed ? "yes" : "no"]),
+    ...occurrences.map((o) => [o.dateKey, localTime(o.start), localTime(o.end) + (toDateKey(o.end) === o.dateKey ? '' : ' (+1)'), o.name, o.completed ? "yes" : "no"]),
   ]);
 }
