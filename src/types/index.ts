@@ -270,6 +270,49 @@ export interface ExploreState {
   count: number;
 }
 
+// Work schedule (docs/superpowers/specs/2026-10-28-work-schedule-design.md): a work item is a repeat rule
+// plus per-date exceptions; occurrences are generated for any day by utils/workSchedule.ts.
+export type WorkRepeat =
+  | { kind: "none" }
+  | { kind: "days"; interval: number } // every day = interval 1, every X days
+  | { kind: "weeks"; interval: number; weekdays: number[] } // 0=Sun..6=Sat
+  | { kind: "months"; interval: number }; // same day of month; months without that day are skipped
+
+export type WorkEnd = { kind: "never" } | { kind: "count"; count: number } | { kind: "until"; dateKey: string };
+
+export type WorkException =
+  | { kind: "skip" }
+  | { kind: "change"; name?: string; description?: string; startMinutes?: number; endMinutes?: number };
+
+export interface WorkItem {
+  id: string;
+  name: string;
+  description: string;
+  calendarColor: string;
+  startMinutes: number; // minutes from midnight
+  endMinutes: number; // end <= start means the end is on the next day
+  startDateKey: string; // "YYYY-MM-DD", local
+  repeat: WorkRepeat;
+  end: WorkEnd; // "count" counts skipped occurrences too
+  exceptions: Record<string, WorkException>; // by dateKey
+  completedDateKeys: string[];
+  createdAt: number;
+}
+
+/** One generated date of a work item; it belongs to its start date even when it ends the next day. */
+export interface WorkOccurrence {
+  itemId: string;
+  dateKey: string;
+  start: number;
+  end: number;
+  name: string;
+  description: string;
+  calendarColor: string;
+  completed: boolean;
+}
+
+export type WorkEditScope = "one" | "following";
+
 export interface GameState {
   playerId: string;
   level: number;
