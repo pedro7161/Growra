@@ -115,7 +115,8 @@ export default function DashboardScreen({
   const collapsed = gameState.settings.dashboardCollapsed;
   // Group rows never count in the header total; that stays Personal and Work.
   const groupRows = gameState.groups.flatMap((group) => {
-    const next = groupNextItem(group, workNow);
+    // workNow only moves while the ticker runs for schedule groups; list groups follow the real clock like Personal.
+    const next = groupNextItem(group, group.kind === "schedule" ? workNow : now);
     return next ? [{ group, next }] : [];
   });
   const pendingCount = pendingTasks.length + workOccurrences.filter((o) => !o.completed).length;

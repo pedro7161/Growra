@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, Group } from "../types";
 import { GroupNextItem } from "../utils/workDashboard";
@@ -40,6 +41,7 @@ export default function DashboardGroupSection({
   onResetTimer,
   onTimerReady,
 }: DashboardGroupSectionProps) {
+  const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   return (
     <View style={styles.section}>
@@ -47,7 +49,7 @@ export default function DashboardGroupSection({
         <TouchableOpacity
           onPress={onToggle}
           accessibilityRole="button"
-          accessibilityLabel={group.name}
+          accessibilityLabel={`${copy.groupDashboardToggle}: ${group.name}`}
           accessibilityState={{ expanded: !collapsed }}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           style={styles.chevronButton}
@@ -59,7 +61,7 @@ export default function DashboardGroupSection({
           onPress={onOpen}
           disabled={disabled}
           accessibilityRole="button"
-          accessibilityHint={group.name}
+          accessibilityHint={copy.groupDashboardOpen}
         >
           <View style={[styles.dot, { backgroundColor: group.color }]} />
           <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>

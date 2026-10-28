@@ -68,6 +68,8 @@ export interface AppCopy {
   groupItemEditTitle: string;
   groupItemNamePlaceholder: string;
   groupItemMarkDone: string;
+  groupDashboardOpen: string;
+  groupDashboardToggle: string;
   groupAddCard: string;
   groupAddTitle: string;
   groupAddNew: string;
@@ -614,6 +616,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     groupItemEditTitle: "Edit item",
     groupItemNamePlaceholder: "e.g. Swimming, Piano lesson",
     groupItemMarkDone: "Mark as done",
+    groupDashboardOpen: "Open group",
+    groupDashboardToggle: "Show or hide this group",
     groupAddCard: "+ Add group",
     groupAddTitle: "Add a group",
     groupAddNew: "New group",
@@ -1317,6 +1321,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     groupItemEditTitle: "Editar item",
     groupItemNamePlaceholder: "ex.: Natação, Aula de piano",
     groupItemMarkDone: "Marcar como feito",
+    groupDashboardOpen: "Abrir grupo",
+    groupDashboardToggle: "Mostrar ou esconder este grupo",
     groupAddCard: "+ Adicionar grupo",
     groupAddTitle: "Adicionar um grupo",
     groupAddNew: "Novo grupo",
