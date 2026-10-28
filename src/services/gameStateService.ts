@@ -283,18 +283,23 @@ function normalizeCalendarShow(stored: PersistedSettings): HolderId[] {
 }
 
 /**
- * Groups from a save or backup, keeping only entries the app can render: an object with a string id and a known
- * kind. Missing item lists become empty and non-object items are dropped, so a malformed backup can't crash syncRecurringTasks.
+ * Groups from a save or backup, keeping only entries the app can render: an object with a string id, name and
+ * colour and a known kind (a missing createdAt becomes 0). Missing item lists become empty and non-object items are dropped, so a malformed backup can't crash syncRecurringTasks.
  */
 function normalizeGroups(stored: unknown): Group[] {
   if (!Array.isArray(stored)) return [];
   return stored
     .filter(
       (group): group is Record<string, unknown> =>
-        isObject(group) && typeof group.id === "string" && (group.kind === "list" || group.kind === "schedule"),
+        isObject(group) &&
+        typeof group.id === "string" &&
+        typeof group.name === "string" &&
+        typeof group.color === "string" &&
+        (group.kind === "list" || group.kind === "schedule"),
     )
     .map((group) => ({
       ...(group as unknown as Group),
+      createdAt: typeof group.createdAt === "number" && Number.isFinite(group.createdAt) ? group.createdAt : 0,
       tasks: Array.isArray(group.tasks) ? (group.tasks.filter(isObject) as unknown as Task[]) : [],
       workItems: Array.isArray(group.workItems) ? (group.workItems.filter(isObject) as unknown as WorkItem[]) : [],
     }));

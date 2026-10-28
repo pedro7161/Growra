@@ -30,11 +30,29 @@ import { createTaskTimer } from "./taskTimer";
  *   work item: { n: name, d?: description, k?: calendarColor, s: startMinutes, e: endMinutes, a: startDateKey,
  *           r?: ["d", n] | ["w", n, weekdays] | ["m", n] (none if absent), z?: ["c", count] | ["u", dateKey]
  *           (never if absent), x?: { dateKey: 0 (skip) | { n?, d?, s?, e? } (change) } }
- * Decoding never throws. A broken header (source, name, colour, kind, item list) makes the whole code a "format"
- * error; inside a good header, an item with any invalid field is dropped and the other items are kept.
+ * Decoding never throws. A broken header (source, name, 6-digit hex colour, kind, item list) makes the whole code a
+ * "format" error; inside a good header, an item with any invalid field (blank name, minutes or lengths out of range,
+ * unknown code...) is dropped and the other items are kept. A bad item colour becomes the default colour. Names are
+ * cut to 80 characters, descriptions to 500; only the first 500 items and 400 exceptions per item are read. The
+ * share builder applies the same limits, so what is sent is what arrives.
  */
 export const GROUP_CODE_VERSION = 1;
 const PREFIX = "GROWRA-GROUP-";
+
+/** Limits that keep imported data within what the UI can show; longer texts are cut, extra entries dropped. */
+const MAX_ITEMS = 500;
+const MAX_EXCEPTIONS = 400;
+const MAX_ITEM_NAME_LENGTH = 80;
+const MAX_DESCRIPTION_LENGTH = 500;
+const MINUTES_IN_DAY = 1440;
+const MAX_TIMER_MS = MINUTES_IN_DAY * 60_000;
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+const isHexColor = (value: unknown): value is string => typeof value === "string" && HEX_COLOR.test(value);
+/** An item colour that is not a 6-digit hex colour becomes the default one. */
+const itemColor = (value: unknown) => (isHexColor(value) ? value : DEFAULT_TASK_CALENDAR_COLOR);
+const clipName = (name: string) => name.slice(0, MAX_ITEM_NAME_LENGTH);
+const clipDescription = (description: string) => description.slice(0, MAX_DESCRIPTION_LENGTH);
 
 export interface GroupShare {
   sourceId: string;
@@ -80,12 +98,12 @@ function shareWorkItem(fields: ShareWorkFields): WorkItem {
   return { id: "", ...fields, completedDateKeys: [], createdAt: 0 };
 }
 
-/** Only the defined fields of a change, so a decoded change equals the shared one. */
+/** Only the defined fields of a change (texts within the limits), so a decoded change equals the shared one. */
 function cleanException(exception: WorkException): WorkException {
   if (exception.kind === "skip") return { kind: "skip" };
   const change: WorkException = { kind: "change" };
-  if (exception.name !== undefined) change.name = exception.name;
-  if (exception.description !== undefined) change.description = exception.description;
+  if (exception.name !== undefined) change.name = clipName(exception.name);
+  if (exception.description !== undefined) change.description = clipDescription(exception.description);
   if (exception.startMinutes !== undefined) change.startMinutes = exception.startMinutes;
   if (exception.endMinutes !== undefined) change.endMinutes = exception.endMinutes;
   return change;
@@ -95,31 +113,36 @@ function cleanRepeat(repeat: WorkRepeat): WorkRepeat {
   return repeat.kind === "weeks" ? { ...repeat, weekdays: [...repeat.weekdays] } : { ...repeat };
 }
 
+/** The task's own fields within the code's limits, so what is shared is exactly what a decode gives back. */
 function taskForShare(task: Task): Task {
   return shareTask({
-    name: task.name,
-    description: task.description,
+    name: clipName(task.name),
+    description: clipDescription(task.description),
     category: task.category,
     frequency: task.frequency,
     priority: task.priority,
-    calendarColor: task.calendarColor,
-    durationMinutes: task.durationMinutes,
+    calendarColor: itemColor(task.calendarColor),
+    durationMinutes: task.durationMinutes ? Math.min(task.durationMinutes, MINUTES_IN_DAY) : undefined,
     timerEnabled: task.timer.enabled,
-    timerDuration: task.timer.duration,
+    timerDuration: Math.min(task.timer.duration, MAX_TIMER_MS),
   });
 }
 
 function workItemForShare(item: WorkItem): WorkItem {
   return shareWorkItem({
-    name: item.name,
-    description: item.description,
-    calendarColor: item.calendarColor,
+    name: clipName(item.name),
+    description: clipDescription(item.description),
+    calendarColor: itemColor(item.calendarColor),
     startMinutes: item.startMinutes,
     endMinutes: item.endMinutes,
     startDateKey: item.startDateKey,
     repeat: cleanRepeat(item.repeat),
     end: { ...item.end },
-    exceptions: Object.fromEntries(Object.entries(item.exceptions).map(([key, value]) => [key, cleanException(value)])),
+    exceptions: Object.fromEntries(
+      Object.entries(item.exceptions)
+        .slice(0, MAX_EXCEPTIONS)
+        .map(([key, value]) => [key, cleanException(value)]),
+    ),
   });
 }
 
@@ -132,7 +155,8 @@ const isFinishedOnce = (task: Task) => task.frequency === TaskFrequency.ONCE && 
  * imported with so codes passed on still update the same copies. An unknown holder gives an empty list.
  */
 export function buildGroupShare(state: GameState, holder: HolderId, builtInName?: string): GroupShare {
-  const tasks = (list: Task[]) => list.filter((task) => !isFinishedOnce(task)).map(taskForShare);
+  const tasks = (list: Task[]) => list.filter((task) => !isFinishedOnce(task)).slice(0, MAX_ITEMS).map(taskForShare);
+  const workItems = (list: WorkItem[]) => list.slice(0, MAX_ITEMS).map(workItemForShare);
   if (holder === "personal" || holder === "work") {
     const isWork = holder === "work";
     return {
@@ -141,7 +165,7 @@ export function buildGroupShare(state: GameState, holder: HolderId, builtInName?
       color: DEFAULT_TASK_CALENDAR_COLOR,
       kind: isWork ? "schedule" : "list",
       tasks: isWork ? [] : tasks(state.tasks),
-      workItems: isWork ? state.workItems.map(workItemForShare) : [],
+      workItems: isWork ? workItems(state.workItems) : [],
     };
   }
   const group = state.groups.find((candidate) => candidate.id === holder);
@@ -149,10 +173,10 @@ export function buildGroupShare(state: GameState, holder: HolderId, builtInName?
   return {
     sourceId: group.sourceId ?? group.id,
     name: group.name,
-    color: group.color,
+    color: isHexColor(group.color) ? group.color : DEFAULT_TASK_CALENDAR_COLOR,
     kind: group.kind,
     tasks: group.kind === "list" ? tasks(group.tasks) : [],
-    workItems: group.kind === "schedule" ? group.workItems.map(workItemForShare) : [],
+    workItems: group.kind === "schedule" ? workItems(group.workItems) : [],
   };
 }
 
@@ -227,8 +251,6 @@ class InvalidField extends Error {}
 
 const isRecord = (value: unknown): value is Packed => typeof value === "object" && value !== null && !Array.isArray(value);
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
-const MINUTES_IN_DAY = 1440;
-
 function text(value: unknown, fallback?: string): string {
   if (value === undefined && fallback !== undefined) return fallback;
   if (typeof value !== "string") throw new InvalidField();
@@ -240,10 +262,17 @@ function integer(value: unknown, min: number, max: number): number {
   return value;
 }
 
-/** Any finite number from `min` up (lengths and timer durations need not be whole). */
-function amount(value: unknown, min: number): number {
-  if (typeof value !== "number" || !Number.isFinite(value) || value < min) throw new InvalidField();
+/** Any finite number in `min..max` (lengths and timer durations need not be whole). */
+function amount(value: unknown, min: number, max: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < min || value > max) throw new InvalidField();
   return value;
+}
+
+/** An item name: a non-blank string, cut to the length limit. */
+function itemName(value: unknown): string {
+  const name = text(value);
+  if (name.trim() === "") throw new InvalidField();
+  return clipName(name);
 }
 
 const minutes = (value: unknown) => integer(value, 0, MINUTES_IN_DAY);
@@ -257,7 +286,8 @@ function dateKey(value: unknown): string {
 
 function coded<T>(codes: Record<string, T>, value: unknown, fallback: T): T {
   if (value === undefined) return fallback;
-  if (typeof value !== "string" || !(value in codes)) throw new InvalidField();
+  // Own keys only: "constructor" or "toString" must not reach Object.prototype.
+  if (typeof value !== "string" || !Object.prototype.hasOwnProperty.call(codes, value)) throw new InvalidField();
   return codes[value];
 }
 
@@ -268,16 +298,16 @@ function unpackTask(raw: unknown): Task {
   if (raw.t !== undefined) {
     if (!Array.isArray(raw.t) || (raw.t[0] !== 0 && raw.t[0] !== 1)) throw new InvalidField();
     timerEnabled = raw.t[0] === 1;
-    timerDuration = amount(raw.t[1], 0);
+    timerDuration = amount(raw.t[1], 0, MAX_TIMER_MS);
   }
   return shareTask({
-    name: text(raw.n),
-    description: text(raw.d, ""),
+    name: itemName(raw.n),
+    description: clipDescription(text(raw.d, "")),
     category: text(raw.c, ""),
     frequency: coded(FREQUENCY_CODES, raw.f, TaskFrequency.ONCE),
     priority: coded(PRIORITY_CODES, raw.p, TaskPriority.MEDIUM),
-    calendarColor: text(raw.k, DEFAULT_TASK_CALENDAR_COLOR),
-    durationMinutes: raw.m === undefined ? undefined : amount(raw.m, Number.MIN_VALUE),
+    calendarColor: itemColor(raw.k),
+    durationMinutes: raw.m === undefined ? undefined : amount(raw.m, Number.MIN_VALUE, MINUTES_IN_DAY),
     timerEnabled,
     timerDuration,
   });
@@ -307,8 +337,8 @@ function unpackException(raw: unknown): WorkException {
   if (raw === 0) return { kind: "skip" };
   if (!isRecord(raw)) throw new InvalidField();
   const change: WorkException = { kind: "change" };
-  if (raw.n !== undefined) change.name = text(raw.n);
-  if (raw.d !== undefined) change.description = text(raw.d);
+  if (raw.n !== undefined) change.name = clipName(text(raw.n));
+  if (raw.d !== undefined) change.description = clipDescription(text(raw.d));
   if (raw.s !== undefined) change.startMinutes = minutes(raw.s);
   if (raw.e !== undefined) change.endMinutes = minutes(raw.e);
   return change;
@@ -317,11 +347,13 @@ function unpackException(raw: unknown): WorkException {
 function unpackWorkItem(raw: unknown): WorkItem {
   if (!isRecord(raw)) throw new InvalidField();
   if (raw.x !== undefined && !isRecord(raw.x)) throw new InvalidField();
-  const exceptions = Object.entries(raw.x ?? {}).map(([key, value]) => [dateKey(key), unpackException(value)]);
+  const exceptions = Object.entries(raw.x ?? {})
+    .slice(0, MAX_EXCEPTIONS)
+    .map(([key, value]) => [dateKey(key), unpackException(value)]);
   return shareWorkItem({
-    name: text(raw.n),
-    description: text(raw.d, ""),
-    calendarColor: text(raw.k, DEFAULT_TASK_CALENDAR_COLOR),
+    name: itemName(raw.n),
+    description: clipDescription(text(raw.d, "")),
+    calendarColor: itemColor(raw.k),
     startMinutes: minutes(raw.s),
     endMinutes: minutes(raw.e),
     startDateKey: dateKey(raw.a),
@@ -331,10 +363,10 @@ function unpackWorkItem(raw: unknown): WorkItem {
   });
 }
 
-/** The valid items; an item with any invalid field is left out. */
+/** The valid items among the first MAX_ITEMS; an item with any invalid field is left out. */
 function unpackAll<T>(rawItems: unknown[], unpack: (raw: unknown) => T): T[] {
   const items: T[] = [];
-  for (const raw of rawItems) {
+  for (const raw of rawItems.slice(0, MAX_ITEMS)) {
     try {
       items.push(unpack(raw));
     } catch (error) {
@@ -360,7 +392,7 @@ export function decodeGroupCode(code: string): { share: GroupShare } | { error: 
   if (!Array.isArray(parsed)) return { error: "format" };
   const [sourceId, rawName, color, kindCode, rawItems] = parsed as unknown[];
   const name = typeof rawName === "string" ? rawName.trim().slice(0, MAX_GROUP_NAME_LENGTH) : "";
-  if (typeof sourceId !== "string" || sourceId === "" || name === "" || typeof color !== "string") {
+  if (typeof sourceId !== "string" || sourceId === "" || name === "" || !isHexColor(color)) {
     return { error: "format" };
   }
   if ((kindCode !== "l" && kindCode !== "s") || !Array.isArray(rawItems)) return { error: "format" };

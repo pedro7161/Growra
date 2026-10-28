@@ -399,7 +399,9 @@ describe('groups save (v22)', () => {
       'g0',
       { name: 'No id', kind: 'list', tasks: [] },
       { id: 'g1', name: 'Odd kind', kind: 'board', tasks: [] },
-      { id: 'g2', name: 'No lists', color: '#f80', kind: 'list', createdAt: 1 },
+      { id: 'g5', color: '#f80', kind: 'list', tasks: [] },
+      { id: 'g6', name: 'No colour', kind: 'list', tasks: [] },
+      { id: 'g2', name: 'No lists', color: '#f80', kind: 'list' },
       { id: 'g3', name: 'Bad lists', color: '#08f', kind: 'schedule', createdAt: 2, tasks: 'x', workItems: { a: 1 } },
       { id: 'g4', name: 'Fine', color: '#0a8', kind: 'list', createdAt: 3, tasks: [task, null, 3], workItems: [] },
     ];
@@ -410,8 +412,8 @@ describe('groups save (v22)', () => {
     if (result.status !== 'loaded') return;
     const groups = result.saveData.gameState.groups;
     expect(groups.map((group) => group.id)).toEqual(['g2', 'g3', 'g4']);
-    expect(groups[0]).toMatchObject({ tasks: [], workItems: [] });
-    expect(groups[1]).toMatchObject({ tasks: [], workItems: [] });
+    expect(groups[0]).toMatchObject({ createdAt: 0, tasks: [], workItems: [] });
+    expect(groups[1]).toMatchObject({ createdAt: 2, tasks: [], workItems: [] });
     expect(groups[2].tasks).toEqual([task]);
     expect(() => syncRecurringTasks(result.saveData.gameState, Date.now())).not.toThrow();
 

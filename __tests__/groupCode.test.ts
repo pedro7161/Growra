@@ -9,6 +9,7 @@ import {
   importGroupCode,
   shareSummary,
 } from "../src/utils/groupCode";
+import { DEFAULT_TASK_CALENDAR_COLOR } from "../src/constants/taskConfig";
 import { MAX_GROUPS, createGroup } from "../src/utils/groups";
 import { createInitialGameState } from "../src/utils/initialState";
 import { encodeShareCode } from "../src/utils/shareCode";
@@ -16,6 +17,7 @@ import { createCustomTask } from "../src/utils/taskFactory";
 import { getStartOfDay } from "../src/utils/taskSchedule";
 import { createWorkItem } from "../src/utils/workSchedule";
 
+const MINUTES_IN_DAY = 1440;
 const NOW = new Date(2026, 9, 28, 15, 30).getTime();
 
 function idMaker(prefix = "n"): () => string {
@@ -24,7 +26,7 @@ function idMaker(prefix = "n"): () => string {
 }
 
 function withGroup(state: GameState, group: Partial<Group> & Pick<Group, "id" | "kind">): GameState {
-  const created = createGroup(state, { name: group.name ?? "Group", color: group.color ?? "#f80", kind: group.kind }, group.id, 1);
+  const created = createGroup(state, { name: group.name ?? "Group", color: group.color ?? "#ff8800", kind: group.kind }, group.id, 1);
   if ("error" in created) throw new Error(created.error);
   return {
     ...created,
@@ -69,7 +71,7 @@ describe("group codes", () => {
       shift("w1", {
         name: "Night shift ☾ Piso 3",
         description: "Ala B, café às 2h",
-        calendarColor: "#08f",
+        calendarColor: "#0088ff",
         startMinutes: 1320,
         endMinutes: 360,
         repeat: { kind: "weeks", interval: 1, weekdays: [1, 3, 5] },
@@ -84,10 +86,10 @@ describe("group codes", () => {
       shift("w2", { repeat: { kind: "months", interval: 2 }, end: { kind: "until", dateKey: "2027-06-01" } }),
       shift("w3", { repeat: { kind: "days", interval: 3 } }),
     ];
-    const state = withGroup(createInitialGameState(), { id: "g1", name: "Team", color: "#0a8", kind: "schedule", workItems: items });
+    const state = withGroup(createInitialGameState(), { id: "g1", name: "Team", color: "#00aa88", kind: "schedule", workItems: items });
 
     const built = buildGroupShare(state, "g1");
-    expect(built).toMatchObject({ sourceId: "g1", name: "Team", color: "#0a8", kind: "schedule", tasks: [] });
+    expect(built).toMatchObject({ sourceId: "g1", name: "Team", color: "#00aa88", kind: "schedule", tasks: [] });
     expect(built.workItems).toHaveLength(3);
     for (const item of built.workItems) {
       expect(item.id).toBe("");
@@ -103,7 +105,7 @@ describe("group codes", () => {
     expect(decoded.workItems[0]).toMatchObject({
       name: "Night shift ☾ Piso 3",
       description: "Ala B, café às 2h",
-      calendarColor: "#08f",
+      calendarColor: "#0088ff",
       startMinutes: 1320,
       endMinutes: 360,
       startDateKey: "2026-10-26",
@@ -115,7 +117,7 @@ describe("group codes", () => {
 
     const imported = asState(importGroupCode(createInitialGameState(), decoded, NOW, idMaker(), "new"));
     const group = imported.groups[0];
-    expect(group).toMatchObject({ name: "Team", color: "#0a8", kind: "schedule", sourceId: "g1", createdAt: NOW });
+    expect(group).toMatchObject({ name: "Team", color: "#00aa88", kind: "schedule", sourceId: "g1", createdAt: NOW });
     expect(group.workItems.map((item) => item.id)).toEqual(["n2", "n3", "n4"]);
     expect(group.workItems.every((item) => item.completedDateKeys.length === 0 && item.linkId === undefined)).toBe(true);
     expect(group.workItems[0].startDateKey).toBe("2026-10-26");
@@ -131,7 +133,7 @@ describe("group codes", () => {
       linkId: "link-2",
     };
     const weekly = createCustomTask("Groceries", "", "", TaskFrequency.WEEKLY, "", 0, false, 0, TaskPriority.LOW);
-    const once = { ...createCustomTask("Call Ana", "", "social", TaskFrequency.ONCE, "", 0), calendarColor: "#c3a" };
+    const once = { ...createCustomTask("Call Ana", "", "social", TaskFrequency.ONCE, "", 0), calendarColor: "#cc33aa" };
     const doneOnce = { ...createCustomTask("Done already", "", "", TaskFrequency.ONCE, "", 0), status: TaskStatus.COMPLETED };
     const state = withGroup(createInitialGameState(), {
       id: "g1", name: "Home", kind: "list", sourceId: "friend:g9", tasks: [daily, weekly, once, doneOnce],
@@ -153,7 +155,7 @@ describe("group codes", () => {
     expect(decoded.tasks[0].completedAt).toBeUndefined();
     expect(decoded.tasks[1]).toMatchObject({ frequency: TaskFrequency.WEEKLY, priority: TaskPriority.LOW });
     expect(decoded.tasks[1].durationMinutes).toBeUndefined();
-    expect(decoded.tasks[2].calendarColor).toBe("#c3a");
+    expect(decoded.tasks[2].calendarColor).toBe("#cc33aa");
     expect(shareSummary(decoded)).toEqual({ count: 3, kind: "list" });
 
     const imported = asState(importGroupCode(createInitialGameState(), decoded, NOW, idMaker(), "new"));
@@ -180,14 +182,49 @@ describe("group codes", () => {
     expect(decodeGroupCode("")).toEqual({ error: "format" });
 
     // A correct envelope with content that is not a group is a format error, never a throw.
-    for (const payload of ["not json", "null", "[]", '{"v":1}', '["g1","Team","#fff","x",[]]', '["g1","","#fff","s",[]]', '["g1","Team","#fff","s",{}]']) {
+    for (const payload of ["not json", "null", "[]", '{"v":1}', '["g1","Team","#ffffff","x",[]]', '["g1","","#ffffff","s",[]]', '["g1","Team","#ffffff","s",{}]']) {
       expect(decodeGroupCode(encodeShareCode("GROWRA-GROUP-", 1, payload))).toEqual({ error: "format" });
     }
     // Inside a valid group, an invalid item is dropped and the rest kept.
     const mixed = decodeOk(
-      encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", "#fff", "s", [{ n: "Ok", s: 60, e: 120, a: "2026-10-28" }, { n: "Bad", s: 60 }, 7, null]])),
+      encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", "#ffffff", "s", [{ n: "Ok", s: 60, e: 120, a: "2026-10-28" }, { n: "Bad", s: 60 }, 7, null]])),
     );
     expect(mixed.workItems.map((item) => item.name)).toEqual(["Ok"]);
+
+    // A code table only answers its own keys: "constructor" or "toString" never become a frequency or priority.
+    const crafted = decodeOk(
+      encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", "#ffffff", "l", [{ n: "A", f: "constructor" }, { n: "B", p: "toString" }, { n: "C", f: "__proto__" }, { n: "Ok", f: "d" }]])),
+    );
+    expect(crafted.tasks.map((task) => [task.name, task.frequency])).toEqual([["Ok", TaskFrequency.DAILY]]);
+
+    // A group colour that is not 6-digit hex rejects the code; a bad item colour falls back to the default.
+    for (const color of ["#fff", "red", "url(x)", 5]) {
+      expect(decodeGroupCode(encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", color, "l", []])))).toEqual({ error: "format" });
+    }
+    const limits = decodeOk(
+      encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", "#ffffff", "l", [
+        { n: "x".repeat(200), d: "y".repeat(900), k: "javascript:alert(1)" },
+        { n: "   " },
+        { n: "Too long", m: 1441 },
+        { n: "Timer too long", t: [1, MINUTES_IN_DAY * 60_000 + 1] },
+        { n: "Full day", m: 1440, t: [1, MINUTES_IN_DAY * 60_000] },
+      ]])),
+    );
+    expect(limits.tasks.map((task) => task.name.length)).toEqual([80, 8]);
+    expect(limits.tasks[0].description).toHaveLength(500);
+    expect(limits.tasks[0].calendarColor).toBe(DEFAULT_TASK_CALENDAR_COLOR);
+    expect(limits.tasks[1]).toMatchObject({ durationMinutes: 1440, timer: { enabled: true, duration: MINUTES_IN_DAY * 60_000 } });
+
+    // Only the first 500 items and 400 exceptions per item are read.
+    const many = Array.from({ length: 501 }, (_, index) => ({ n: `T${index}` }));
+    expect(decodeOk(encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", "#ffffff", "l", many]))).tasks).toHaveLength(500);
+    const exceptions = Object.fromEntries(
+      Array.from({ length: 401 }, (_, index) => [`2027-${String(Math.floor(index / 28) + 1).padStart(2, "0")}-${String((index % 28) + 1).padStart(2, "0")}`, 0]),
+    );
+    const longItem = decodeOk(
+      encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", "#ffffff", "s", [{ n: "Ok", s: 60, e: 120, a: "2026-10-28", r: ["d", 1], x: exceptions }]])),
+    );
+    expect(Object.keys(longItem.workItems[0].exceptions)).toHaveLength(400);
   });
 
   it("import at 10 groups returns cap error and leaves state equal", () => {
@@ -201,7 +238,7 @@ describe("group codes", () => {
 
   it("importing a code from the same source offers update (findImportedGroup) and 'update' replaces items only", () => {
     const sender = withGroup(createInitialGameState(), {
-      id: "g1", name: "Team", color: "#0a8", kind: "schedule", workItems: [shift("w1", { name: "Monday" })],
+      id: "g1", name: "Team", color: "#00aa88", kind: "schedule", workItems: [shift("w1", { name: "Monday" })],
     });
     const first = decodeOk(encodeGroupCode(buildGroupShare(sender, "g1")));
     expect(findImportedGroup(createInitialGameState(), first.sourceId)).toBeUndefined();
@@ -211,7 +248,7 @@ describe("group codes", () => {
     // The receiver renames it, collapses it on the dashboard and shows it in the calendar.
     receiver = {
       ...receiver,
-      groups: [{ ...local, name: "Ana's shifts", color: "#123" }],
+      groups: [{ ...local, name: "Ana's shifts", color: "#112233" }],
       settings: { ...receiver.settings, dashboardCollapsed: { ...receiver.settings.dashboardCollapsed, [local.id]: true }, calendarShow: [local.id] },
     };
     expect(findImportedGroup(receiver, "g1")?.id).toBe(local.id);
@@ -221,7 +258,7 @@ describe("group codes", () => {
     );
     const updated = asState(importGroupCode(receiver, newer, NOW + 1, idMaker("b"), "update"));
     expect(updated.groups).toHaveLength(1);
-    expect(updated.groups[0]).toMatchObject({ id: local.id, name: "Ana's shifts", color: "#123", sourceId: "g1", createdAt: local.createdAt });
+    expect(updated.groups[0]).toMatchObject({ id: local.id, name: "Ana's shifts", color: "#112233", sourceId: "g1", createdAt: local.createdAt });
     expect(updated.groups[0].workItems.map((item) => [item.id, item.name])).toEqual([["b1", "Tuesday"], ["b2", "Friday"]]);
     expect(updated.settings).toEqual(receiver.settings);
 
