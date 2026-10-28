@@ -99,6 +99,8 @@ export interface Task {
   /** How long the task takes, in minutes; longer tasks pay more. */
   durationMinutes?: number;
   timer: TaskTimer;
+  /** Shared by copies of this task in other holders (see utils/groupLinks); absent when it stands alone. */
+  linkId?: string;
 }
 
 export type TaskTimerState = "idle" | "running" | "paused" | "ready";
@@ -304,6 +306,8 @@ export interface WorkItem {
   exceptions: Record<string, WorkException>; // by dateKey
   completedDateKeys: string[];
   createdAt: number;
+  /** Shared by copies of this item in other holders (see utils/groupLinks); absent when it stands alone. */
+  linkId?: string;
 }
 
 /** One generated date of a work item; it belongs to its start date even when it ends the next day. */
