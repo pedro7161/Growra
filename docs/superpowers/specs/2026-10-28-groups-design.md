@@ -149,6 +149,25 @@ No server, the same idea as room codes (`src/utils/roomCode.ts`, `roomShare.ts`)
 - **Limits:** importing respects the 10-category cap. Very large codes are allowed (they're pasted, not typed). A QR
   option can follow later, as with room codes phase 2 (issue #41).
 
+## 11. Adding one item to several groups (owner request, 2026-10-28)
+
+The use case: a manager builds the team's schedule in their own Work (or a group), and every shift also goes into each
+worker's group. They then share each worker's group with that worker by code, so each person gets only their shifts.
+
+- **Creating:** the task form and the shift form get an **"Also add to…"** row with checkboxes for the player's groups
+  of the matching kind (Schedule groups for a shift, List groups for a task). It shows only when at least one such
+  group exists. Saving creates the item where it was made plus an identical copy in each ticked group.
+- **Linked copies:** all copies share a hidden `linkId`. Copies in groups still earn nothing; only the one in the
+  player's own Personal/Work pays, as before.
+- **Editing or deleting a linked item** (from any of its copies) asks which copies to apply it to: checkboxes for
+  "this one" (always on) and every other group holding a copy, pre-ticked (owner: "they should have the option to also
+  delete"). For repeating schedule items this comes after the existing "Only this one / This and all following"
+  choice, and the same scope applies to every chosen copy (each copy's own date exceptions are respected).
+- Copies that were changed on their own stay linked; the next linked edit simply overwrites the fields it changes.
+- A copy can be **unlinked** from its ⋯ menu, making it independent.
+- Sharing a group by code (section 9) drops `linkId`, so links never cross phones.
+- Deleting a whole group removes its copies only; the other copies stay.
+
 ## 10. Name (owner, 2026-10-28)
 
 The feature is called **Groups** in the UI (pt-PT **Grupos**): "+ Add group", "Share group", "Add group from code".
