@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings } from "../types";
+import { allSelected, showSelectAll, toggleAll } from "../utils/selectAll";
 
 /** A group that can take a copy of the item being made. */
 export interface LinkTarget {
@@ -27,10 +28,26 @@ export default function LinkTargetsRow({ settings, targets, selected, onChange, 
   const theme = getAppTheme(settings.theme);
   const toggle = (id: string) =>
     onChange(selected.includes(id) ? selected.filter((candidate) => candidate !== id) : [...selected, id]);
+  const ids = targets.map((target) => target.id);
+  const everyTicked = allSelected(ids, selected);
 
   return (
     <View style={[styles.container, disabled && styles.disabled]}>
-      <Text style={[styles.label, { color: theme.text }]}>{copy.linkAlsoAddTo}</Text>
+      <View style={styles.header}>
+        <Text style={[styles.label, { color: theme.text }]}>{copy.linkAlsoAddTo}</Text>
+        {showSelectAll(targets.length) ? (
+          <TouchableOpacity
+            onPress={() => onChange(toggleAll(ids, selected))}
+            disabled={disabled}
+            accessibilityRole="button"
+            hitSlop={8}
+          >
+            <Text style={[styles.selectAll, { color: theme.accent }]}>
+              {everyTicked ? copy.linkUnselectAll : copy.linkSelectAll}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
       <Text style={[styles.hint, { color: theme.mutedText }]}>{copy.linkAlsoAddToHint}</Text>
       {targets.map((target) => {
         const ticked = selected.includes(target.id);
@@ -66,7 +83,9 @@ export default function LinkTargetsRow({ settings, targets, selected, onChange, 
 const styles = StyleSheet.create({
   container: { marginTop: 16, gap: 4 },
   disabled: { opacity: 0.4 },
-  label: { fontSize: 14, fontWeight: "600" },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  label: { flexShrink: 1, fontSize: 14, fontWeight: "600" },
+  selectAll: { fontSize: 14, fontWeight: "700" },
   hint: { fontSize: 13, lineHeight: 18, marginBottom: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   box: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, alignItems: "center", justifyContent: "center" },
