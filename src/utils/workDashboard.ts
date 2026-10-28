@@ -1,4 +1,5 @@
-import { Task, TaskPriority, WorkOccurrence, WorkItem } from "../types";
+import { Group, Task, TaskPriority, WorkOccurrence, WorkItem } from "../types";
+import { getTodayTasks } from "./taskSchedule";
 import { addDaysToKey } from "./workForm";
 import { getOccurrencesBetween, toDateKey, dateKeyToStart } from "./workSchedule";
 
@@ -32,4 +33,17 @@ export function nextTaskFirst(tasks: Task[]): Task[] {
     (PRIORITY_RANK[task.priority] - PRIORITY_RANK[best.priority] || task.name.localeCompare(best.name)) < 0 ? task : best,
   );
   return [next, ...tasks.filter((task) => task !== next)];
+}
+
+export type GroupNextItem = { kind: "task"; task: Task } | { kind: "occurrence"; occurrence: WorkOccurrence };
+
+/** The one item a group shows on the dashboard, or null when it has nothing left today. */
+export function groupNextItem(group: Group, now: number): GroupNextItem | null {
+  if (group.kind === "list") {
+    const task = nextTaskFirst(getTodayTasks(group.tasks, now))[0];
+    return task ? { kind: "task", task } : null;
+  }
+  const open = getTodayWorkOccurrences(group.workItems, now).filter((o) => !o.completed);
+  const occurrence = nextFirst(open, now)[0];
+  return occurrence ? { kind: "occurrence", occurrence } : null;
 }

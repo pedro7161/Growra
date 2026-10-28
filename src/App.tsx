@@ -213,7 +213,9 @@ export default function App() {
     (activeScreen === "tasks" &&
       (openSection === "work" ||
         gameState?.groups.some((group) => group.id === openSection && group.kind === "schedule") === true)) ||
-    (activeScreen === "dashboard" && (gameState?.workItems.length ?? 0) > 0);
+    (activeScreen === "dashboard" &&
+      ((gameState?.workItems.length ?? 0) > 0 ||
+        gameState?.groups.some((group) => group.kind === "schedule" && group.workItems.length > 0) === true));
   useEffect(() => {
     if (!workScreenOpen || !appActive) return;
     setWorkNow(Date.now());
@@ -909,10 +911,10 @@ export default function App() {
     await persistCompletion(gameState, updated, "shift");
   };
 
-  const openWorkScreen = async () => {
+  const openHolderScreen = async (holder: HolderId) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
-    await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection: "work" } });
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection: holder } });
     setActiveScreen("tasks");
     playUiTap();
   };
@@ -1230,8 +1232,13 @@ export default function App() {
               playUiTap();
             }}
             onCompleteWorkOccurrence={(itemId, dateKey) => void handleCompleteWorkOccurrence(itemId, dateKey)}
-            onOpenWork={() => void openWorkScreen()}
+            onOpenWork={() => void openHolderScreen("work")}
             onToggleSection={(section) => void handleToggleDashboardSection(section)}
+            onCompleteGroupTask={(groupId, taskId) => void handleCompleteTask(taskId, groupId)}
+            onCompleteGroupOccurrence={(groupId, itemId, dateKey) =>
+              void handleCompleteWorkOccurrence(itemId, dateKey, groupId)
+            }
+            onOpenGroup={(groupId) => void openHolderScreen(groupId)}
             workNow={workNow}
             backupNudgeVisible={backupNudgeVisible}
             onShareBackup={() => {

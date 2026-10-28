@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AddTaskModal from "../components/AddTaskModal";
 import TaskTimerControls from "../components/TaskTimerControls";
 import CompanionArtwork from "../components/CompanionArtwork";
+import DashboardGroupSection from "../components/DashboardGroupSection";
 import DashboardSectionHeader from "../components/DashboardSectionHeader";
 import ShiftCheerCard from "../components/ShiftCheerCard";
 import WorkOccurrenceRow from "../components/WorkOccurrenceRow";
@@ -24,6 +25,7 @@ import { getPredefinedTask } from "../constants/predefinedTasks";
 import {
     CustomTaskTemplate,
     GameState,
+    HolderId,
     Task,
     TaskStatus,
 } from "../types";
@@ -38,7 +40,7 @@ import { getRoadPosition } from "../utils/journey";
 import { taskCategoryLabel } from "../utils/taskLabels";
 import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
-import { getTodayWorkOccurrences, nextFirst, nextTaskFirst } from "../utils/workDashboard";
+import { getTodayWorkOccurrences, groupNextItem, nextFirst, nextTaskFirst } from "../utils/workDashboard";
 
 interface DashboardScreenProps {
   gameState: GameState;
@@ -47,10 +49,10 @@ interface DashboardScreenProps {
   onCompleteTask: (taskId: string) => void;
   onOpenSettings: () => void;
   onUiTap: () => void;
-  onStartTimer: (taskId: string) => void;
-  onPauseTimer: (taskId: string) => void;
-  onResetTimer: (taskId: string) => void;
-  onTimerReady: (taskId: string) => void;
+  onStartTimer: (taskId: string, holder?: HolderId) => void;
+  onPauseTimer: (taskId: string, holder?: HolderId) => void;
+  onResetTimer: (taskId: string, holder?: HolderId) => void;
+  onTimerReady: (taskId: string, holder?: HolderId) => void;
   /** Shown once after 2+ days away (#53); null otherwise. */
   returnRecap: ReturnRecap | null;
   onDismissReturnRecap: () => void;
@@ -61,7 +63,11 @@ interface DashboardScreenProps {
   /** Work section: confirm a shift, open the Work screen, and remember which sections are collapsed. */
   onCompleteWorkOccurrence: (itemId: string, dateKey: string) => void;
   onOpenWork: () => void;
-  onToggleSection: (section: "personal" | "work") => void;
+  onToggleSection: (section: HolderId) => void;
+  /** Group rows: tick the group's next item (reward-free) and open the group's own screen. */
+  onCompleteGroupTask: (groupId: string, taskId: string) => void;
+  onCompleteGroupOccurrence: (groupId: string, itemId: string, dateKey: string) => void;
+  onOpenGroup: (groupId: string) => void;
   /** Clock for the Work section; it moves the running shift along. */
   workNow: number;
 }
@@ -85,6 +91,9 @@ export default function DashboardScreen({
   onCompleteWorkOccurrence,
   onOpenWork,
   onToggleSection,
+  onCompleteGroupTask,
+  onCompleteGroupOccurrence,
+  onOpenGroup,
   workNow,
 }: DashboardScreenProps) {
   const copy = getAppCopy(gameState.settings.language);
@@ -104,6 +113,11 @@ export default function DashboardScreen({
   // With a Work section the Personal list leads with its next task; without one the list stays as it was.
   const personalTasks = hasWork ? nextTaskFirst(pendingTasks) : pendingTasks;
   const collapsed = gameState.settings.dashboardCollapsed;
+  // Group rows never count in the header total; that stays Personal and Work.
+  const groupRows = gameState.groups.flatMap((group) => {
+    const next = groupNextItem(group, workNow);
+    return next ? [{ group, next }] : [];
+  });
   const pendingCount = pendingTasks.length + workOccurrences.filter((o) => !o.completed).length;
   const completedTasks = gameState.tasks.filter(
     (task) => task.status === TaskStatus.COMPLETED,
@@ -376,6 +390,26 @@ export default function DashboardScreen({
               )}
             </View>
           )}
+
+          {groupRows.map(({ group, next }) => (
+            <DashboardGroupSection
+              key={group.id}
+              group={group}
+              next={next}
+              collapsed={collapsed[group.id] === true}
+              settings={gameState.settings}
+              now={workNow}
+              disabled={tutorialLocked}
+              onToggle={() => onToggleSection(group.id)}
+              onOpen={() => onOpenGroup(group.id)}
+              onCompleteTask={(taskId) => onCompleteGroupTask(group.id, taskId)}
+              onCompleteOccurrence={(itemId, dateKey) => onCompleteGroupOccurrence(group.id, itemId, dateKey)}
+              onStartTimer={(taskId) => onStartTimer(taskId, group.id)}
+              onPauseTimer={(taskId) => onPauseTimer(taskId, group.id)}
+              onResetTimer={(taskId) => onResetTimer(taskId, group.id)}
+              onTimerReady={(taskId) => onTimerReady(taskId, group.id)}
+            />
+          ))}
         </View>
 
         <View style={styles.section}>
