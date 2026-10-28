@@ -16,8 +16,9 @@ import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, CustomTaskTemplate, Task, TaskType, TaskFrequency, TaskPriority } from "../types";
 import { getPredefinedTask, getPredefinedTaskGroups, localizePredefinedTask, predefinedTasks } from "../constants/predefinedTasks";
-import { formatTaskDuration, taskDurationOptions, taskPriorityOptions } from "../constants/taskConfig";
+import { taskPriorityOptions } from "../constants/taskConfig";
 import { getStartOfDay } from "../utils/taskSchedule";
+import DurationField from "./DurationField";
 import TaskDatePicker from "./TaskDatePicker";
 import { getCustomTaskTemplateGroups } from "../utils/customTaskTemplates";
 import { taskCategoryLabel } from "../utils/taskLabels";
@@ -78,7 +79,6 @@ export default function AddTaskModal({
   onSubmit,
 }: AddTaskModalProps) {
   const copy = getAppCopy(settings.language);
-  const durationUnits = { minutes: copy.tasksDurationMinutesUnit, hours: copy.tasksDurationHoursUnit };
   const theme = getAppTheme(settings.theme);
   const predefinedTaskGroups = getPredefinedTaskGroups().map((group) => ({
     ...group,
@@ -614,24 +614,14 @@ export default function AddTaskModal({
 
             <View style={styles.field}>
               <Text style={[styles.label, { color: theme.text }]}>{copy.tasksDuration}</Text>
-              <View style={[styles.row, tutorialOn && styles.tutorialDisabled]}>
-                <ChipButton
-                  label={copy.tasksDurationNone}
-                  active={durationMinutes === null}
-                  onPress={() => setDurationMinutes(null)}
+              <View style={tutorialOn && styles.tutorialDisabled}>
+                <DurationField
                   settings={settings}
+                  copy={copy}
+                  minutes={durationMinutes}
+                  onChange={setDurationMinutes}
                   disabled={tutorialOn}
                 />
-                {taskDurationOptions.map((option) => (
-                  <ChipButton
-                    key={option}
-                    label={formatTaskDuration(option, durationUnits)}
-                    active={durationMinutes === option}
-                    onPress={() => setDurationMinutes(option)}
-                    settings={settings}
-                    disabled={tutorialOn}
-                  />
-                ))}
               </View>
             </View>
 

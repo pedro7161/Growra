@@ -11,7 +11,7 @@ interface CompanionStyleCopy {
   joins: string;
 }
 
-interface AppCopy {
+export interface AppCopy {
   navDashboard: string;
   navTasks: string;
   navJourney: string;
@@ -121,6 +121,7 @@ interface AppCopy {
   tasksPriorityLow: string;
   tasksDuration: string;
   tasksDurationNone: string;
+  tasksDurationSecondsUnit: string;
   tasksDurationMinutesUnit: string;
   tasksDurationHoursUnit: string;
   tasksPriorityMedium: string;
@@ -291,6 +292,10 @@ interface AppCopy {
   shiftLinesStart: string[];
   shiftLinesMiddle: string[];
   shiftLinesLastHour: string[];
+  /** What the companion says when a task is ticked off; {name} is optional. */
+  praiseLines: string[];
+  /** Same, when a work shift is completed. */
+  praiseShiftLines: string[];
   companionStyles: Record<CompanionStyle, CompanionStyleCopy>;
   /** Companion descriptions by companion id; a missing entry falls back to the English original in utils/gameplay.ts. */
   companionBios: Partial<Record<string, string>>;
@@ -591,6 +596,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksPriorityLow: "Low",
     tasksDuration: "How long?",
     tasksDurationNone: "None",
+    tasksDurationSecondsUnit: "s",
     tasksDurationMinutesUnit: "min",
     tasksDurationHoursUnit: "h",
     tasksPriorityMedium: "Medium",
@@ -777,6 +783,22 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       newYear: "{name} says: Happy New Year! ✨",
     },
     companionBios: {},
+    praiseLines: [
+      "Nice work!",
+      "You did it!",
+      "{name} is proud of you!",
+      "Another one done!",
+      "Well done, that counts!",
+      "{name} is cheering for you!",
+      "One less thing to carry!",
+      "Look at you go!",
+    ],
+    praiseShiftLines: [
+      "Shift done, rest well!",
+      "{name} is proud of you. Time to unwind!",
+      "Shift complete, you earned a break!",
+      "Great shift! {name} is glad you made it.",
+    ],
     shiftLinesStart: [
       "{name} is by your side. Have a good start!",
       "Shift on! {name} is cheering you on.",
@@ -1201,6 +1223,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksPriorityLow: "Baixa",
     tasksDuration: "Quanto tempo?",
     tasksDurationNone: "Sem",
+    tasksDurationSecondsUnit: "s",
     tasksDurationMinutesUnit: "min",
     tasksDurationHoursUnit: "h",
     tasksPriorityMedium: "Média",
@@ -1403,6 +1426,22 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       gloam: "Um fantasma-abóbora com um manto roxo, que brilha mais nas noites mais escuras de outono.",
       holly: "Uma pequena corça de inverno com hastes de azevinho e um cachecol vermelho, que toca um sininho dourado.",
     },
+    praiseLines: [
+      "Bom trabalho!",
+      "Conseguiste!",
+      "{name} tem orgulho em ti!",
+      "Mais uma feita!",
+      "Muito bem, isso conta!",
+      "{name} está a torcer por ti!",
+      "Menos uma coisa na lista!",
+      "Olha para ti a avançar!",
+    ],
+    praiseShiftLines: [
+      "Turno feito, descansa bem!",
+      "{name} tem orgulho em ti. Hora de relaxar!",
+      "Turno concluído, mereces uma pausa!",
+      "Grande turno! {name} está feliz por teres chegado ao fim.",
+    ],
     shiftLinesStart: [
       "{name} está ao teu lado. Bom começo!",
       "Turno a começar! {name} está a torcer por ti.",

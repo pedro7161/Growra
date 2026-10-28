@@ -277,7 +277,12 @@ export default function DashboardScreen({
                   </Text>
                 </View>
               ) : (
-                personalTasks.map((task) => (
+                <ScrollView
+                  style={styles.sectionList}
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator
+                >
+                {personalTasks.map((task) => (
                   <View key={task.id} style={styles.todayTaskWrapper}>
                     <View
                       style={[
@@ -321,7 +326,8 @@ export default function DashboardScreen({
                       </View>
                     </View>
                   </View>
-                ))
+                ))}
+                </ScrollView>
               )}
             </>
           )}
@@ -349,7 +355,12 @@ export default function DashboardScreen({
                       <Text style={[styles.emptyText, { color: theme.mutedText }]}>{copy.workNoShiftsDay}</Text>
                     </View>
                   ) : (
-                    workOccurrences.map((occurrence) => (
+                    <ScrollView
+                      style={styles.sectionList}
+                      nestedScrollEnabled
+                      showsVerticalScrollIndicator
+                    >
+                    {workOccurrences.map((occurrence) => (
                       <WorkOccurrenceRow
                         key={`${occurrence.itemId}-${occurrence.dateKey}`}
                         occurrence={occurrence}
@@ -358,7 +369,8 @@ export default function DashboardScreen({
                         onOpen={onOpenWork}
                         onComplete={() => onCompleteWorkOccurrence(occurrence.itemId, occurrence.dateKey)}
                       />
-                    ))
+                    ))}
+                    </ScrollView>
                   )}
                 </View>
               )}
@@ -487,6 +499,8 @@ export default function DashboardScreen({
 }
 
 const styles = StyleSheet.create({
+  // About five rows show; longer lists scroll inside the section. Shorter lists keep their natural height.
+  sectionList: { maxHeight: 360 },
   tutorialDisabled: {
     opacity: 0.34,
   },
