@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Modal, Pressable, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
@@ -146,7 +146,9 @@ export default function TasksChooser({
       ) : null}
 
       <Modal visible={dialog?.kind === "add"} transparent animationType="fade" onRequestClose={close}>
-        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={close}>
+        <View style={styles.backdrop}>
+          {/* Only the backdrop closes the sheet; taps on the card stay on the card. */}
+          <Pressable style={StyleSheet.absoluteFill} onPress={close} accessible={false} />
           <View style={[styles.sheet, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.sheetTitle, { color: theme.text }]}>{copy.groupAddTitle}</Text>
             <TouchableOpacity onPress={() => setDialog({ kind: "form" })} accessibilityRole="button">
@@ -156,7 +158,7 @@ export default function TasksChooser({
               <Text style={[styles.sheetItem, { color: theme.text }]}>{copy.groupAddFromCode}</Text>
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       {dialog?.kind === "form" ? (

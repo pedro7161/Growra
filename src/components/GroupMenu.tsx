@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, GroupKind } from "../types";
@@ -50,11 +50,18 @@ export default function GroupMenu({
     itemCount,
   );
 
-  const menuItem = (label: string, onPress: () => void, danger = false) => (
-    <TouchableOpacity key={label} onPress={onPress} accessibilityRole="button">
-      <Text style={[styles.menuItem, { color: danger ? theme.danger : theme.text }]}>{label}</Text>
+  const menuItem = (label: string, onPress: () => void, danger = false, disabled = false) => (
+    <TouchableOpacity
+      key={label}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+    >
+      <Text style={[styles.menuItem, { color: danger ? theme.danger : theme.text }, disabled && styles.disabled]}>{label}</Text>
     </TouchableOpacity>
   );
+  const nothingToShare = shareCount === 0;
 
   const confirm = (title: string, body: string, note: string | null, action: string, onConfirm: () => void, danger: boolean) => (
     <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -74,13 +81,16 @@ export default function GroupMenu({
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={step === "menu" ? onClose : undefined}>
+      <View style={styles.backdrop}>
+        {/* Only the backdrop closes the menu; taps on the card stay on the card. */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={step === "menu" ? onClose : undefined} accessible={false} />
         {step === "menu" ? (
           <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
               {name}
             </Text>
-            {menuItem(copy.groupMenuShare, () => setStep("share"))}
+            {menuItem(copy.groupMenuShare, () => setStep("share"), false, nothingToShare)}
+            {nothingToShare ? <Text style={[styles.note, { color: theme.mutedText }]}>{copy.groupShareNothing}</Text> : null}
             {isGroup ? menuItem(copy.groupMenuEdit, onEdit) : null}
             {isGroup ? menuItem(copy.groupMenuDelete, () => setStep("delete"), true) : null}
           </View>
@@ -89,7 +99,7 @@ export default function GroupMenu({
         ) : (
           confirm(copy.groupDeleteTitle, deleteText, null, copy.groupDeleteConfirm, onDelete, true)
         )}
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 }
@@ -104,4 +114,5 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", justifyContent: "flex-end", gap: 20, marginTop: 8 },
   action: { fontSize: 15, fontWeight: "600", paddingVertical: 6 },
   primary: { fontWeight: "800" },
+  disabled: { opacity: 0.4 },
 });

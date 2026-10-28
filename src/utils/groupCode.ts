@@ -384,6 +384,18 @@ function parseJson(payload: string): unknown {
   }
 }
 
+/**
+ * The code inside a pasted text: words around it are dropped, and a code a messenger wrapped over several lines (or
+ * broke with spaces) is joined again. Text without a code comes back unchanged, so decoding still reports it.
+ */
+export function extractGroupCode(text: string): string {
+  const start = text.indexOf(PREFIX);
+  if (start < 0) return text;
+  const joined = (text.slice(start).match(/^[A-Za-z0-9_\-\s]+/)?.[0] ?? "").replace(/\s+/g, "");
+  // The checksum ends the code, so a word that ran into it after a line break is left out.
+  return joined.match(new RegExp(`^${PREFIX}\\d+-[A-Za-z0-9_-]+-[0-9a-f]{8}`))?.[0] ?? joined;
+}
+
 /** Reads a pasted code (spaces and line breaks around it are fine). Never throws; nothing is changed on an error. */
 export function decodeGroupCode(code: string): { share: GroupShare } | { error: GroupCodeError } {
   const decoded = decodeShareCode(code, PREFIX, GROUP_CODE_VERSION);
@@ -433,10 +445,26 @@ function freshItems(share: GroupShare, now: number, newId: () => string): Pick<G
   };
 }
 
+/** Personal and Work are shared with a per-player source id ("<playerId>:work"); a group's id has no colon. */
+const isBuiltInShare = (share: GroupShare) => /:(personal|work)$/.test(share.sourceId);
+
+/**
+ * The new group's name. A shared Personal or Work gets `sharedLabel` after it ("Work (shared)"), so it can't be
+ * mistaken for the player's own; the label is added once and the name is cut so both fit the length limit.
+ */
+function importedName(share: GroupShare, sharedLabel?: string): string {
+  const name = share.name.trim().slice(0, MAX_GROUP_NAME_LENGTH);
+  if (!sharedLabel || !isBuiltInShare(share)) return name;
+  const suffix = ` ${sharedLabel}`;
+  if (name.endsWith(suffix)) return name;
+  return `${name.slice(0, Math.max(0, MAX_GROUP_NAME_LENGTH - suffix.length)).trim()}${suffix}`;
+}
+
 /**
  * Adds a shared code as a group; the player's own Personal and Work are never touched. "new" makes a new group
  * (the cap applies). "update" replaces the items of the group imported from the same source and keeps its name,
- * colour and settings; with no such group of the same kind it makes a new one instead.
+ * colour and settings; with no such group of the same kind it makes a new one instead. `sharedLabel` (the player's
+ * "(shared)") names a new group made from a shared Personal or Work.
  */
 export function importGroupCode(
   state: GameState,
@@ -444,6 +472,7 @@ export function importGroupCode(
   now: number,
   newId: () => string,
   mode: "new" | "update",
+  sharedLabel?: string,
 ): GameState | { error: "cap" } {
   const existing = mode === "update" ? findImportedGroup(state, share.sourceId) : undefined;
   if (existing && existing.kind === share.kind) {
@@ -454,7 +483,7 @@ export function importGroupCode(
   }
   if (state.groups.length >= MAX_GROUPS) return { error: "cap" };
   const id = newId();
-  const name = share.name.trim().slice(0, MAX_GROUP_NAME_LENGTH);
+  const name = importedName(share, sharedLabel);
   const created = createGroup(state, { name, color: share.color, kind: share.kind }, id, now);
   // Only a hand-made share with a blank name gets here (decoded shares always have a name): nothing changes.
   if ("error" in created) return created.error === "cap" ? { error: "cap" } : state;

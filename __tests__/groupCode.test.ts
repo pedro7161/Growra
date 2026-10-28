@@ -5,6 +5,7 @@ import {
   buildGroupShare,
   decodeGroupCode,
   encodeGroupCode,
+  extractGroupCode,
   findImportedGroup,
   importGroupCode,
   shareSummary,
@@ -281,5 +282,44 @@ describe("group codes", () => {
     expect(imported.coins).toBe(40);
     expect(imported.groups[0]).toMatchObject({ name: "Trabalho", kind: "schedule", sourceId: "player-7:work" });
     expect(imported.groups[0].workItems).toHaveLength(2);
+  });
+
+  it("an imported Personal or Work is named '<name> (shared)'; a group share keeps its name", () => {
+    const sender = { ...createInitialGameState(), playerId: "player-7", workItems: [shift("w1")] };
+    const work = decodeOk(encodeGroupCode(buildGroupShare(sender, "work", "Work")));
+    const imported = asState(importGroupCode(createInitialGameState(), work, NOW, idMaker(), "new", "(shared)"));
+    expect(imported.groups[0].name).toBe("Work (shared)");
+    // Passed on again, it is not suffixed twice.
+    const passedOn = decodeOk(encodeGroupCode(buildGroupShare(imported, imported.groups[0].id)));
+    const again = asState(importGroupCode(createInitialGameState(), passedOn, NOW, idMaker(), "new", "(shared)"));
+    expect(again.groups[0].name).toBe("Work (shared)");
+    // The suffix always fits the name limit.
+    const long = { ...work, name: "W".repeat(24) };
+    const clipped = asState(importGroupCode(createInitialGameState(), long, NOW, idMaker(), "new", "(partilhado)"));
+    expect(clipped.groups[0].name).toBe(`${"W".repeat(11)} (partilhado)`);
+    const team = withGroup(createInitialGameState(), { id: "g1", name: "Team", kind: "schedule", workItems: [shift("w1")] });
+    const group = decodeOk(encodeGroupCode(buildGroupShare(team, "g1")));
+    expect(asState(importGroupCode(createInitialGameState(), group, NOW, idMaker(), "new", "(shared)")).groups[0].name).toBe("Team");
+  });
+});
+
+describe("extractGroupCode", () => {
+  const code = encodeGroupCode({ sourceId: "g1", name: "Team", color: "#00aa88", kind: "list", tasks: [], workItems: [] });
+
+  it("pulls the code out of a whole message", () => {
+    expect(extractGroupCode(`My Team group in Growra. Paste this code: ${code}`)).toBe(code);
+    expect(extractGroupCode(`  ${code}\n`)).toBe(code);
+  });
+
+  it("joins a code a messenger wrapped over several lines", () => {
+    const wrapped = `Paste this code: ${code.slice(0, 20)}\n${code.slice(20, 31)} \r\n ${code.slice(31)}`;
+    expect(extractGroupCode(wrapped)).toBe(code);
+    expect(decodeGroupCode(extractGroupCode(wrapped))).toEqual({ share: expect.objectContaining({ name: "Team" }) });
+    // Words after the code are left out.
+    expect(extractGroupCode(`${code.slice(0, 25)}\n${code.slice(25)}\nThanks!`)).toBe(code);
+  });
+
+  it("gives back text without a code unchanged", () => {
+    expect(extractGroupCode("hello")).toBe("hello");
   });
 });

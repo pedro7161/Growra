@@ -117,6 +117,20 @@ export interface AppCopy {
   groupPreviewNoMore: string;
   groupPreviewEmpty: string;
   groupImportErrors: Record<GroupCodeError | "cap", string>;
+  groupImportSharedLabel: string;
+  groupShareNothing: string;
+  linkAlsoAddTo: string;
+  linkAlsoAddToHint: string;
+  linkEditTitle: string;
+  linkDeleteTitle: string;
+  linkApplyTo: string;
+  linkThisOne: string;
+  linkUntickedNote: string;
+  linkApply: string;
+  linkDelete: string;
+  linkAlsoIn: string;
+  linkUnlink: string;
+  linkUnlinkHint: string;
   workDone: string;
   workMarkDone: string;
   workNow: string;
@@ -654,6 +668,20 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       newer: "This code is from a newer Growra. Update the app to use it.",
       cap: "You already have {max} groups. Delete one to add this.",
     },
+    groupImportSharedLabel: "(shared)",
+    groupShareNothing: "Nothing to share yet.",
+    linkAlsoAddTo: "Also add to…",
+    linkAlsoAddToHint: "A copy goes in each group you tick. Later changes can reach them all.",
+    linkEditTitle: "Change the copies too?",
+    linkDeleteTitle: "Delete the copies too?",
+    linkApplyTo: "Apply to:",
+    linkThisOne: "This one",
+    linkUntickedNote: "Unticked copies stay as they are.",
+    linkApply: "Apply",
+    linkDelete: "Delete",
+    linkAlsoIn: "Also in: {names}",
+    linkUnlink: "Unlink",
+    linkUnlinkHint: "Unlink to stop changes here reaching the other copies.",
     workDone: "Done",
     workMarkDone: "Mark as worked",
     workNow: "Now",
@@ -1343,6 +1371,20 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       newer: "Este código é de um Growra mais recente. Atualiza a app para o usar.",
       cap: "Já tens {max} grupos. Apaga um para adicionar este.",
     },
+    groupImportSharedLabel: "(partilhado)",
+    groupShareNothing: "Ainda não há nada para partilhar.",
+    linkAlsoAddTo: "Adicionar também a…",
+    linkAlsoAddToHint: "Vai uma cópia para cada grupo que marcares. Mudanças futuras podem chegar a todas.",
+    linkEditTitle: "Alterar também as cópias?",
+    linkDeleteTitle: "Apagar também as cópias?",
+    linkApplyTo: "Aplicar a:",
+    linkThisOne: "Este",
+    linkUntickedNote: "As cópias por marcar ficam como estão.",
+    linkApply: "Aplicar",
+    linkDelete: "Apagar",
+    linkAlsoIn: "Também em: {names}",
+    linkUnlink: "Desligar",
+    linkUnlinkHint: "Desliga para as mudanças aqui deixarem de chegar às outras cópias.",
     workDone: "Feito",
     workMarkDone: "Marcar como feito",
     workNow: "Agora",

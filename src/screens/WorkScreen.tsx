@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ShiftCheerCard from "../components/ShiftCheerCard";
+import { LinkTarget } from "../components/LinkTargetsRow";
 import WorkItemModal from "../components/WorkItemModal";
 import WorkOccurrenceRow from "../components/WorkOccurrenceRow";
 import { getAppCopy } from "../constants/appCopy";
@@ -9,6 +10,7 @@ import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, GameState, HolderId, WorkEditScope, WorkItem, WorkOccurrence } from "../types";
 import { getActiveCompanion } from "../utils/companions";
 import { isBuiltIn } from "../utils/groups";
+import { LinkedCopy } from "../utils/linkedEdits";
 import { generateId } from "../utils/idUtils";
 import { getLocaleFromSettings } from "../utils/settings";
 import { addDaysToKey, weekStartKey, WorkItemFields } from "../utils/workForm";
@@ -36,10 +38,18 @@ interface WorkScreenProps {
   onBackToChooser: () => void;
   /** The work calendar; the button is hidden until there is one. */
   onOpenCalendar?: () => void;
-  /** Adds a new item or replaces an existing one with the same id. */
-  onSaveItem: (item: WorkItem) => void;
+  /** Adds a new item (with a linked copy in each `alsoAddTo` group) or replaces an existing one with the same id. */
+  onSaveItem: (item: WorkItem, alsoAddTo?: string[]) => void;
   onEditOccurrence: (itemId: string, dateKey: string, fields: WorkItemFields, scope: WorkEditScope) => void;
-  onDeleteOccurrence: (itemId: string, dateKey: string, scope: WorkEditScope) => void;
+  /** An edit of a linked item that also reaches the copies in `others`; scope is null for a one-off item. */
+  onEditLinked: (item: WorkItem, dateKey: string, fields: WorkItemFields, scope: WorkEditScope | null, others: HolderId[]) => void;
+  /** `others`: the copies to delete with it. */
+  onDeleteOccurrence: (itemId: string, dateKey: string, scope: WorkEditScope, others: HolderId[]) => void;
+  onUnlink: (itemId: string) => void;
+  /** The groups a new item can also go to. */
+  linkTargets: LinkTarget[];
+  /** The other copies of a linked item. */
+  linkedCopiesOf: (item: WorkItem) => LinkedCopy[];
   onCompleteOccurrence: (itemId: string, dateKey: string) => void;
   onSetView: (view: AppSettings["workView"]) => void;
 }
@@ -60,7 +70,11 @@ export default function WorkScreen({
   onOpenCalendar,
   onSaveItem,
   onEditOccurrence,
+  onEditLinked,
   onDeleteOccurrence,
+  onUnlink,
+  linkTargets,
+  linkedCopiesOf,
   onCompleteOccurrence,
   onSetView,
 }: WorkScreenProps) {
@@ -102,16 +116,18 @@ export default function WorkScreen({
   };
   const closeModal = () => setModalOpen(false);
 
-  const handleSave = (fields: WorkItemFields, scope: WorkEditScope | null) => {
-    if (!editing) onSaveItem(createWorkItem(fields, generateId(), Date.now()));
+  const handleSave = (fields: WorkItemFields, scope: WorkEditScope | null, holders: HolderId[]) => {
+    if (!editing) onSaveItem(createWorkItem(fields, generateId(), Date.now()), holders);
+    else if (holders.length > 0) onEditLinked(editing.item, editing.occurrence.dateKey, fields, scope, holders);
     else if (scope === null) onSaveItem(withValidCompletions({ ...editing.item, ...fields }));
     else onEditOccurrence(editing.item.id, editing.occurrence.dateKey, fields, scope);
     closeModal();
   };
-  const handleDelete = (scope: WorkEditScope | null) => {
-    if (editing) onDeleteOccurrence(editing.item.id, editing.occurrence.dateKey, scope ?? "one");
+  const handleDelete = (scope: WorkEditScope | null, holders: HolderId[]) => {
+    if (editing) onDeleteOccurrence(editing.item.id, editing.occurrence.dateKey, scope ?? "one", holders);
     closeModal();
   };
+  const editingCopies = editing ? linkedCopiesOf(editing.item) : [];
 
   const row = (occurrence: WorkOccurrence, compact: boolean) => (
     <WorkOccurrenceRow
@@ -257,6 +273,16 @@ export default function WorkScreen({
         onSave={handleSave}
         onDelete={handleDelete}
         forGroup={isGroup}
+        linkTargets={linkTargets}
+        linkedCopies={editingCopies}
+        onUnlink={
+          editing && editingCopies.length > 0
+            ? () => {
+                onUnlink(editing.item.id);
+                closeModal();
+              }
+            : undefined
+        }
         onComplete={
           editing && editingCompletable
             ? () => {

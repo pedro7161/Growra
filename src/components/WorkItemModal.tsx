@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { taskCalendarColors } from "../constants/taskConfig";
-import { AppSettings, WorkEditScope, WorkItem, WorkOccurrence } from "../types";
+import { AppSettings, HolderId, WorkEditScope, WorkItem, WorkOccurrence } from "../types";
 import { getLocaleFromSettings } from "../utils/settings";
 import {
   changesSeriesRule,
@@ -20,6 +20,8 @@ import {
   WorkItemFields,
 } from "../utils/workForm";
 import { dateKeyToStart, toDateKey } from "../utils/workSchedule";
+import LinkedScopePrompt, { LinkedCopiesCard, LinkedCopy } from "./LinkedScopePrompt";
+import LinkTargetsRow, { LinkTarget } from "./LinkTargetsRow";
 import TaskDatePicker from "./TaskDatePicker";
 import WorkScopePrompt from "./WorkScopePrompt";
 
@@ -30,13 +32,23 @@ interface WorkItemModalProps {
   editing: { item: WorkItem; occurrence: WorkOccurrence } | null;
   newDateKey: string;
   onClose: () => void;
-  /** scope is null for a new item or an item that doesn't repeat (the whole item is replaced). */
-  onSave: (fields: WorkItemFields, scope: WorkEditScope | null) => void;
-  onDelete: (scope: WorkEditScope | null) => void;
+  /**
+   * scope is null for a new item or an item that doesn't repeat (the whole item is replaced). `holders` is the
+   * ticked "Also add to…" groups for a new item, or the other copies chosen for an edit of a linked item.
+   */
+  onSave: (fields: WorkItemFields, scope: WorkEditScope | null, holders: HolderId[]) => void;
+  /** `holders`: the other copies chosen to be deleted too. */
+  onDelete: (scope: WorkEditScope | null, holders: HolderId[]) => void;
   /** Present only while the occurrence can be ticked off. */
   onComplete?: () => void;
   /** A group's item rather than a work shift: the title, name hint and tick button drop the word "shift". */
   forGroup?: boolean;
+  /** The groups a new item can also go to ("Also add to…"). */
+  linkTargets?: LinkTarget[];
+  /** The other copies of the item being edited. */
+  linkedCopies?: LinkedCopy[];
+  /** Makes the edited item independent of its copies. */
+  onUnlink?: () => void;
 }
 
 const REPEAT_CHOICES: RepeatChoice[] = ["none", "daily", "xdays", "weekly", "xweeks", "monthly"];
@@ -61,6 +73,9 @@ export default function WorkItemModal({
   onDelete,
   onComplete,
   forGroup = false,
+  linkTargets = [],
+  linkedCopies = [],
+  onUnlink,
 }: WorkItemModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
@@ -69,6 +84,11 @@ export default function WorkItemModal({
   const [error, setError] = useState<WorkDraftError | null>(null);
   const [prompt, setPrompt] = useState<{ action: "edit" | "delete"; fields?: WorkItemFields } | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [alsoAddTo, setAlsoAddTo] = useState<string[]>([]);
+  // After the scope is known, a linked item asks which copies the edit or delete reaches.
+  const [linkPrompt, setLinkPrompt] = useState<
+    { action: "edit" | "delete"; fields?: WorkItemFields; scope: WorkEditScope | null } | null
+  >(null);
 
   useEffect(() => {
     if (!visible) return;
@@ -76,6 +96,8 @@ export default function WorkItemModal({
     setError(null);
     setPrompt(null);
     setConfirmingDelete(false);
+    setAlsoAddTo([]);
+    setLinkPrompt(null);
   }, [visible, editing, newDateKey]);
 
   const repeats = editing ? editing.item.repeat.kind !== "none" : false;
@@ -90,21 +112,36 @@ export default function WorkItemModal({
       setError(result.error);
       return;
     }
-    if (repeats) setPrompt({ action: "edit", fields: result.fields });
-    else onSave(result.fields, null);
+    if (!editing) onSave(result.fields, null, alsoAddTo);
+    else if (repeats) setPrompt({ action: "edit", fields: result.fields });
+    else afterScope("edit", null, result.fields);
+  };
+
+  /** With other copies, asks which ones to include; otherwise applies to this one only. */
+  const afterScope = (action: "edit" | "delete", scope: WorkEditScope | null, fields?: WorkItemFields) => {
+    if (linkedCopies.length > 0) setLinkPrompt({ action, fields, scope });
+    else if (action === "edit" && fields) onSave(fields, scope, []);
+    else if (action === "delete") onDelete(scope, []);
   };
 
   const handleDelete = () => {
     if (repeats) setPrompt({ action: "delete" });
-    else if (confirmingDelete) onDelete(null);
+    // The copies prompt is its own confirmation.
+    else if (linkedCopies.length > 0 || confirmingDelete) afterScope("delete", null);
     else setConfirmingDelete(true);
   };
 
   const handleScope = (scope: WorkEditScope) => {
     const pending = prompt;
     setPrompt(null);
-    if (pending?.action === "edit" && pending.fields) onSave(pending.fields, scope);
-    if (pending?.action === "delete") onDelete(scope);
+    if (pending) afterScope(pending.action, scope, pending.fields);
+  };
+
+  const handleLinkedConfirm = (holders: HolderId[]) => {
+    const pending = linkPrompt;
+    setLinkPrompt(null);
+    if (pending?.action === "edit" && pending.fields) onSave(pending.fields, pending.scope, holders);
+    if (pending?.action === "delete") onDelete(pending.scope, holders);
   };
 
   const inputStyle = [styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }];
@@ -258,6 +295,16 @@ export default function WorkItemModal({
             </>
           ) : null}
 
+          {!editing ? (
+            <LinkTargetsRow settings={settings} targets={linkTargets} selected={alsoAddTo} onChange={setAlsoAddTo} />
+          ) : null}
+
+          {editing && onUnlink ? (
+            <View style={styles.linked}>
+              <LinkedCopiesCard settings={settings} copies={linkedCopies} onUnlink={onUnlink} />
+            </View>
+          ) : null}
+
           {editing ? (
             <View style={styles.deleteRow}>
               {confirmingDelete ? (
@@ -279,6 +326,15 @@ export default function WorkItemModal({
             followingOnly={prompt.fields ? changesSeriesRule(editing.item, prompt.fields) : false}
             onChoose={handleScope}
             onCancel={() => setPrompt(null)}
+          />
+        ) : null}
+        {linkPrompt ? (
+          <LinkedScopePrompt
+            settings={settings}
+            action={linkPrompt.action}
+            copies={linkedCopies}
+            onConfirm={handleLinkedConfirm}
+            onCancel={() => setLinkPrompt(null)}
           />
         ) : null}
       </SafeAreaView>
@@ -320,6 +376,7 @@ const styles = StyleSheet.create({
   primary: { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16, alignItems: "center", marginTop: 8 },
   secondary: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: "center", marginTop: 8 },
   primaryText: { fontSize: 15, fontWeight: "700" },
+  linked: { marginTop: 24 },
   deleteRow: { flexDirection: "row", gap: 12, marginTop: 28 },
   deleteButton: { flex: 1 },
   deleteText: { color: "#fff" },

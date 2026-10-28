@@ -3,7 +3,7 @@ import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "reac
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, Group } from "../types";
-import { GroupShare, decodeGroupCode } from "../utils/groupCode";
+import { GroupShare, decodeGroupCode, extractGroupCode } from "../utils/groupCode";
 import { MAX_GROUPS } from "../utils/groups";
 
 interface GroupImportModalProps {
@@ -14,9 +14,6 @@ interface GroupImportModalProps {
   onImport: (share: GroupShare, mode: "new" | "update") => "cap" | null;
   onClose: () => void;
 }
-
-/** A pasted message may carry words around the code; only the code itself is read. */
-const codeIn = (text: string) => text.match(/GROWRA-GROUP-\S+/)?.[0] ?? text;
 
 /** "Add group from code": paste a code, see a friendly error, or choose Update / Add as new for a known source. */
 export default function GroupImportModal({ settings, findExisting, onImport, onClose }: GroupImportModalProps) {
@@ -37,7 +34,7 @@ export default function GroupImportModal({ settings, findExisting, onImport, onC
   };
 
   const submit = () => {
-    const decoded = decodeGroupCode(codeIn(text));
+    const decoded = decodeGroupCode(extractGroupCode(text));
     if ("error" in decoded) {
       setError(copy.groupImportErrors[decoded.error]);
       return;

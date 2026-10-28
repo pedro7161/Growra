@@ -32,6 +32,8 @@ import { taskCategoryLabel, taskFrequencyLabel } from "../utils/taskLabels";
 import { customTaskDraftProblem } from "../utils/taskDraft";
 import { taskMatchesSearch } from "../utils/taskSearch";
 import { isBuiltIn } from "../utils/groups";
+import { LinkedCopy } from "../utils/linkedEdits";
+import { LinkTarget } from "../components/LinkTargetsRow";
 
 interface TasksScreenProps {
   /** Personal, or a list group. */
@@ -56,10 +58,17 @@ interface TasksScreenProps {
     taskType: TaskType;
     selectedPredefinedTaskId: string;
   }) => void;
-  onAddTask: (task: Task, customTemplate?: CustomTaskTemplate) => void;
+  /** `alsoAddTo`: groups that get a linked copy. */
+  onAddTask: (task: Task, customTemplate?: CustomTaskTemplate, alsoAddTo?: string[]) => void;
   onCompleteTask: (taskId: string) => void;
-  onUpdateTask: (task: Task) => void;
-  onDeleteTask: (taskId: string) => void;
+  /** `others`: the other copies of a linked task the edit also reaches. */
+  onUpdateTask: (task: Task, others: HolderId[]) => void;
+  onDeleteTask: (taskId: string, others: HolderId[]) => void;
+  onUnlink: (taskId: string) => void;
+  /** The groups a new task can also go to. */
+  linkTargets: LinkTarget[];
+  /** The other copies of a linked task. */
+  linkedCopiesOf: (task: Task) => LinkedCopy[];
   /** The calendar button is hidden without it. */
   onOpenCalendar?: () => void;
   onTaskToolsOpenChange: (open: boolean) => void;
@@ -84,6 +93,9 @@ export default function TasksScreen({
   onCompleteTask,
   onUpdateTask,
   onDeleteTask,
+  onUnlink,
+  linkTargets,
+  linkedCopiesOf,
   onOpenCalendar,
   onTaskToolsOpenChange,
   onUiTap,
@@ -138,10 +150,11 @@ export default function TasksScreen({
       return rightTask.createdAt - leftTask.createdAt;
     });
 
-  const handleAddTask = (values: TaskFormValues) => {
+  const handleAddTask = (values: TaskFormValues, alsoAddTo: string[]) => {
     const { task, customTemplate } = buildTaskFromFormValues(values);
-    onAddTask(task, customTemplate);
+    onAddTask(task, customTemplate, alsoAddTo);
   };
+  const selectedCopies = selectedTask ? linkedCopiesOf(selectedTask) : [];
   const handleQuickAdd = () => {
     if (tutorialOn) {
       return;
@@ -408,6 +421,7 @@ export default function TasksScreen({
         }
         onTutorialStateChange={onTutorialStateChange}
         onSubmit={handleAddTask}
+        linkTargets={linkTargets}
       />
       <TaskDetailsModal
         visible={selectedTask !== null}
@@ -418,14 +432,23 @@ export default function TasksScreen({
           setSelectedTask(null);
           onUiTap();
         }}
-        onSave={(task) => {
-          onUpdateTask(task);
+        onSave={(task, others) => {
+          onUpdateTask(task, others);
           setSelectedTask(null);
         }}
-        onDelete={(taskId) => {
-          onDeleteTask(taskId);
+        onDelete={(taskId, others) => {
+          onDeleteTask(taskId, others);
           setSelectedTask(null);
         }}
+        linkedCopies={selectedCopies}
+        onUnlink={
+          selectedTask && selectedCopies.length > 0
+            ? () => {
+                onUnlink(selectedTask.id);
+                setSelectedTask(null);
+              }
+            : undefined
+        }
       />
     </SafeAreaView>
   );
