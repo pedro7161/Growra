@@ -175,7 +175,22 @@ The calendar export (CSV, Growra Plus) should include work items.
 - Branch from `develop` (main = the released app) and keep `develop` releasable.
 - The Play listing says "no accounts, no servers, no analytics"; nothing here may change that.
 
-## 8. Left to the builder
+## 8. Decisions after the builder check (author's calls, 2026-10-28)
+
+- **Prices are modelled on a Personal-only user** (a few short tasks a day): their earnings and the time to
+  afford things stay about where they are today, so non-Work users notice nothing. Shift workers earn faster;
+  that's intended, they do more. (This replaces the "couple of weeks" target in section 4: today a room style
+  takes a few days, and that pace is kept.)
+- **A late-confirmed shift counts on the day it's ticked**, like every task (streak, Journey, daily counters).
+  A work occurrence is never "overdue" for perks.
+- **A personal task's time only affects pay.** It doesn't lock completion, change order or put the task in the
+  Work view; personal tasks keep today's data model with one new optional `durationMinutes` field.
+- **The choice screen stays for everyone**, remembered after the first pick. While the first-run tutorial is
+  active, Tasks always opens Personal so the tutorial steps still work.
+- **Work is free.** Nothing in this design is a Growra Plus feature (the existing Plus CSV export simply
+  includes work items).
+
+## 9. Left to the builder
 
 - Exact reward and price numbers (modelled, with the reasoning written in the PR).
 - Visual design of the choice screen, day and week views, and the collapsible sections, within Growra's style.
