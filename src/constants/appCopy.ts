@@ -461,6 +461,10 @@ interface AppCopy {
   csvExportChoose: string;
   csvExportTasks: string;
   csvExportCompletions: string;
+  csvExportWork: string;
+  calendarShowBoth: string;
+  calendarWorkMarker: string;
+  workCalendarTitle: string;
   csvExportError: string;
   timerLabel: string;
   taskStatusPending: string;
@@ -906,6 +910,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     csvExportChoose: "Which file do you want to share?",
     csvExportTasks: "Tasks",
     csvExportCompletions: "Completions",
+    csvExportWork: "Work",
+    calendarShowBoth: "Show both",
+    calendarWorkMarker: "Work",
+    workCalendarTitle: "Work calendar",
     csvExportError: "The file couldn't be created or shared. Please try again.",
     exploreButton: "Send {name} exploring",
     exploreAdHint: "Watch a short ad · {left} left today",
@@ -1528,6 +1536,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     csvExportChoose: "Que ficheiro queres partilhar?",
     csvExportTasks: "Tarefas",
     csvExportCompletions: "Conclusões",
+    csvExportWork: "Trabalho",
+    calendarShowBoth: "Mostrar ambos",
+    calendarWorkMarker: "Trabalho",
+    workCalendarTitle: "Calendário de trabalho",
     csvExportError: "Não foi possível criar ou partilhar o ficheiro. Tenta outra vez.",
     exploreButton: "Enviar {name} a explorar",
     exploreAdHint: "Vê um anúncio curto · faltam {left} hoje",

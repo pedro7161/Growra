@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, AppState, BackHandler, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
+import { Alert, AlertButton, AppState, BackHandler, Platform, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
@@ -23,7 +23,7 @@ import { getActiveCompanion } from "./utils/companions";
 import { syncRooms } from "./utils/rooms";
 import { buildRoomShareMessage, shareRoomPicture } from "./utils/roomShare";
 import { resolveTheme, withResolvedTheme } from "./utils/plus";
-import { buildCompletionsCsv, buildTasksCsv } from "./utils/historyCsv";
+import { buildCompletionsCsv, buildTasksCsv, buildWorkCsv, getWorkExportRange } from "./utils/historyCsv";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import CompanionRevealModal from "./components/CompanionRevealModal";
@@ -104,7 +104,7 @@ import {
 const plusService = createPlusService(expoIapClient);
 const adsService = createAdsService(googleAdsClient, REWARDED_AD_UNIT_ID);
 
-type Screen = "dashboard" | "tasks" | "task-calendar" | "journey" | "companions";
+type Screen = "dashboard" | "tasks" | "task-calendar" | "work-calendar" | "journey" | "companions";
 
 interface TaskTutorialUiState {
   modalVisible: boolean;
@@ -168,7 +168,7 @@ export default function App() {
     selectedPredefinedTaskId: "",
   });
   const tutorialStep = gameState
-    ? getTutorialStep(gameState, activeScreen, taskTutorialUiState.modalVisible)
+    ? getTutorialStep(gameState, activeScreen === "work-calendar" ? "task-calendar" : activeScreen, taskTutorialUiState.modalVisible)
     : "done";
   const [plusVisible, setPlusVisible] = useState(false);
   const [exploreBusy, setExploreBusy] = useState(false);
@@ -245,7 +245,7 @@ export default function App() {
   // The ambience follows the screen (home / journey / room editor) and pauses while the app is inactive.
   useEffect(() => {
     const musicEnabled = appActive && (gameState?.settings.musicEnabled ?? false);
-    void setGrowraAmbience(ambienceFor(activeScreen, roomEditorId !== null, musicEnabled));
+    void setGrowraAmbience(ambienceFor(activeScreen === "work-calendar" ? "task-calendar" : activeScreen, roomEditorId !== null, musicEnabled));
   }, [appActive, activeScreen, roomEditorId, gameState?.settings.musicEnabled]);
 
   useEffect(() => () => void setGrowraAmbience(null), []);
@@ -621,7 +621,7 @@ export default function App() {
   // welcome gift and show the finish card.
   useEffect(() => {
     const current = gameStateRef.current;
-    if (!current || !tutorialVisible || !shouldFinishTutorial(current, activeScreen)) return;
+    if (!current || !tutorialVisible || !shouldFinishTutorial(current, activeScreen === "work-calendar" ? "task-calendar" : activeScreen)) return;
     setTutorialVisible(false);
     setTutorialCard("finish");
     void persistGameState(finishTutorial(current));
@@ -736,6 +736,13 @@ export default function App() {
     const gameState = gameStateRef.current;
     if (!gameState) return;
     await persistGameState({ ...gameState, settings: { ...gameState.settings, workView } });
+    playUiTap();
+  };
+
+  const handleCalendarShowBothChange = async (calendarShowBoth: boolean) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, calendarShowBoth } });
     playUiTap();
   };
 
@@ -932,14 +939,24 @@ export default function App() {
         Alert.alert(copy.settingsExportCsv, copy.csvExportError);
       }
     };
-    Alert.alert(copy.settingsExportCsv, copy.csvExportChoose, [
+    // Work export range: the earliest work item start to today, both included.
+    const workRange = getWorkExportRange(current.workItems, Date.now());
+    const buttons: AlertButton[] = [
       { text: copy.csvExportTasks, onPress: () => void share("growra-tasks.csv", buildTasksCsv(current.tasks)) },
       {
         text: copy.csvExportCompletions,
         onPress: () => void share("growra-completions.csv", buildCompletionsCsv(current.days)),
       },
-      { text: copy.addTaskCancel, style: "cancel" },
-    ]);
+    ];
+    if (workRange) {
+      buttons.push({
+        text: copy.csvExportWork,
+        onPress: () => void share("growra-work.csv", buildWorkCsv(current.workItems, workRange.fromKey, workRange.toKey)),
+      });
+    }
+    // Android shows at most three buttons: with the Work file the dialog closes through Back or a tap outside.
+    if (!workRange || Platform.OS !== "android") buttons.push({ text: copy.addTaskCancel, style: "cancel" });
+    Alert.alert(copy.settingsExportCsv, copy.csvExportChoose, buttons, { cancelable: true });
   };
 
   const handleExportData = async (): Promise<string> => {
@@ -1060,6 +1077,7 @@ export default function App() {
               onDeleteOccurrence={(itemId, dateKey, scope) => void handleDeleteWorkOccurrence(itemId, dateKey, scope)}
               onCompleteOccurrence={(itemId, dateKey) => void handleCompleteWorkOccurrence(itemId, dateKey)}
               onSetView={(view) => void handleWorkViewChange(view)}
+              onOpenCalendar={() => handleNavigate("work-calendar")}
             />
           );
         }
@@ -1102,6 +1120,20 @@ export default function App() {
           <TaskCalendarScreen
             settings={viewState.settings}
             tasks={gameState.tasks}
+            workItems={gameState.workItems}
+            mode="personal"
+            onToggleShowBoth={(showBoth) => void handleCalendarShowBothChange(showBoth)}
+            onBack={() => handleNavigate("tasks")}
+          />
+        );
+      case "work-calendar":
+        return (
+          <TaskCalendarScreen
+            settings={viewState.settings}
+            tasks={gameState.tasks}
+            workItems={gameState.workItems}
+            mode="work"
+            onToggleShowBoth={(showBoth) => void handleCalendarShowBothChange(showBoth)}
             onBack={() => handleNavigate("tasks")}
           />
         );
@@ -1152,7 +1184,7 @@ export default function App() {
         {renderScreen()}
         <BottomNavigation
           activeScreen={
-            activeScreen === "task-calendar" ? "tasks" : activeScreen
+            activeScreen === "task-calendar" || activeScreen === "work-calendar" ? "tasks" : activeScreen
           }
           onNavigate={handleNavigate}
           settings={viewState.settings}
