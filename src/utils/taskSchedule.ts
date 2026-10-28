@@ -71,17 +71,25 @@ export function syncTask(task: Task, now: number): Task {
   };
 }
 
+/** Brings every repeating task back once its next day comes: Personal's and each List group's. */
 export function syncRecurringTasks(gameState: GameState, now: number = Date.now()): GameState {
   let hasChanges = false;
+  const syncAll = (list: Task[]): Task[] => {
+    let listChanged = false;
+    const synced = list.map((task) => {
+      const syncedTask = syncTask(task, now);
+      if (syncedTask !== task) listChanged = true;
+      return syncedTask;
+    });
+    if (!listChanged) return list;
+    hasChanges = true;
+    return synced;
+  };
 
-  const tasks = gameState.tasks.map((task) => {
-    const syncedTask = syncTask(task, now);
-
-    if (syncedTask !== task) {
-      hasChanges = true;
-    }
-
-    return syncedTask;
+  const tasks = syncAll(gameState.tasks);
+  const groups = gameState.groups.map((group) => {
+    const groupTasks = syncAll(group.tasks);
+    return groupTasks === group.tasks ? group : { ...group, tasks: groupTasks };
   });
 
   if (!hasChanges) {
@@ -91,6 +99,7 @@ export function syncRecurringTasks(gameState: GameState, now: number = Date.now(
   return {
     ...gameState,
     tasks,
+    groups,
     lastPlayedAt: now,
   };
 }

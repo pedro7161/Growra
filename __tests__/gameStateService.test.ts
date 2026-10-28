@@ -277,7 +277,7 @@ describe('work schedule save (v21)', () => {
     const task = createCustomTask('Water', '', 'health', TaskFrequency.ONCE, '', 0);
     const base = { ...createInitialGameState(), coins: 77, tasks: [task], pets: [createCompanion('sprout')] };
     const { workItems: _w, ...gameState } = base;
-    const { tasksSection: _a, workView: _b, dashboardCollapsed: _c, calendarShowBoth: _d, ...settings } = base.settings;
+    const { tasksSection: _a, workView: _b, dashboardCollapsed: _c, calendarShow: _d, ...settings } = base.settings;
     await AsyncStorage.setItem(
       'growra_save_data',
       JSON.stringify({ ...createSaveData({ ...gameState, settings } as never), version: 20 }),
@@ -291,29 +291,102 @@ describe('work schedule save (v21)', () => {
       tasksSection: 'choose',
       workView: 'day',
       dashboardCollapsed: { personal: false, work: false },
-      calendarShowBoth: false,
+      calendarShow: [],
     });
     expect(loaded.coins).toBe(77);
     expect(loaded.tasks).toHaveLength(1);
     expect(loaded.pets).toHaveLength(base.pets.length);
   });
 
-  it('v21 save loads unchanged', async () => {
+  it('v21 save with a work schedule keeps its items and work settings', async () => {
     const item = {
       id: 'w1', name: 'Shift', description: '', calendarColor: '#fff', startMinutes: 540, endMinutes: 1020,
       startDateKey: '2026-10-28', repeat: { kind: 'none' }, end: { kind: 'never' }, exceptions: {},
       completedDateKeys: [], createdAt: 1,
     };
-    const state = {
-      ...createInitialGameState(),
-      workItems: [item],
-      settings: { ...createInitialGameState().settings, tasksSection: 'work' as const, workView: 'week' as const, calendarShowBoth: true },
-    };
-    await gameStateService.saveGame(createSaveData(state as never));
+    const { groups: _g, ...gameState } = createInitialGameState();
+    const { calendarShow: _c, ...settings } = gameState.settings;
+    await AsyncStorage.setItem(
+      'growra_save_data',
+      JSON.stringify({
+        ...createSaveData({ ...gameState, workItems: [item], settings: { ...settings, tasksSection: 'work', workView: 'week', calendarShowBoth: true } } as never),
+        version: 21,
+      }),
+    );
     const result = await gameStateService.loadGame();
     expect(result.status === 'loaded' && result.saveData.gameState.workItems).toEqual([item]);
     expect(result.status === 'loaded' && result.saveData.gameState.settings).toMatchObject({
-      tasksSection: 'work', workView: 'week', calendarShowBoth: true,
+      tasksSection: 'work', workView: 'week', calendarShow: ['personal', 'work'],
     });
+  });
+});
+
+describe('groups save (v22)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  const v21Save = (legacySettings: Record<string, unknown>, extra: Record<string, unknown> = {}) => {
+    const task = createCustomTask('Water', '', 'health', TaskFrequency.ONCE, '', 0);
+    const base = { ...createInitialGameState(), coins: 55, tasks: [task], pets: [createCompanion('sprout')], ...extra };
+    const { groups: _g, ...gameState } = base;
+    const { calendarShow: _c, dashboardCollapsed: _d, ...settings } = base.settings;
+    return { base, json: JSON.stringify({ ...createSaveData({ ...gameState, settings: { ...settings, ...legacySettings } } as never), version: 21 }) };
+  };
+
+  it("v21 save gains groups [] and maps settings: work/personal collapsed flags kept, calendarShowBoth true → ['personal','work'], false → []", async () => {
+    const both = v21Save({ dashboardCollapsed: { personal: true, work: false }, calendarShowBoth: true, tasksSection: 'personal' });
+    await AsyncStorage.setItem('growra_save_data', both.json);
+    const result = await gameStateService.loadGame();
+    expect(result.status).toBe('loaded');
+    if (result.status !== 'loaded') return;
+    const loaded = result.saveData.gameState;
+    expect(result.saveData.version).toBe(22);
+    expect(loaded.groups).toEqual([]);
+    expect(loaded.settings.dashboardCollapsed).toEqual({ personal: true, work: false });
+    expect(loaded.settings.calendarShow).toEqual(['personal', 'work']);
+    expect(loaded.settings.tasksSection).toBe('personal');
+    expect('calendarShowBoth' in loaded.settings).toBe(false);
+    expect(loaded.coins).toBe(55);
+    expect(loaded.tasks).toEqual(both.base.tasks);
+    expect(loaded.pets).toHaveLength(both.base.pets.length);
+    expect(loaded.streak).toEqual(both.base.streak);
+
+    const neither = v21Save({ dashboardCollapsed: { personal: false, work: true }, calendarShowBoth: false });
+    await AsyncStorage.setItem('growra_save_data', neither.json);
+    const again = await gameStateService.loadGame();
+    expect(again.status === 'loaded' && again.saveData.gameState.settings).toMatchObject({
+      dashboardCollapsed: { personal: false, work: true },
+      calendarShow: [],
+    });
+  });
+
+  it('v22 save loads unchanged', async () => {
+    const task = createCustomTask('Read', '', 'study', TaskFrequency.DAILY, '', 0);
+    const item = {
+      id: 'w1', name: 'Shift', description: '', calendarColor: '#fff', startMinutes: 540, endMinutes: 1020,
+      startDateKey: '2026-10-28', repeat: { kind: 'none' as const }, end: { kind: 'never' as const }, exceptions: {},
+      completedDateKeys: ['2026-10-28'], createdAt: 1,
+    };
+    const groups = [
+      { id: 'g1', name: 'Family', color: '#f80', kind: 'list' as const, createdAt: 5, tasks: [task], workItems: [] },
+      { id: 'g2', name: 'Team', color: '#08f', kind: 'schedule' as const, createdAt: 6, sourceId: 'src', tasks: [], workItems: [item] },
+    ];
+    const state = {
+      ...createInitialGameState(),
+      groups,
+      settings: {
+        ...createInitialGameState().settings,
+        tasksSection: 'g2',
+        dashboardCollapsed: { personal: false, work: true, g1: true },
+        calendarShow: ['work', 'g1'],
+      },
+    };
+    await gameStateService.saveGame(createSaveData(state));
+    const result = await gameStateService.loadGame();
+    expect(result.status).toBe('loaded');
+    if (result.status !== 'loaded') return;
+    expect(result.saveData.gameState.groups).toEqual(groups);
+    expect(result.saveData.gameState.settings).toEqual(state.settings);
   });
 });

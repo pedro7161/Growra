@@ -19,6 +19,8 @@ import {
   GameNotice,
   UsageStats,
   WorkItem,
+  Group,
+  HolderId,
 } from "../types";
 import { DEFAULT_TASK_CALENDAR_COLOR } from "../constants/taskConfig";
 import { getPredefinedTask } from "../constants/predefinedTasks";
@@ -145,6 +147,8 @@ type PersistedGameState = Omit<
   | "backupNudgeShown"
   | "whatsNewHiddenFor"
   | "workItems"
+  | "groups"
+  | "settings"
 > & {
   days?: DayRecord[];
   decorations?: Decoration[];
@@ -156,6 +160,7 @@ type PersistedGameState = Omit<
   backupNudgeShown?: boolean;
   whatsNewHiddenFor?: string;
   workItems?: WorkItem[];
+  groups?: Group[];
   usage?: UsageStats;
   companionEvents?: CompanionEvent[];
   notices?: GameNotice[];
@@ -164,7 +169,7 @@ type PersistedGameState = Omit<
   equippedPetId?: string;
   tutorialCompleted?: boolean;
   tutorialRewardGranted?: boolean;
-  settings?: AppSettings;
+  settings?: PersistedSettings;
   customTaskTemplates?: CustomTaskTemplate[];
   gearItems?: {
     id?: string;
@@ -253,9 +258,35 @@ function getEquippedPetId(gameState: PersistedGameState): string {
   return "";
 }
 
+/** Up to v21 the calendar had one "Show both" switch, and only Personal and Work could fold on the dashboard. */
+type PersistedSettings = Omit<AppSettings, "calendarShow" | "dashboardCollapsed"> & {
+  calendarShow?: unknown;
+  calendarShowBoth?: boolean;
+  dashboardCollapsed?: Record<string, unknown>;
+};
+
+/** Personal and Work always have a flag; group flags are kept as saved. */
+function normalizeDashboardCollapsed(stored: Record<string, unknown> | undefined): Record<string, boolean> {
+  const collapsed: Record<string, boolean> = { personal: false, work: false };
+  for (const [holder, value] of Object.entries(stored ?? {})) {
+    if (typeof value === "boolean") collapsed[holder] = value;
+  }
+  return collapsed;
+}
+
+/** v22 keeps a list of holders; older saves map "Show both" on to Personal and Work, off to none. */
+function normalizeCalendarShow(stored: PersistedSettings): HolderId[] {
+  if (Array.isArray(stored.calendarShow)) {
+    return stored.calendarShow.filter((holder): holder is string => typeof holder === "string");
+  }
+  return stored.calendarShowBoth === true ? ["personal", "work"] : [];
+}
+
 function migrateSaveData(saveData: PersistedSaveData): SaveData {
   const equippedPetId = getEquippedPetId(saveData.gameState);
-  const storedSettings = saveData.gameState.settings ? saveData.gameState.settings : defaultSettings;
+  const persistedSettings: PersistedSettings = saveData.gameState.settings ? saveData.gameState.settings : defaultSettings;
+  const { calendarShowBoth: _legacyShowBoth, ...storedSettings } = persistedSettings;
+  const groups = saveData.gameState.groups ?? [];
   const timerAlert = storedSettings.timerAlert
     ? {
         mode: storedSettings.timerAlert.mode,
@@ -367,6 +398,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     backupNudgeShown: saveData.gameState.backupNudgeShown === true,
     whatsNewHiddenFor: saveData.gameState.whatsNewHiddenFor ?? "",
     workItems: saveData.gameState.workItems ?? [],
+    groups,
     totalTasksCompleted:
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted
@@ -392,16 +424,16 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       musicEnabled: storedSettings.musicEnabled === true,
       sfxEnabled: storedSettings.sfxEnabled === true,
       timerAlert,
+      // A remembered group that no longer exists falls back to the chooser.
       tasksSection:
-        storedSettings.tasksSection === "personal" || storedSettings.tasksSection === "work"
+        storedSettings.tasksSection === "personal" ||
+        storedSettings.tasksSection === "work" ||
+        groups.some((group) => group.id === storedSettings.tasksSection)
           ? storedSettings.tasksSection
           : "choose",
       workView: storedSettings.workView === "week" ? "week" : "day",
-      dashboardCollapsed: {
-        personal: storedSettings.dashboardCollapsed?.personal === true,
-        work: storedSettings.dashboardCollapsed?.work === true,
-      },
-      calendarShowBoth: storedSettings.calendarShowBoth === true,
+      dashboardCollapsed: normalizeDashboardCollapsed(storedSettings.dashboardCollapsed),
+      calendarShow: normalizeCalendarShow(persistedSettings),
     },
     customTaskTemplates: saveData.gameState.customTaskTemplates
       ? saveData.gameState.customTaskTemplates.map((template) => ({

@@ -55,6 +55,7 @@ import { ensureNotificationPermission, syncDailyReminder, syncTimerNotifications
 import { getReturnRecap, ReturnRecap, shouldShowBackupNudge } from "./utils/returnRecap";
 import {
   AppLanguage,
+  AppSettings,
   AppAppearance,
   AppThemeId,
   CustomTaskTemplate,
@@ -65,6 +66,7 @@ import {
   Room,
   WorkEditScope,
   WorkItem,
+  HolderId,
 } from "./types";
 import { upsertCustomTaskTemplate } from "./utils/customTaskTemplates";
 import {
@@ -91,6 +93,7 @@ import { playGrowraCue, setGrowraAmbience } from "./utils/growraAudio";
 import { createInitialGameState, createSaveData } from "./utils/initialState";
 
 import { getTodayTasks, syncRecurringTasks } from "./utils/taskSchedule";
+import { isBuiltIn } from "./utils/groups";
 import {
   finishTaskTimer,
   pauseTaskTimer,
@@ -670,7 +673,7 @@ export default function App() {
     await persistGameState({ ...gameState, settings: { ...gameState.settings, confirmExit } });
   };
 
-  const handleTasksSectionChange = async (tasksSection: "choose" | "personal" | "work") => {
+  const handleTasksSectionChange = async (tasksSection: AppSettings["tasksSection"]) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
     await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection } });
@@ -742,12 +745,12 @@ export default function App() {
     playUiTap();
   };
 
-  const handleToggleDashboardSection = async (section: "personal" | "work") => {
+  const handleToggleDashboardSection = async (section: HolderId) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
     const dashboardCollapsed = {
       ...gameState.settings.dashboardCollapsed,
-      [section]: !gameState.settings.dashboardCollapsed[section],
+      [section]: gameState.settings.dashboardCollapsed[section] !== true,
     };
     await persistGameState({ ...gameState, settings: { ...gameState.settings, dashboardCollapsed } });
     playUiTap();
@@ -760,10 +763,13 @@ export default function App() {
     playUiTap();
   };
 
-  const handleCalendarShowBothChange = async (calendarShowBoth: boolean) => {
+  const handleCalendarShowBothChange = async (showBoth: boolean) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
-    await persistGameState({ ...gameState, settings: { ...gameState.settings, calendarShowBoth } });
+    // "Show both" puts Personal and Work in the calendar together; any group choices stay as they are.
+    const groupsShown = gameState.settings.calendarShow.filter((holder) => !isBuiltIn(holder));
+    const calendarShow: HolderId[] = showBoth ? ["personal", "work", ...groupsShown] : groupsShown;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, calendarShow } });
     playUiTap();
   };
 

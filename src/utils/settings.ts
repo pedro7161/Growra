@@ -30,7 +30,7 @@ export const defaultSettings: AppSettings = {
   tasksSection: "choose",
   workView: "day",
   dashboardCollapsed: { personal: false, work: false },
-  calendarShowBoth: false,
+  calendarShow: [],
 };
 
 export interface GameStatsSummary {

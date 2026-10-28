@@ -261,12 +261,12 @@ export default function DashboardScreen({
           {hasWork && (
             <DashboardSectionHeader
               title={copy.tasksChoosePersonal}
-              collapsed={collapsed.personal}
+              collapsed={collapsed.personal === true}
               settings={gameState.settings}
               onToggle={() => onToggleSection("personal")}
             />
           )}
-          {hasWork && collapsed.personal ? null : (
+          {hasWork && collapsed.personal === true ? null : (
             <>
               {pendingTasks.length === 0 ? (
                 <View
@@ -336,11 +336,11 @@ export default function DashboardScreen({
             <View style={styles.workSection}>
               <DashboardSectionHeader
                 title={copy.tasksChooseWork}
-                collapsed={collapsed.work}
+                collapsed={collapsed.work === true}
                 settings={gameState.settings}
                 onToggle={() => onToggleSection("work")}
               />
-              {collapsed.work ? null : (
+              {collapsed.work === true ? null : (
                 <View style={styles.workList}>
                   {runningShift && shiftCompanion ? (
                     <ShiftCheerCard

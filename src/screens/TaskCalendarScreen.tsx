@@ -178,7 +178,8 @@ export default function TaskCalendarScreen({
   const [selectedDayStart, setSelectedDayStart] = useState(() => getStartOfDay(Date.now()));
 
   const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
-  const showBoth = settings.calendarShowBoth;
+  // "Show both" means the other built-in is in the calendar too.
+  const showBoth = settings.calendarShow.includes(mode === "personal" ? "work" : "personal");
   const showPersonal = mode === "personal" || showBoth;
   const showWork = mode === "work" || showBoth;
   const workByDay = useMemo(() => {
