@@ -94,14 +94,20 @@ import { createInitialGameState, createSaveData } from "./utils/initialState";
 
 import { getTodayTasks, syncRecurringTasks } from "./utils/taskSchedule";
 import {
+  MAX_GROUP_NAME_LENGTH,
   completeGroupOccurrence,
   completeGroupTask,
+  createGroup,
+  deleteGroup,
   getHolderTasks,
   getHolderWorkItems,
   isBuiltIn,
   setHolderTasks,
   setHolderWorkItems,
+  updateGroup,
 } from "./utils/groups";
+import { GroupShare, importGroupCode } from "./utils/groupCode";
+import type { GroupFields } from "./components/GroupFormModal";
 import {
   finishTaskTimer,
   pauseTaskTimer,
@@ -735,6 +741,45 @@ export default function App() {
     await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection } });
   };
 
+  /** Creates a group from the chooser; returns why nothing was made (cap or blank name). */
+  const handleCreateGroup = (fields: GroupFields): "cap" | "name" | null => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return null;
+    const created = createGroup(gameState, fields, generateId(), Date.now());
+    if ("error" in created) return created.error;
+    void persistGameState(created);
+    void playGrowraCue("task-added", gameState.settings.sfxEnabled);
+    return null;
+  };
+
+  const handleUpdateGroup = (id: string, fields: { name: string; color: string }): "name" | null => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return null;
+    const name = fields.name.trim();
+    if (name === "" || name.length > MAX_GROUP_NAME_LENGTH) return "name";
+    void persistGameState(updateGroup(gameState, id, { name, color: fields.color }));
+    void playGrowraCue("task-saved", gameState.settings.sfxEnabled);
+    return null;
+  };
+
+  const handleDeleteGroup = (id: string) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    void persistGameState(deleteGroup(gameState, id));
+    void playGrowraCue("task-removed", gameState.settings.sfxEnabled);
+  };
+
+  /** Adds a shared code as a group (or updates the one from the same source); never touches Personal or Work. */
+  const handleImportGroup = (share: GroupShare, mode: "new" | "update"): "cap" | null => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return null;
+    const imported = importGroupCode(gameState, share, Date.now(), generateId, mode);
+    if ("error" in imported) return imported.error;
+    void persistGameState(imported);
+    void playGrowraCue("task-added", gameState.settings.sfxEnabled);
+    return null;
+  };
+
   /** Writes a schedule holder's items: Work's own array (as before) or the group's. */
   const persistWorkItems = async (holder: HolderId, items: WorkItem[]) => {
     const gameState = gameStateRef.current;
@@ -1143,12 +1188,19 @@ export default function App() {
           return (
             <TasksChooser
               settings={viewState.settings}
+              gameState={gameState}
+              now={now}
               personalCount={getTodayTasks(gameState.tasks, now).length}
               workPreview={buildWorkPreview(gameState.workItems, now, viewState.settings)}
               onChoose={(choice) => {
                 playUiTap();
                 void handleTasksSectionChange(choice);
               }}
+              onCreateGroup={handleCreateGroup}
+              onUpdateGroup={handleUpdateGroup}
+              onDeleteGroup={handleDeleteGroup}
+              onImportGroup={handleImportGroup}
+              onUiTap={playUiTap}
             />
           );
         }

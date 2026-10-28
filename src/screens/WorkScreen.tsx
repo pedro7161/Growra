@@ -174,7 +174,8 @@ export default function WorkScreen({
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <View style={styles.headerText}>
+        {/* A group's own name can be wider than the screen: its header column shrinks so the title can truncate. */}
+        <View style={[styles.headerText, isGroup && styles.headerTextShrink]}>
           <TouchableOpacity onPress={onBackToChooser} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button">
             <Text style={[styles.back, { color: theme.accent }]}>{copy.tasksBackToChooser}</Text>
           </TouchableOpacity>
@@ -273,6 +274,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
   headerText: { flexGrow: 1, flexShrink: 0 },
+  headerTextShrink: { flexShrink: 1, minWidth: 0 },
   back: { fontSize: 13, fontWeight: "600", marginBottom: 2 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   titleDot: { width: 14, height: 14, borderRadius: 7 },

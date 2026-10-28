@@ -173,7 +173,8 @@ export default function TasksScreen({
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <View>
+        {/* A group's own name can be wider than the screen: its header column shrinks so the title can truncate. */}
+        <View style={groupColor ? styles.headerTextShrink : undefined}>
           {onBackToChooser && !tutorialOn ? (
             <TouchableOpacity
               onPress={() => {
@@ -609,6 +610,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     marginBottom: 2,
+  },
+  headerTextShrink: {
+    flexShrink: 1,
+    minWidth: 0,
   },
   titleRow: {
     flexDirection: "row",
