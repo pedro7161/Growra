@@ -7,12 +7,14 @@ import {
     Streak,
     Task,
     TaskStatus,
+    WorkItem,
 } from "../types";
 import { getCalendarDayDifference, getNextAvailableDate, getStartOfDay } from "./taskSchedule";
 import { finishTaskTimer } from "./taskTimer";
 import { generateId } from "./idUtils";
 import {
   COMPANIONS,
+  BIG_DAY_TASKS,
   CompletionFacts,
   STARTER_TEMPLATE_IDS,
   getActiveCompanion,
@@ -29,6 +31,8 @@ import {
   recordTaskCreated,
   withToday,
 } from "./companions";
+import { currentSeason } from "./seasons";
+import { canCompleteOccurrence, getOccurrencesBetween, dateKeyToStart, toDateKey } from "./workSchedule";
 import { getFocusFind, recordDayCompletion, recordDayScheduledAhead } from "./journey";
 
 const STREAK_BONUS_PER_DAY = 0.05;
@@ -760,6 +764,65 @@ export function completeTask(gameState: GameState, taskId: string): GameState {
 
       return finishTaskTimer(completedTask);
     }),
+  };
+}
+
+/** Replaces the work schedule (the screens edit it through utils/workSchedule and hand the result here). */
+export function upsertWorkItems(gameState: GameState, items: WorkItem[]): GameState {
+  return { ...gameState, workItems: items, lastPlayedAt: Date.now() };
+}
+
+/** Ticks off one shift: pays it like a task as long as it is long, and counts it for the streak. */
+export function completeWorkOccurrence(
+  gameState: GameState,
+  itemId: string,
+  dateKey: string,
+  now: number = Date.now(),
+): GameState {
+  const item = gameState.workItems.find((candidate) => candidate.id === itemId);
+  if (!item) {
+    return gameState;
+  }
+  const nextDay = new Date(dateKeyToStart(dateKey));
+  nextDay.setDate(nextDay.getDate() + 1);
+  const occurrence = getOccurrencesBetween([item], dateKey, toDateKey(nextDay.getTime())).find(
+    (candidate) => candidate.itemId === itemId && candidate.dateKey === dateKey,
+  );
+  if (!occurrence || !canCompleteOccurrence(occurrence, now)) {
+    return gameState;
+  }
+
+  const usageToday = withToday(gameState.usage, now);
+  const recurring = item.repeat.kind !== "none";
+  const { state } = applyCompletionRewards(
+    gameState,
+    {
+      name: occurrence.name,
+      minutes: (occurrence.end - occurrence.start) / 60000,
+      facts: {
+        recurring,
+        custom: true,
+        highPriority: false,
+        timer: false,
+        overdue: false,
+        onDueDay: true,
+        scheduledAhead: false,
+        firstOfDay: usageToday.todayDone === 0,
+        bigDayReached: usageToday.todayDone + 1 === BIG_DAY_TASKS,
+        season: currentSeason(now),
+      },
+      record: { recurring, custom: true, highPriority: false, timer: false },
+    },
+    now,
+  );
+
+  return {
+    ...state,
+    workItems: state.workItems.map((candidate) =>
+      candidate.id === itemId
+        ? { ...candidate, completedDateKeys: [...candidate.completedDateKeys, dateKey] }
+        : candidate,
+    ),
   };
 }
 

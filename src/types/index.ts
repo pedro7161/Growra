@@ -55,6 +55,12 @@ export interface AppSettings {
   musicEnabled: boolean;
   sfxEnabled: boolean;
   timerAlert: TimerAlertSettings;
+  /** Which Tasks section opens: the chooser, personal tasks or the work schedule. */
+  tasksSection: "choose" | "personal" | "work";
+  workView: "day" | "week";
+  dashboardCollapsed: { personal: boolean; work: boolean };
+  /** The calendar shows personal tasks and work shifts together. */
+  calendarShowBoth: boolean;
 }
 
 export interface PredefinedTaskTemplate {
@@ -341,6 +347,7 @@ export interface GameState {
   backupNudgeShown: boolean;
   /** The app version whose What's New notes the player chose to stop seeing ("" = none yet). */
   whatsNewHiddenFor: string;
+  workItems: WorkItem[];
   createdAt: number;
   lastPlayedAt: number;
 }

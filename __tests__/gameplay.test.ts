@@ -7,11 +7,14 @@ import {
   applyTaskUpdated,
   calculateUpdatedStreak,
   completeTask,
+  completeWorkOccurrence,
+  upsertWorkItems,
   BASE_TASK_COIN_REWARD,
   getRewardScale,
 } from '../src/utils/gameplay';
 import { DAILY_BASE_BOND_CAP, collectableCompanionCount, createEmptyUsage, getCompletionFacts, getPerkCoins } from '../src/utils/companions';
 import { createInitialGameState, createInitialStreak } from '../src/utils/initialState';
+import { createWorkItem } from '../src/utils/workSchedule';
 import { createCustomTask } from '../src/utils/taskFactory';
 
 const local = (y: number, m: number, d: number, h = 0) => new Date(y, m - 1, d, h).getTime();
@@ -316,5 +319,34 @@ describe('event companions: Gloam (Halloween) and Holly (Christmas)', () => {
   it('event companions only count toward the total once they have joined', () => {
     expect(collectableCompanionCount(new Set(['sprout']))).toBe(12);
     expect(collectableCompanionCount(new Set(['sprout', 'gloam']))).toBe(13);
+  });
+});
+
+describe('completeWorkOccurrence', () => {
+  const shift = createWorkItem(
+    {
+      name: 'Shift', description: '', calendarColor: '#fff', startMinutes: 9 * 60, endMinutes: 17 * 60,
+      startDateKey: '2026-10-28', repeat: { kind: 'none' }, end: { kind: 'never' },
+    },
+    'w1',
+    0,
+  );
+  const base = upsertWorkItems(createInitialGameState(), [shift]);
+  const during = local(2026, 10, 28, 12);
+  const multiplier = 1 + calculateUpdatedStreak(createInitialStreak(), during).bonus;
+
+  it('completing an 8 h shift pays Math.round(15 * (1 + 2/3*8)) coins and counts for the streak', () => {
+    const done = completeWorkOccurrence(base, 'w1', '2026-10-28', during);
+    expect(done.coins).toBe(Math.round(15 * (1 + (2 / 3) * 8) * multiplier));
+    expect(done.totalTasksCompleted).toBe(1);
+    expect(done.streak.lastCompletedDate).toBe(local(2026, 10, 28));
+    expect(done.workItems[0].completedDateKeys).toEqual(['2026-10-28']);
+  });
+
+  it("a shift can't be completed before it starts or twice", () => {
+    expect(completeWorkOccurrence(base, 'w1', '2026-10-28', local(2026, 10, 28, 8))).toBe(base);
+    const done = completeWorkOccurrence(base, 'w1', '2026-10-28', during);
+    expect(completeWorkOccurrence(done, 'w1', '2026-10-28', during)).toBe(done);
+    expect(completeWorkOccurrence(base, 'nope', '2026-10-28', during)).toBe(base);
   });
 });
