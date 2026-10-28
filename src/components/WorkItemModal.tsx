@@ -35,6 +35,8 @@ interface WorkItemModalProps {
   onDelete: (scope: WorkEditScope | null) => void;
   /** Present only while the occurrence can be ticked off. */
   onComplete?: () => void;
+  /** A group's item rather than a work shift: the title, name hint and tick button drop the word "shift". */
+  forGroup?: boolean;
 }
 
 const REPEAT_CHOICES: RepeatChoice[] = ["none", "daily", "xdays", "weekly", "xweeks", "monthly"];
@@ -49,7 +51,17 @@ function longDate(locale: string, key: string): string {
   return new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }).format(new Date(dateKeyToStart(key)));
 }
 
-export default function WorkItemModal({ visible, settings, editing, newDateKey, onClose, onSave, onDelete, onComplete }: WorkItemModalProps) {
+export default function WorkItemModal({
+  visible,
+  settings,
+  editing,
+  newDateKey,
+  onClose,
+  onSave,
+  onDelete,
+  onComplete,
+  forGroup = false,
+}: WorkItemModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const locale = getLocaleFromSettings(settings);
@@ -130,7 +142,9 @@ export default function WorkItemModal({ visible, settings, editing, newDateKey, 
           <TouchableOpacity onPress={onClose} accessibilityRole="button">
             <Text style={[styles.headerButton, { color: theme.mutedText }]}>{copy.addTaskCancel}</Text>
           </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>{editing ? copy.workFormEditTitle : copy.workFormNewTitle}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{editing
+              ? forGroup ? copy.groupItemEditTitle : copy.workFormEditTitle
+              : forGroup ? copy.groupItemNewTitle : copy.workFormNewTitle}</Text>
           <TouchableOpacity onPress={handleSave} accessibilityRole="button">
             <Text style={[styles.headerButton, styles.save, { color: theme.accent }]}>{copy.workFormSave}</Text>
           </TouchableOpacity>
@@ -142,7 +156,7 @@ export default function WorkItemModal({ visible, settings, editing, newDateKey, 
 
           {onComplete ? (
             <TouchableOpacity style={[styles.primary, { backgroundColor: theme.success }]} onPress={onComplete} accessibilityRole="button">
-              <Text style={[styles.primaryText, { color: theme.accentText }]}>✓ {copy.workMarkDone}</Text>
+              <Text style={[styles.primaryText, { color: theme.accentText }]}>✓ {forGroup ? copy.groupItemMarkDone : copy.workMarkDone}</Text>
             </TouchableOpacity>
           ) : null}
 
@@ -151,7 +165,7 @@ export default function WorkItemModal({ visible, settings, editing, newDateKey, 
             style={inputStyle}
             value={draft.name}
             onChangeText={(name) => update({ name })}
-            placeholder={copy.workFormNamePlaceholder}
+            placeholder={forGroup ? copy.groupItemNamePlaceholder : copy.workFormNamePlaceholder}
             placeholderTextColor={theme.mutedText}
           />
 

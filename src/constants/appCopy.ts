@@ -59,6 +59,14 @@ export interface AppCopy {
   workPrevious: string;
   workNext: string;
   workNoShiftsDay: string;
+  groupScheduleEmptyTitle: string;
+  groupScheduleEmptyBody: string;
+  groupScheduleEmptyAdd: string;
+  groupScheduleNoItemsDay: string;
+  groupItemNewTitle: string;
+  groupItemEditTitle: string;
+  groupItemNamePlaceholder: string;
+  groupItemMarkDone: string;
   workDone: string;
   workMarkDone: string;
   workNow: string;
@@ -534,6 +542,14 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     workPrevious: "Previous",
     workNext: "Next",
     workNoShiftsDay: "No shifts this day",
+    groupScheduleEmptyTitle: "Nothing scheduled yet",
+    groupScheduleEmptyBody: "Add times to this group, one-off or repeating. Tick one off once it's done.",
+    groupScheduleEmptyAdd: "Add the first one",
+    groupScheduleNoItemsDay: "Nothing this day",
+    groupItemNewTitle: "New item",
+    groupItemEditTitle: "Edit item",
+    groupItemNamePlaceholder: "e.g. Swimming, Piano lesson",
+    groupItemMarkDone: "Mark as done",
     workDone: "Done",
     workMarkDone: "Mark as worked",
     workNow: "Now",
@@ -1161,6 +1177,14 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     workPrevious: "Anterior",
     workNext: "Seguinte",
     workNoShiftsDay: "Sem turnos neste dia",
+    groupScheduleEmptyTitle: "Ainda nada marcado",
+    groupScheduleEmptyBody: "Adiciona horários a este grupo, únicos ou repetidos. Marca cada um quando estiver feito.",
+    groupScheduleEmptyAdd: "Adicionar o primeiro",
+    groupScheduleNoItemsDay: "Nada neste dia",
+    groupItemNewTitle: "Novo item",
+    groupItemEditTitle: "Editar item",
+    groupItemNamePlaceholder: "ex.: Natação, Aula de piano",
+    groupItemMarkDone: "Marcar como feito",
     workDone: "Feito",
     workMarkDone: "Marcar como feito",
     workNow: "Agora",

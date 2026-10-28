@@ -15,6 +15,7 @@ import { getAppTheme } from "../constants/appTheme";
 import {
   AppSettings,
   CustomTaskTemplate,
+  HolderId,
   Task,
   TaskPriority,
   TaskStatus,
@@ -30,9 +31,16 @@ import { getLocaleFromSettings } from "../utils/settings";
 import { taskCategoryLabel, taskFrequencyLabel } from "../utils/taskLabels";
 import { customTaskDraftProblem } from "../utils/taskDraft";
 import { taskMatchesSearch } from "../utils/taskSearch";
+import { isBuiltIn } from "../utils/groups";
 
 interface TasksScreenProps {
+  /** Personal, or a list group. */
+  holder: HolderId;
+  title: string;
+  /** The holder's colour: a group shows it beside the title and on its task cards. */
+  accentColor: string;
   settings: AppSettings;
+  /** The holder's own tasks. */
   tasks: Task[];
   customTaskTemplates: CustomTaskTemplate[];
   onBackToChooser?: () => void;
@@ -52,7 +60,8 @@ interface TasksScreenProps {
   onCompleteTask: (taskId: string) => void;
   onUpdateTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
-  onOpenCalendar: () => void;
+  /** The calendar button is hidden without it. */
+  onOpenCalendar?: () => void;
   onTaskToolsOpenChange: (open: boolean) => void;
   onUiTap: () => void;
   onStartTimer: (taskId: string) => void;
@@ -62,6 +71,9 @@ interface TasksScreenProps {
 }
 
 export default function TasksScreen({
+  holder,
+  title,
+  accentColor,
   settings,
   tasks,
   customTaskTemplates,
@@ -83,6 +95,7 @@ export default function TasksScreen({
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const tutorialOn = tutorialTarget !== null;
+  const groupColor = isBuiltIn(holder) ? null : accentColor;
   const tutorialCreateFlow =
     tutorialTarget === "add-button" ||
     tutorialTarget === "modal-type-predefined" ||
@@ -173,25 +186,33 @@ export default function TasksScreen({
               <Text style={[styles.backLink, { color: theme.accent }]}>{copy.tasksBackToChooser}</Text>
             </TouchableOpacity>
           ) : null}
-          <Text style={[styles.title, { color: theme.text }]}>{copy.tasksTitle}</Text>
+          <View style={styles.titleRow}>
+            {groupColor ? <View style={[styles.titleDot, { backgroundColor: groupColor }]} /> : null}
+            {/* A group name is the user's own and may be long; built-in titles keep their exact look. */}
+            <Text style={[styles.title, { color: theme.text }]} numberOfLines={groupColor ? 1 : undefined}>
+              {title}
+            </Text>
+          </View>
           <Text style={[styles.subtitle, { color: theme.mutedText }]}>
             {todayTasks.length} {copy.tasksActiveToday}
           </Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={[
-              styles.calendarButton,
-              { backgroundColor: theme.surfaceMuted, borderColor: theme.border },
-              tutorialOn && styles.tutorialDisabled,
-            ]}
-            onPress={onOpenCalendar}
-            disabled={tutorialOn}
-            hitSlop={{ top: 8, bottom: 8 }}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.calendarButtonText, { color: theme.text }]}>{copy.tasksCalendar}</Text>
-          </TouchableOpacity>
+          {onOpenCalendar ? (
+            <TouchableOpacity
+              style={[
+                styles.calendarButton,
+                { backgroundColor: theme.surfaceMuted, borderColor: theme.border },
+                tutorialOn && styles.tutorialDisabled,
+              ]}
+              onPress={onOpenCalendar}
+              disabled={tutorialOn}
+              hitSlop={{ top: 8, bottom: 8 }}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.calendarButtonText, { color: theme.text }]}>{copy.tasksCalendar}</Text>
+            </TouchableOpacity>
+          ) : null}
           <TouchableOpacity
             style={[
               styles.addButton,
@@ -350,6 +371,7 @@ export default function TasksScreen({
               key={task.id}
               task={task}
               onComplete={() => onCompleteTask(task.id)}
+              stripeColor={groupColor ?? undefined}
               onOpen={() => {
                 setSelectedTask(task);
                 onUiTap();
@@ -410,6 +432,7 @@ export default function TasksScreen({
 
 function TaskItem({
   task,
+  stripeColor,
   onComplete,
   onOpen,
   settings,
@@ -421,6 +444,8 @@ function TaskItem({
   tutorialTarget,
 }: {
   task: Task;
+  /** Replaces the theme accent on the card's left edge (a group's colour). */
+  stripeColor?: string;
   onComplete: () => void;
   onOpen: () => void;
   settings: AppSettings;
@@ -450,7 +475,7 @@ function TaskItem({
         styles.taskItem,
         {
           backgroundColor: theme.surface,
-          borderLeftColor: theme.accent,
+          borderLeftColor: stripeColor ?? theme.accent,
         },
         isCompleted && styles.taskItemCompleted,
         tutorialTarget && styles.tutorialHighlight,
@@ -585,7 +610,18 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 2,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  titleDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
   title: {
+    flexShrink: 1,
     fontSize: 24,
     fontWeight: "700",
     color: "#333",

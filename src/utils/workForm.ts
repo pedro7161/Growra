@@ -1,8 +1,8 @@
 // The work-item form's draft (what the user is typing) and its conversion to and from WorkItem fields,
 // plus the small date-key helpers the Work screen's day and week views need. Pure functions only.
 import { DEFAULT_TASK_CALENDAR_COLOR } from "../constants/taskConfig";
-import { WorkEnd, WorkItem, WorkOccurrence, WorkRepeat } from "../types";
-import { dateKeyToStart, toDateKey } from "./workSchedule";
+import { WorkEditScope, WorkEnd, WorkItem, WorkOccurrence, WorkRepeat } from "../types";
+import { dateKeyToStart, editOccurrence, getOccurrencesBetween, toDateKey } from "./workSchedule";
 
 export type WorkItemFields = Omit<WorkItem, "id" | "exceptions" | "completedDateKeys" | "createdAt">;
 
@@ -163,6 +163,46 @@ export function occurrenceChange(occurrence: WorkOccurrence, fields: WorkItemFie
   if (fields.startMinutes !== minutesOf(occurrence.start)) change.startMinutes = fields.startMinutes;
   if (fields.endMinutes !== minutesOf(occurrence.end)) change.endMinutes = fields.endMinutes;
   return change;
+}
+
+/**
+ * Applies the work form's edit of one occurrence to a holder's items, or returns null when "only this one" changed
+ * nothing or the item is gone. `makeId` names the series a "this and all following" edit continues in.
+ */
+export function editWorkItems(
+  items: WorkItem[],
+  itemId: string,
+  dateKey: string,
+  fields: WorkItemFields,
+  scope: WorkEditScope,
+  makeId: () => string,
+): WorkItem[] | null {
+  const original = items.find((item) => item.id === itemId);
+  if (!original) return null;
+  const occurrence = getOccurrencesBetween([original], dateKey, addDaysToKey(dateKey, 1))[0];
+  // "Only this one" writes just what changed on that date; "following" carries all values into the new series.
+  const change =
+    scope === "one" && occurrence
+      ? occurrenceChange(occurrence, fields)
+      : { name: fields.name, description: fields.description, startMinutes: fields.startMinutes, endMinutes: fields.endMinutes };
+  if (Object.keys(change).length === 0 && scope === "one") return null;
+  let continuedId: string | null = null;
+  const edited = editOccurrence(items, itemId, dateKey, change, scope, () => (continuedId = makeId()));
+  // "This and all following" may also change the colour and the repeat rule; an unchanged end rule keeps the
+  // remaining count editOccurrence worked out.
+  const endChanged = JSON.stringify(fields.end) !== JSON.stringify(original.end);
+  return edited.map((item) =>
+    item.id === continuedId
+      ? { ...item, calendarColor: fields.calendarColor, repeat: fields.repeat, end: endChanged ? fields.end : item.end }
+      : item,
+  );
+}
+
+/** Adds a new item, or replaces the one with the same id. */
+export function saveWorkItem(items: WorkItem[], item: WorkItem): WorkItem[] {
+  return items.some((candidate) => candidate.id === item.id)
+    ? items.map((candidate) => (candidate.id === item.id ? item : candidate))
+    : [...items, item];
 }
 
 /** True when the fields change something only a whole series can hold (colour, repeat rule or end rule). */

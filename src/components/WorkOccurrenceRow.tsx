@@ -14,10 +14,20 @@ interface WorkOccurrenceRowProps {
   compact?: boolean;
   onOpen: () => void;
   onComplete: () => void;
+  /** A group's item: the tick is labelled "done" rather than "worked". */
+  forGroup?: boolean;
 }
 
 /** One shift: its colour, times and name, with a tick while it can be confirmed and a check once it is. */
-export default function WorkOccurrenceRow({ occurrence, settings, now, compact = false, onOpen, onComplete }: WorkOccurrenceRowProps) {
+export default function WorkOccurrenceRow({
+  occurrence,
+  settings,
+  now,
+  compact = false,
+  onOpen,
+  onComplete,
+  forGroup = false,
+}: WorkOccurrenceRowProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const completable = canCompleteOccurrence(occurrence, now);
@@ -36,7 +46,7 @@ export default function WorkOccurrenceRow({ occurrence, settings, now, compact =
           style={[styles.tick, { borderColor: theme.accent }]}
           onPress={onComplete}
           accessibilityRole="button"
-          accessibilityLabel={copy.workMarkDone}
+          accessibilityLabel={forGroup ? copy.groupItemMarkDone : copy.workMarkDone}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         />
       ) : null}

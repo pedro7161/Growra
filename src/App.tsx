@@ -79,8 +79,8 @@ import {
   equipPet,
   upsertWorkItems,
 } from "./utils/gameplay";
-import { deleteOccurrence, editOccurrence, getOccurrencesBetween } from "./utils/workSchedule";
-import { addDaysToKey, occurrenceChange, WorkItemFields } from "./utils/workForm";
+import { deleteOccurrence } from "./utils/workSchedule";
+import { editWorkItems, saveWorkItem, WorkItemFields } from "./utils/workForm";
 import { generateId } from "./utils/idUtils";
 import {
   buyDecoration,
@@ -93,7 +93,15 @@ import { playGrowraCue, setGrowraAmbience } from "./utils/growraAudio";
 import { createInitialGameState, createSaveData } from "./utils/initialState";
 
 import { getTodayTasks, syncRecurringTasks } from "./utils/taskSchedule";
-import { isBuiltIn } from "./utils/groups";
+import {
+  completeGroupOccurrence,
+  completeGroupTask,
+  getHolderTasks,
+  getHolderWorkItems,
+  isBuiltIn,
+  setHolderTasks,
+  setHolderWorkItems,
+} from "./utils/groups";
 import {
   finishTaskTimer,
   pauseTaskTimer,
@@ -186,8 +194,11 @@ export default function App() {
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
   // The Work screen's and dashboard Work section's clock: it moves the running shift and its encouragement along while shown.
   const [workNow, setWorkNow] = useState(() => Date.now());
+  const openSection = gameState?.settings.tasksSection;
   const workScreenOpen =
-    (activeScreen === "tasks" && gameState?.settings.tasksSection === "work") ||
+    (activeScreen === "tasks" &&
+      (openSection === "work" ||
+        gameState?.groups.some((group) => group.id === openSection && group.kind === "schedule") === true)) ||
     (activeScreen === "dashboard" && (gameState?.workItems.length ?? 0) > 0);
   useEffect(() => {
     if (!workScreenOpen || !appActive) return;
@@ -405,9 +416,22 @@ export default function App() {
   const handleAddTask = async (
     task: Task,
     customTemplate?: CustomTaskTemplate,
+    holder: HolderId = "personal",
   ) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
+
+    if (!isBuiltIn(holder)) {
+      // A group's task is invisible to the game: no usage, days or companion joins, only the list (and the template).
+      const withTask = setHolderTasks(gameState, holder, [...getHolderTasks(gameState, holder), task]);
+      await persistGameState(
+        customTemplate
+          ? { ...withTask, customTaskTemplates: upsertCustomTaskTemplate(gameState.customTaskTemplates, customTemplate) }
+          : withTask,
+      );
+      void playGrowraCue("task-added", gameState.settings.sfxEnabled);
+      return;
+    }
 
     const updated = applyTaskCreated(
       {
@@ -443,9 +467,18 @@ export default function App() {
     if (praiseTimerRef.current) clearTimeout(praiseTimerRef.current);
   }, []);
 
-  const handleCompleteTask = async (taskId: string) => {
+  const handleCompleteTask = async (taskId: string, holder: HolderId = "personal") => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
+
+    if (!isBuiltIn(holder)) {
+      // Ticking in a group pays nothing and shows no praise: only the task changes.
+      const ticked = completeGroupTask(gameState, holder, taskId, Date.now());
+      if (ticked === gameState) return;
+      await persistGameState(ticked);
+      void playGrowraCue("task-complete", gameState.settings.sfxEnabled);
+      return;
+    }
 
     const updated = completeTask(gameState, taskId);
     if (updated === gameState) return;
@@ -480,9 +513,17 @@ export default function App() {
     if (reachedCamp(tilesBefore, tilesAfter)) setTimeout(() => void maybeAskForReview(), 1500);
   };
 
-  const handleUpdateTask = async (updatedTask: Task) => {
+  const handleUpdateTask = async (updatedTask: Task, holder: HolderId = "personal") => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
+
+    if (!isBuiltIn(holder)) {
+      const tasks = getHolderTasks(gameState, holder);
+      if (!tasks.some((task) => task.id === updatedTask.id)) return;
+      await persistGameState(setHolderTasks(gameState, holder, tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))));
+      void playGrowraCue("task-saved", gameState.settings.sfxEnabled);
+      return;
+    }
 
     const previousTask = gameState.tasks.find((task) => task.id === updatedTask.id);
     const updatedState = {
@@ -502,9 +543,17 @@ export default function App() {
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
+  const handleDeleteTask = async (taskId: string, holder: HolderId = "personal") => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
+
+    if (!isBuiltIn(holder)) {
+      const tasks = getHolderTasks(gameState, holder);
+      if (!tasks.some((task) => task.id === taskId)) return;
+      await persistGameState(setHolderTasks(gameState, holder, tasks.filter((task) => task.id !== taskId)));
+      void playGrowraCue("task-removed", gameState.settings.sfxEnabled);
+      return;
+    }
 
     const deletedTask = gameState.tasks.find((task) => task.id === taskId);
     const remainingState = {
@@ -525,9 +574,16 @@ export default function App() {
   const applyTimerUpdate = async (
     taskId: string,
     updater: (task: Task) => Task,
+    holder: HolderId = "personal",
   ) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
+
+    if (!isBuiltIn(holder)) {
+      const tasks = getHolderTasks(gameState, holder);
+      await persistGameState(setHolderTasks(gameState, holder, tasks.map((task) => (task.id === taskId ? updater(task) : task))));
+      return;
+    }
 
     await persistGameState({
       ...gameState,
@@ -538,28 +594,28 @@ export default function App() {
     });
   };
 
-  const handleStartTimer = async (taskId: string) => {
+  const handleStartTimer = async (taskId: string, holder: HolderId = "personal") => {
     // The first timer start is the moment to ask; a refusal only means no background alert.
     await ensureNotificationPermission();
-    await applyTimerUpdate(taskId, startTaskTimer);
+    await applyTimerUpdate(taskId, startTaskTimer, holder);
     void playGrowraCue("timer-start", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
 
-  const handlePauseTimer = async (taskId: string) => {
-    await applyTimerUpdate(taskId, pauseTaskTimer);
+  const handlePauseTimer = async (taskId: string, holder: HolderId = "personal") => {
+    await applyTimerUpdate(taskId, pauseTaskTimer, holder);
     void playGrowraCue("timer-pause", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
 
-  const handleResetTimer = async (taskId: string) => {
-    await applyTimerUpdate(taskId, resetTaskTimer);
+  const handleResetTimer = async (taskId: string, holder: HolderId = "personal") => {
+    await applyTimerUpdate(taskId, resetTaskTimer, holder);
     void playGrowraCue("timer-reset", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
 
-  const handleTimerReady = async (taskId: string) => {
+  const handleTimerReady = async (taskId: string, holder: HolderId = "personal") => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await applyTimerUpdate(taskId, finishTaskTimer);
+    await applyTimerUpdate(taskId, finishTaskTimer, holder);
     await playTimerAlert(gameState.settings.timerAlert);
   };
 
@@ -679,58 +735,56 @@ export default function App() {
     await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection } });
   };
 
-  const persistWorkItems = async (items: WorkItem[]) => {
+  /** Writes a schedule holder's items: Work's own array (as before) or the group's. */
+  const persistWorkItems = async (holder: HolderId, items: WorkItem[]) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
-    await persistGameState(upsertWorkItems(gameState, items));
+    await persistGameState(holder === "work" ? upsertWorkItems(gameState, items) : setHolderWorkItems(gameState, holder, items));
   };
 
-  const handleSaveWorkItem = async (item: WorkItem) => {
+  const handleSaveWorkItem = async (item: WorkItem, holder: HolderId = "work") => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
-    const exists = gameState.workItems.some((candidate) => candidate.id === item.id);
-    await persistWorkItems(
-      exists ? gameState.workItems.map((candidate) => (candidate.id === item.id ? item : candidate)) : [...gameState.workItems, item],
-    );
+    const items = getHolderWorkItems(gameState, holder);
+    const exists = items.some((candidate) => candidate.id === item.id);
+    await persistWorkItems(holder, saveWorkItem(items, item));
     void playGrowraCue(exists ? "task-saved" : "task-added", gameState.settings.sfxEnabled);
   };
 
-  const handleEditWorkOccurrence = async (itemId: string, dateKey: string, fields: WorkItemFields, scope: WorkEditScope) => {
+  const handleEditWorkOccurrence = async (
+    itemId: string,
+    dateKey: string,
+    fields: WorkItemFields,
+    scope: WorkEditScope,
+    holder: HolderId = "work",
+  ) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
-    const original = gameState.workItems.find((item) => item.id === itemId);
-    if (!original) return;
-    const occurrence = getOccurrencesBetween([original], dateKey, addDaysToKey(dateKey, 1))[0];
-    // "Only this one" writes just what changed on that date; "following" carries all values into the new series.
-    const change =
-      scope === "one" && occurrence
-        ? occurrenceChange(occurrence, fields)
-        : { name: fields.name, description: fields.description, startMinutes: fields.startMinutes, endMinutes: fields.endMinutes };
-    if (Object.keys(change).length === 0 && scope === "one") return;
-    let continuedId: string | null = null;
-    const edited = editOccurrence(gameState.workItems, itemId, dateKey, change, scope, () => (continuedId = generateId()));
-    // "This and all following" may also change the colour and the repeat rule; an unchanged end rule keeps the
-    // remaining count editOccurrence worked out.
-    const endChanged = JSON.stringify(fields.end) !== JSON.stringify(original.end);
-    const items = edited.map((item) =>
-      item.id === continuedId
-        ? { ...item, calendarColor: fields.calendarColor, repeat: fields.repeat, end: endChanged ? fields.end : item.end }
-        : item,
-    );
-    await persistWorkItems(items);
+    const items = editWorkItems(getHolderWorkItems(gameState, holder), itemId, dateKey, fields, scope, generateId);
+    if (!items) return;
+    await persistWorkItems(holder, items);
     void playGrowraCue("task-saved", gameState.settings.sfxEnabled);
   };
 
-  const handleDeleteWorkOccurrence = async (itemId: string, dateKey: string, scope: WorkEditScope) => {
+  const handleDeleteWorkOccurrence = async (itemId: string, dateKey: string, scope: WorkEditScope, holder: HolderId = "work") => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
-    await persistWorkItems(deleteOccurrence(gameState.workItems, itemId, dateKey, scope));
+    await persistWorkItems(holder, deleteOccurrence(getHolderWorkItems(gameState, holder), itemId, dateKey, scope));
     void playGrowraCue("task-removed", gameState.settings.sfxEnabled);
   };
 
-  const handleCompleteWorkOccurrence = async (itemId: string, dateKey: string) => {
+  const handleCompleteWorkOccurrence = async (itemId: string, dateKey: string, holder: HolderId = "work") => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
+    if (!isBuiltIn(holder)) {
+      // A group's schedule item is just marked done: no pay and no praise.
+      const ticked = completeGroupOccurrence(gameState, holder, itemId, dateKey, Date.now());
+      if (ticked === gameState) return;
+      setWorkNow(Date.now());
+      await persistGameState(ticked);
+      void playGrowraCue("task-complete", gameState.settings.sfxEnabled);
+      return;
+    }
     const updated = completeWorkOccurrence(gameState, itemId, dateKey);
     if (updated === gameState) return;
     setWorkNow(Date.now());
@@ -1077,7 +1131,13 @@ export default function App() {
         );
       case "tasks": {
         // The tutorial always works in Personal, whatever section is remembered.
-        const section = tutorialStep !== "done" ? "personal" : viewState.settings.tasksSection;
+        const remembered = tutorialStep !== "done" ? "personal" : viewState.settings.tasksSection;
+        const group =
+          remembered === "choose" || isBuiltIn(remembered)
+            ? undefined
+            : gameState.groups.find((candidate) => candidate.id === remembered);
+        // A group that no longer exists falls back to the choice screen.
+        const section = remembered !== "choose" && !isBuiltIn(remembered) && !group ? "choose" : remembered;
         if (section === "choose") {
           const now = Date.now();
           return (
@@ -1092,32 +1152,42 @@ export default function App() {
             />
           );
         }
-        if (section === "work") {
+        const holder: HolderId = group ? group.id : section;
+        const copy = getAppCopy(viewState.settings.language);
+        if (section === "work" || group?.kind === "schedule") {
           return (
             <WorkScreen
               gameState={viewState}
+              holder={holder}
+              title={group ? group.name : copy.workTitle}
+              accentColor={group ? group.color : appTheme.accent}
+              items={getHolderWorkItems(gameState, holder)}
               settings={viewState.settings}
               now={workNow}
               onBackToChooser={() => void handleTasksSectionChange("choose")}
-              onSaveItem={(item) => void handleSaveWorkItem(item)}
-              onEditOccurrence={(itemId, dateKey, fields, scope) => void handleEditWorkOccurrence(itemId, dateKey, fields, scope)}
-              onDeleteOccurrence={(itemId, dateKey, scope) => void handleDeleteWorkOccurrence(itemId, dateKey, scope)}
-              onCompleteOccurrence={(itemId, dateKey) => void handleCompleteWorkOccurrence(itemId, dateKey)}
+              onSaveItem={(item) => void handleSaveWorkItem(item, holder)}
+              onEditOccurrence={(itemId, dateKey, fields, scope) => void handleEditWorkOccurrence(itemId, dateKey, fields, scope, holder)}
+              onDeleteOccurrence={(itemId, dateKey, scope) => void handleDeleteWorkOccurrence(itemId, dateKey, scope, holder)}
+              onCompleteOccurrence={(itemId, dateKey) => void handleCompleteWorkOccurrence(itemId, dateKey, holder)}
               onSetView={(view) => void handleWorkViewChange(view)}
-              onOpenCalendar={() => handleNavigate("work-calendar")}
+              // The calendar learns about groups in its own task; until then only Work opens it.
+              onOpenCalendar={group ? undefined : () => handleNavigate("work-calendar")}
             />
           );
         }
         return (
           <TasksScreen
+            holder={holder}
+            title={group ? group.name : copy.tasksTitle}
+            accentColor={group ? group.color : appTheme.accent}
             onBackToChooser={
               tutorialStep === "done" ? () => void handleTasksSectionChange("choose") : undefined
             }
             settings={viewState.settings}
-            tasks={gameState.tasks}
+            tasks={getHolderTasks(gameState, holder)}
             customTaskTemplates={gameState.customTaskTemplates}
             tutorialTarget={
-              !tutorialVisible
+              group || !tutorialVisible
                 ? null
                 : tutorialStep === "tap-add-task"
                   ? "add-button"
@@ -1128,17 +1198,17 @@ export default function App() {
                       : null
             }
             onTutorialStateChange={setTaskTutorialUiState}
-            onAddTask={handleAddTask}
-            onCompleteTask={handleCompleteTask}
-            onUpdateTask={handleUpdateTask}
-            onDeleteTask={handleDeleteTask}
-            onOpenCalendar={() => handleNavigate("task-calendar")}
+            onAddTask={(task, customTemplate) => void handleAddTask(task, customTemplate, holder)}
+            onCompleteTask={(taskId) => void handleCompleteTask(taskId, holder)}
+            onUpdateTask={(task) => void handleUpdateTask(task, holder)}
+            onDeleteTask={(taskId) => void handleDeleteTask(taskId, holder)}
+            onOpenCalendar={group ? undefined : () => handleNavigate("task-calendar")}
             onTaskToolsOpenChange={(open) => void handleTaskToolsOpenChange(open)}
             onUiTap={playUiTap}
-            onStartTimer={handleStartTimer}
-            onPauseTimer={handlePauseTimer}
-            onResetTimer={handleResetTimer}
-            onTimerReady={handleTimerReady}
+            onStartTimer={(taskId) => void handleStartTimer(taskId, holder)}
+            onPauseTimer={(taskId) => void handlePauseTimer(taskId, holder)}
+            onResetTimer={(taskId) => void handleResetTimer(taskId, holder)}
+            onTimerReady={(taskId) => void handleTimerReady(taskId, holder)}
           />
         );
       }

@@ -6,8 +6,9 @@ import WorkItemModal from "../components/WorkItemModal";
 import WorkOccurrenceRow from "../components/WorkOccurrenceRow";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { AppSettings, GameState, WorkEditScope, WorkItem, WorkOccurrence } from "../types";
+import { AppSettings, GameState, HolderId, WorkEditScope, WorkItem, WorkOccurrence } from "../types";
 import { getActiveCompanion } from "../utils/companions";
+import { isBuiltIn } from "../utils/groups";
 import { generateId } from "../utils/idUtils";
 import { getLocaleFromSettings } from "../utils/settings";
 import { addDaysToKey, weekStartKey, WorkItemFields } from "../utils/workForm";
@@ -23,6 +24,13 @@ import {
 
 interface WorkScreenProps {
   gameState: GameState;
+  /** Work, or a schedule group. */
+  holder: HolderId;
+  title: string;
+  /** The holder's colour, shown beside a group's title. */
+  accentColor: string;
+  /** The holder's own items. */
+  items: WorkItem[];
   settings: AppSettings;
   now: number;
   onBackToChooser: () => void;
@@ -42,6 +50,10 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 
 export default function WorkScreen({
   gameState,
+  holder,
+  title: screenTitle,
+  accentColor,
+  items,
   settings,
   now,
   onBackToChooser,
@@ -55,7 +67,7 @@ export default function WorkScreen({
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const locale = getLocaleFromSettings(settings);
-  const items = gameState.workItems;
+  const isGroup = !isBuiltIn(holder);
   const view = settings.workView;
   const todayKey = toDateKey(now);
   const [selectedKey, setSelectedKey] = useState(todayKey);
@@ -67,7 +79,8 @@ export default function WorkScreen({
   const rangeEnd = addDaysToKey(rangeStart, view === "day" ? 1 : 7);
   const occurrences = useMemo(() => getOccurrencesBetween(items, rangeStart, rangeEnd), [items, rangeStart, rangeEnd]);
   const running = getRunningOccurrence(items, now);
-  const companion = getActiveCompanion(gameState);
+  // The companion cheers on Work shifts only; groups stay out of the game.
+  const companion = holder === "work" ? getActiveCompanion(gameState) : null;
 
   const format = (key: string, options: Intl.DateTimeFormatOptions) =>
     capitalize(new Intl.DateTimeFormat(locale, options).format(new Date(dateKeyToStart(key))));
@@ -107,6 +120,7 @@ export default function WorkScreen({
       settings={settings}
       now={now}
       compact={compact}
+      forGroup={isGroup}
       onOpen={() => openOccurrence(occurrence)}
       onComplete={() => onCompleteOccurrence(occurrence.itemId, occurrence.dateKey)}
     />
@@ -125,7 +139,7 @@ export default function WorkScreen({
 
   const renderDay = () =>
     occurrences.length === 0 ? (
-      <Text style={[styles.empty, { color: theme.mutedText }]}>{copy.workNoShiftsDay}</Text>
+      <Text style={[styles.empty, { color: theme.mutedText }]}>{isGroup ? copy.groupScheduleNoItemsDay : copy.workNoShiftsDay}</Text>
     ) : (
       occurrences.map((occurrence) => row(occurrence, false))
     );
@@ -164,9 +178,13 @@ export default function WorkScreen({
           <TouchableOpacity onPress={onBackToChooser} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button">
             <Text style={[styles.back, { color: theme.accent }]}>{copy.tasksBackToChooser}</Text>
           </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>
-            {copy.workTitle}
-          </Text>
+          <View style={styles.titleRow}>
+            {isGroup ? <View style={[styles.titleDot, { backgroundColor: accentColor }]} /> : null}
+            {/* A group name is the user's own and may be long; built-in titles keep their exact look. */}
+            <Text style={[styles.title, { color: theme.text }]} numberOfLines={isGroup ? 1 : undefined}>
+              {screenTitle}
+            </Text>
+          </View>
         </View>
         {onOpenCalendar ? (
           <TouchableOpacity style={[styles.headerButton, { borderColor: theme.border }]} onPress={onOpenCalendar} accessibilityRole="button">
@@ -187,10 +205,10 @@ export default function WorkScreen({
 
         {items.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>{copy.workEmptyTitle}</Text>
-            <Text style={[styles.emptyBody, { color: theme.mutedText }]}>{copy.workEmptyBody}</Text>
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>{isGroup ? copy.groupScheduleEmptyTitle : copy.workEmptyTitle}</Text>
+            <Text style={[styles.emptyBody, { color: theme.mutedText }]}>{isGroup ? copy.groupScheduleEmptyBody : copy.workEmptyBody}</Text>
             <TouchableOpacity style={[styles.emptyButton, { backgroundColor: theme.accent }]} onPress={openNew} accessibilityRole="button">
-              <Text style={[styles.emptyButtonText, { color: theme.accentText }]}>{copy.workEmptyAdd}</Text>
+              <Text style={[styles.emptyButtonText, { color: theme.accentText }]}>{isGroup ? copy.groupScheduleEmptyAdd : copy.workEmptyAdd}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -237,6 +255,7 @@ export default function WorkScreen({
         onClose={closeModal}
         onSave={handleSave}
         onDelete={handleDelete}
+        forGroup={isGroup}
         onComplete={
           editing && editingCompletable
             ? () => {
@@ -255,7 +274,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
   headerText: { flexGrow: 1, flexShrink: 0 },
   back: { fontSize: 13, fontWeight: "600", marginBottom: 2 },
-  title: { fontSize: 24, fontWeight: "700" },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  titleDot: { width: 14, height: 14, borderRadius: 7 },
+  title: { fontSize: 24, fontWeight: "700", flexShrink: 1 },
   headerButton: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   headerButtonText: { fontSize: 14, fontWeight: "700" },
   content: { padding: 16, gap: 12, paddingBottom: 32 },
