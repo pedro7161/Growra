@@ -25,7 +25,7 @@ import { getActiveCompanion } from "./utils/companions";
 import { syncRooms } from "./utils/rooms";
 import { buildRoomShareMessage, shareRoomPicture } from "./utils/roomShare";
 import { resolveTheme, withResolvedTheme } from "./utils/plus";
-import { buildCompletionsCsv, buildTasksCsv, buildWorkCsv, getWorkExportRange } from "./utils/historyCsv";
+import { buildCompletionsCsv, buildGroupsCsv, buildTasksCsv, buildWorkCsv, getGroupsExportRange, getWorkExportRange } from "./utils/historyCsv";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import CompanionRevealModal from "./components/CompanionRevealModal";
@@ -937,12 +937,11 @@ export default function App() {
     playUiTap();
   };
 
-  const handleCalendarShowBothChange = async (showBoth: boolean) => {
+  const handleCalendarHolderToggle = async (holder: HolderId) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
-    // "Show both" puts Personal and Work in the calendar together; any group choices stay as they are.
-    const groupsShown = gameState.settings.calendarShow.filter((holder) => !isBuiltIn(holder));
-    const calendarShow: HolderId[] = showBoth ? ["personal", "work", ...groupsShown] : groupsShown;
+    const shown = gameState.settings.calendarShow;
+    const calendarShow: HolderId[] = shown.includes(holder) ? shown.filter((id) => id !== holder) : [...shown, holder];
     await persistGameState({ ...gameState, settings: { ...gameState.settings, calendarShow } });
     playUiTap();
   };
@@ -1142,6 +1141,7 @@ export default function App() {
     };
     // Work export range: the earliest work item start to today, both included.
     const workRange = getWorkExportRange(current.workItems, Date.now());
+    const groupsRange = getGroupsExportRange(current.groups, Date.now());
     const buttons: AlertButton[] = [
       { text: copy.csvExportTasks, onPress: () => void share("growra-tasks.csv", buildTasksCsv(current.tasks)) },
       {
@@ -1149,14 +1149,40 @@ export default function App() {
         onPress: () => void share("growra-completions.csv", buildCompletionsCsv(current.days)),
       },
     ];
-    if (workRange) {
-      buttons.push({
-        text: copy.csvExportWork,
-        onPress: () => void share("growra-work.csv", buildWorkCsv(current.workItems, workRange.fromKey, workRange.toKey)),
-      });
+    // Android shows at most three buttons, so when Work and groups both exist they share one
+    // file (Work as the first "group"); other platforms get a button for each.
+    const mergeWork = Platform.OS === "android" && workRange !== null && groupsRange !== null;
+    if (mergeWork) {
+      const withWork: GameState = {
+        ...current,
+        groups: [
+          { id: "work", name: copy.tasksChooseWork, color: "", kind: "schedule", createdAt: 0, tasks: [], workItems: current.workItems },
+          ...current.groups,
+        ],
+      };
+      const range = getGroupsExportRange(withWork.groups, Date.now());
+      if (range) {
+        buttons.push({
+          text: copy.csvExportWorkAndGroups,
+          onPress: () => void share("growra-work-groups.csv", buildGroupsCsv(withWork, range.fromKey, range.toKey)),
+        });
+      }
+    } else {
+      if (workRange) {
+        buttons.push({
+          text: copy.csvExportWork,
+          onPress: () => void share("growra-work.csv", buildWorkCsv(current.workItems, workRange.fromKey, workRange.toKey)),
+        });
+      }
+      if (groupsRange) {
+        buttons.push({
+          text: copy.csvExportGroups,
+          onPress: () => void share("growra-groups.csv", buildGroupsCsv(current, groupsRange.fromKey, groupsRange.toKey)),
+        });
+      }
     }
-    // Android shows at most three buttons: with the Work file the dialog closes through Back or a tap outside.
-    if (!workRange || Platform.OS !== "android") buttons.push({ text: copy.addTaskCancel, style: "cancel" });
+    // Android shows at most three buttons: with a third file the dialog closes through Back or a tap outside.
+    if (buttons.length < 3 || Platform.OS !== "android") buttons.push({ text: copy.addTaskCancel, style: "cancel" });
     Alert.alert(copy.settingsExportCsv, copy.csvExportChoose, buttons, { cancelable: true });
   };
 
@@ -1312,8 +1338,7 @@ export default function App() {
               linkedCopiesOf={copiesOf}
               onCompleteOccurrence={(itemId, dateKey) => void handleCompleteWorkOccurrence(itemId, dateKey, holder)}
               onSetView={(view) => void handleWorkViewChange(view)}
-              // The calendar learns about groups in its own task; until then only Work opens it.
-              onOpenCalendar={group ? undefined : () => handleNavigate("work-calendar")}
+              onOpenCalendar={() => handleNavigate("work-calendar")}
             />
           );
         }
@@ -1348,7 +1373,7 @@ export default function App() {
             // The tutorial's first task stays a plain Personal task.
             linkTargets={tutorialStep === "done" ? linkTargets(gameState, "list", holder) : []}
             linkedCopiesOf={copiesOf}
-            onOpenCalendar={group ? undefined : () => handleNavigate("task-calendar")}
+            onOpenCalendar={() => handleNavigate("task-calendar")}
             onTaskToolsOpenChange={(open) => void handleTaskToolsOpenChange(open)}
             onUiTap={playUiTap}
             onStartTimer={(taskId) => void handleStartTimer(taskId, holder)}
@@ -1359,27 +1384,28 @@ export default function App() {
         );
       }
       case "task-calendar":
+      case "work-calendar": {
+        // The calendar opens from a holder's own screen; Tasks remembers which one that was.
+        const remembered = gameState.settings.tasksSection;
+        const calendarHolder: HolderId =
+          remembered !== "choose" && (isBuiltIn(remembered) || gameState.groups.some((group) => group.id === remembered))
+            ? remembered
+            : activeScreen === "work-calendar"
+              ? "work"
+              : "personal";
         return (
           <TaskCalendarScreen
             settings={viewState.settings}
             tasks={gameState.tasks}
             workItems={gameState.workItems}
-            mode="personal"
-            onToggleShowBoth={(showBoth) => void handleCalendarShowBothChange(showBoth)}
+            groups={gameState.groups}
+            holder={calendarHolder}
+            onToggleHolder={(toggled) => void handleCalendarHolderToggle(toggled)}
+            onOpenHolder={(opened) => void openHolderScreen(opened)}
             onBack={() => handleNavigate("tasks")}
           />
         );
-      case "work-calendar":
-        return (
-          <TaskCalendarScreen
-            settings={viewState.settings}
-            tasks={gameState.tasks}
-            workItems={gameState.workItems}
-            mode="work"
-            onToggleShowBoth={(showBoth) => void handleCalendarShowBothChange(showBoth)}
-            onBack={() => handleNavigate("tasks")}
-          />
-        );
+      }
       case "journey":
         return (
           <JourneyScreen
