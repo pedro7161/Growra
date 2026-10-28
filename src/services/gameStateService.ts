@@ -282,9 +282,52 @@ function normalizeCalendarShow(stored: PersistedSettings): HolderId[] {
   return stored.calendarShowBoth === true ? ["personal", "work"] : [];
 }
 
+type PersistedTask = PersistedGameState["tasks"][number];
+
+/** A saved task with the fields later versions added filled in; Personal and group tasks both go through it. */
+function normalizeTask(task: PersistedTask): Task {
+  return {
+    ...task,
+    predefinedTaskId: task.predefinedTaskId !== undefined ? task.predefinedTaskId : "",
+    customTemplateId: task.customTemplateId !== undefined ? task.customTemplateId : "",
+    category:
+      task.category !== undefined
+        ? task.category
+        : task.predefinedTaskId
+          ? getPredefinedTask(task.predefinedTaskId).category
+          : "custom",
+    priority: task.priority !== undefined ? task.priority : TaskPriority.MEDIUM,
+    calendarColor:
+      task.calendarColor !== undefined
+        ? task.calendarColor
+        : task.predefinedTaskId
+          ? getPredefinedTask(task.predefinedTaskId).calendarColor
+          : DEFAULT_TASK_CALENDAR_COLOR,
+    dueDate:
+      task.dueDate !== undefined
+        ? task.dueDate
+        : task.status === TaskStatus.COMPLETED && task.completedAt
+          ? getNextAvailableDate(task, task.completedAt)
+          : getStartOfDay(task.createdAt),
+    timer: (() => {
+      const duration = Math.max(0, task.timer?.duration ?? 0);
+      const enabled = task.timer?.enabled ?? false;
+      const baseTimer = createTaskTimer(duration, enabled);
+      const remaining = Math.min(duration, Math.max(0, task.timer?.remainingMs ?? duration));
+
+      return {
+        ...baseTimer,
+        state: task.timer?.state ?? baseTimer.state,
+        startedAt: task.timer?.startedAt ?? 0,
+        remainingMs: enabled ? remaining : 0,
+      };
+    })(),
+  };
+}
+
 /**
  * Groups from a save or backup, keeping only entries the app can render: an object with a string id, name and
- * colour and a known kind (a missing createdAt becomes 0). Missing item lists become empty and non-object items are dropped, so a malformed backup can't crash syncRecurringTasks.
+ * colour and a known kind (a missing createdAt becomes 0). Missing item lists become empty and non-object items are dropped, so a malformed backup can't crash syncRecurringTasks; tasks get the same defaults as Personal ones (a timer, a priority...).
  */
 function normalizeGroups(stored: unknown): Group[] {
   if (!Array.isArray(stored)) return [];
@@ -300,7 +343,7 @@ function normalizeGroups(stored: unknown): Group[] {
     .map((group) => ({
       ...(group as unknown as Group),
       createdAt: typeof group.createdAt === "number" && Number.isFinite(group.createdAt) ? group.createdAt : 0,
-      tasks: Array.isArray(group.tasks) ? (group.tasks.filter(isObject) as unknown as Task[]) : [],
+      tasks: Array.isArray(group.tasks) ? (group.tasks.filter(isObject) as unknown as PersistedTask[]).map(normalizeTask) : [],
       workItems: Array.isArray(group.workItems) ? (group.workItems.filter(isObject) as unknown as WorkItem[]) : [],
     }));
 }
@@ -463,43 +506,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
           ...template,
         }))
       : [],
-    tasks: saveData.gameState.tasks.map((task) => ({
-      ...task,
-      predefinedTaskId: task.predefinedTaskId !== undefined ? task.predefinedTaskId : "",
-      customTemplateId: task.customTemplateId !== undefined ? task.customTemplateId : "",
-      category:
-        task.category !== undefined
-          ? task.category
-          : task.predefinedTaskId
-            ? getPredefinedTask(task.predefinedTaskId).category
-            : "custom",
-      priority: task.priority !== undefined ? task.priority : TaskPriority.MEDIUM,
-      calendarColor:
-        task.calendarColor !== undefined
-          ? task.calendarColor
-          : task.predefinedTaskId
-            ? getPredefinedTask(task.predefinedTaskId).calendarColor
-            : DEFAULT_TASK_CALENDAR_COLOR,
-      dueDate:
-        task.dueDate !== undefined
-          ? task.dueDate
-          : task.status === TaskStatus.COMPLETED && task.completedAt
-            ? getNextAvailableDate(task, task.completedAt)
-            : getStartOfDay(task.createdAt),
-      timer: (() => {
-        const duration = Math.max(0, task.timer?.duration ?? 0);
-        const enabled = task.timer?.enabled ?? false;
-        const baseTimer = createTaskTimer(duration, enabled);
-        const remaining = Math.min(duration, Math.max(0, task.timer?.remainingMs ?? duration));
-
-        return {
-          ...baseTimer,
-          state: task.timer?.state ?? baseTimer.state,
-          startedAt: task.timer?.startedAt ?? 0,
-          remainingMs: enabled ? remaining : 0,
-        };
-      })(),
-    })),
+    tasks: saveData.gameState.tasks.map(normalizeTask),
     pets,
     equippedPetId: activePetId,
   };

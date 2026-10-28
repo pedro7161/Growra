@@ -74,6 +74,7 @@ export interface AppCopy {
   groupAddTitle: string;
   groupAddNew: string;
   groupAddFromCode: string;
+  groupAddCapNote: string;
   groupFormNewTitle: string;
   groupFormEditTitle: string;
   groupFormName: string;
@@ -623,6 +624,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     groupAddTitle: "Add a group",
     groupAddNew: "New group",
     groupAddFromCode: "From a code",
+    groupAddCapNote: "{max} groups max",
     groupFormNewTitle: "New group",
     groupFormEditTitle: "Edit group",
     groupFormName: "Name",
@@ -1329,6 +1331,7 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     groupAddTitle: "Adicionar um grupo",
     groupAddNew: "Novo grupo",
     groupAddFromCode: "A partir de um código",
+    groupAddCapNote: "Máximo de {max} grupos",
     groupFormNewTitle: "Novo grupo",
     groupFormEditTitle: "Editar grupo",
     groupFormName: "Nome",

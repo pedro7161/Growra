@@ -14,6 +14,21 @@ function validName(name: string): string | null {
   return trimmed.length >= 1 && trimmed.length <= MAX_GROUP_NAME_LENGTH ? trimmed : null;
 }
 
+/**
+ * Fills "{key}" placeholders in one pass. The replacer is a function, so a name holding "$&" or "$'" (or "{code}")
+ * shows as typed instead of being read as a replacement pattern.
+ */
+export function fillText(template: string, values: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (placeholder, key: string) =>
+    Object.prototype.hasOwnProperty.call(values, key) ? values[key] : placeholder,
+  );
+}
+
+/** What the "Add a group" sheet offers: a new group needs room under the cap; a code can always update a group. */
+export function groupAddOptions(groupCount: number): { newGroup: boolean; fromCode: boolean } {
+  return { newGroup: groupCount < MAX_GROUPS, fromCode: true };
+}
+
 export function isBuiltIn(holder: HolderId): boolean {
   return holder === "personal" || holder === "work";
 }

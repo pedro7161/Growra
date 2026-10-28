@@ -16,7 +16,7 @@ import { createInitialGameState } from "../src/utils/initialState";
 import { encodeShareCode } from "../src/utils/shareCode";
 import { createCustomTask } from "../src/utils/taskFactory";
 import { getStartOfDay } from "../src/utils/taskSchedule";
-import { createWorkItem } from "../src/utils/workSchedule";
+import { createWorkItem, getOccurrencesBetween } from "../src/utils/workSchedule";
 
 const MINUTES_IN_DAY = 1440;
 const NOW = new Date(2026, 9, 28, 15, 30).getTime();
@@ -56,7 +56,7 @@ function shift(id: string, fields: Partial<WorkItem> = {}): WorkItem {
 }
 
 function decodeOk(code: string): GroupShare {
-  const decoded = decodeGroupCode(code);
+  const decoded = decodeGroupCode(code, NOW);
   if (!("share" in decoded)) throw new Error(`expected a share, got ${decoded.error}`);
   return decoded.share;
 }
@@ -89,7 +89,7 @@ describe("group codes", () => {
     ];
     const state = withGroup(createInitialGameState(), { id: "g1", name: "Team", color: "#00aa88", kind: "schedule", workItems: items });
 
-    const built = buildGroupShare(state, "g1");
+    const built = buildGroupShare(state, "g1", NOW);
     expect(built).toMatchObject({ sourceId: "g1", name: "Team", color: "#00aa88", kind: "schedule", tasks: [] });
     expect(built.workItems).toHaveLength(3);
     for (const item of built.workItems) {
@@ -140,7 +140,7 @@ describe("group codes", () => {
       id: "g1", name: "Home", kind: "list", sourceId: "friend:g9", tasks: [daily, weekly, once, doneOnce],
     });
 
-    const built = buildGroupShare(state, "g1");
+    const built = buildGroupShare(state, "g1", NOW);
     expect(built.sourceId).toBe("friend:g9");
     // A one-time task that is already done is not part of the list any more.
     expect(built.tasks.map((task) => task.name)).toEqual(["Stretch", "Groceries", "Call Ana"]);
@@ -171,20 +171,20 @@ describe("group codes", () => {
 
   it("truncated, edited-checksum, wrong-prefix and newer-version codes are errors", () => {
     const state = withGroup(createInitialGameState(), { id: "g1", kind: "schedule", workItems: [shift("w1")] });
-    const code = encodeGroupCode(buildGroupShare(state, "g1"));
+    const code = encodeGroupCode(buildGroupShare(state, "g1", NOW));
     const [, body, sum] = code.match(/^GROWRA-GROUP-1-(.+)-([0-9a-f]{8})$/) ?? [];
 
-    expect(decodeGroupCode(code.slice(0, -3))).toEqual({ error: "format" });
-    expect(decodeGroupCode(`GROWRA-GROUP-1-${body.slice(0, -4)}-${sum}`)).toEqual({ error: "checksum" });
+    expect(decodeGroupCode(code.slice(0, -3), NOW)).toEqual({ error: "format" });
+    expect(decodeGroupCode(`GROWRA-GROUP-1-${body.slice(0, -4)}-${sum}`, NOW)).toEqual({ error: "checksum" });
     const flipped = sum[0] === "0" ? `1${sum.slice(1)}` : `0${sum.slice(1)}`;
-    expect(decodeGroupCode(`GROWRA-GROUP-1-${body}-${flipped}`)).toEqual({ error: "checksum" });
-    expect(decodeGroupCode(code.replace("GROWRA-GROUP-", "GROWRA-ROOM-"))).toEqual({ error: "format" });
-    expect(decodeGroupCode(code.replace("GROWRA-GROUP-1-", "GROWRA-GROUP-2-"))).toEqual({ error: "newer" });
-    expect(decodeGroupCode("")).toEqual({ error: "format" });
+    expect(decodeGroupCode(`GROWRA-GROUP-1-${body}-${flipped}`, NOW)).toEqual({ error: "checksum" });
+    expect(decodeGroupCode(code.replace("GROWRA-GROUP-", "GROWRA-ROOM-"), NOW)).toEqual({ error: "format" });
+    expect(decodeGroupCode(code.replace("GROWRA-GROUP-1-", "GROWRA-GROUP-2-"), NOW)).toEqual({ error: "newer" });
+    expect(decodeGroupCode("", NOW)).toEqual({ error: "format" });
 
     // A correct envelope with content that is not a group is a format error, never a throw.
     for (const payload of ["not json", "null", "[]", '{"v":1}', '["g1","Team","#ffffff","x",[]]', '["g1","","#ffffff","s",[]]', '["g1","Team","#ffffff","s",{}]']) {
-      expect(decodeGroupCode(encodeShareCode("GROWRA-GROUP-", 1, payload))).toEqual({ error: "format" });
+      expect(decodeGroupCode(encodeShareCode("GROWRA-GROUP-", 1, payload), NOW)).toEqual({ error: "format" });
     }
     // Inside a valid group, an invalid item is dropped and the rest kept.
     const mixed = decodeOk(
@@ -200,7 +200,7 @@ describe("group codes", () => {
 
     // A group colour that is not 6-digit hex rejects the code; a bad item colour falls back to the default.
     for (const color of ["#fff", "red", "url(x)", 5]) {
-      expect(decodeGroupCode(encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", color, "l", []])))).toEqual({ error: "format" });
+      expect(decodeGroupCode(encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", color, "l", []])), NOW)).toEqual({ error: "format" });
     }
     const limits = decodeOk(
       encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", "#ffffff", "l", [
@@ -220,7 +220,8 @@ describe("group codes", () => {
     const many = Array.from({ length: 501 }, (_, index) => ({ n: `T${index}` }));
     expect(decodeOk(encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", "#ffffff", "l", many]))).tasks).toHaveLength(500);
     const exceptions = Object.fromEntries(
-      Array.from({ length: 401 }, (_, index) => [`2027-${String(Math.floor(index / 28) + 1).padStart(2, "0")}-${String((index % 28) + 1).padStart(2, "0")}`, 0]),
+      // Real calendar days (2027-01-01 on), so only the count limit applies.
+      Array.from({ length: 401 }, (_, index) => [`${2027 + Math.floor(index / 336)}-${String(Math.floor((index % 336) / 28) + 1).padStart(2, "0")}-${String((index % 28) + 1).padStart(2, "0")}`, 0]),
     );
     const longItem = decodeOk(
       encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify(["g1", "Team", "#ffffff", "s", [{ n: "Ok", s: 60, e: 120, a: "2026-10-28", r: ["d", 1], x: exceptions }]])),
@@ -232,7 +233,7 @@ describe("group codes", () => {
     let state = createInitialGameState();
     for (let index = 0; index < MAX_GROUPS; index += 1) state = withGroup(state, { id: `g${index}`, kind: "list" });
     const before = JSON.parse(JSON.stringify(state));
-    const shared = decodeOk(encodeGroupCode(buildGroupShare(state, "g0")));
+    const shared = decodeOk(encodeGroupCode(buildGroupShare(state, "g0", NOW)));
     expect(importGroupCode(state, shared, NOW, idMaker(), "new")).toEqual({ error: "cap" });
     expect(state).toEqual(before);
   });
@@ -241,7 +242,7 @@ describe("group codes", () => {
     const sender = withGroup(createInitialGameState(), {
       id: "g1", name: "Team", color: "#00aa88", kind: "schedule", workItems: [shift("w1", { name: "Monday" })],
     });
-    const first = decodeOk(encodeGroupCode(buildGroupShare(sender, "g1")));
+    const first = decodeOk(encodeGroupCode(buildGroupShare(sender, "g1", NOW)));
     expect(findImportedGroup(createInitialGameState(), first.sourceId)).toBeUndefined();
 
     let receiver = asState(importGroupCode(createInitialGameState(), first, NOW, idMaker("a"), "new"));
@@ -255,7 +256,7 @@ describe("group codes", () => {
     expect(findImportedGroup(receiver, "g1")?.id).toBe(local.id);
 
     const newer = decodeOk(
-      encodeGroupCode(buildGroupShare({ ...sender, groups: [{ ...sender.groups[0], workItems: [shift("w1", { name: "Tuesday" }), shift("w2", { name: "Friday" })] }] }, "g1")),
+      encodeGroupCode(buildGroupShare({ ...sender, groups: [{ ...sender.groups[0], workItems: [shift("w1", { name: "Tuesday" }), shift("w2", { name: "Friday" })] }] }, "g1", NOW)),
     );
     const updated = asState(importGroupCode(receiver, newer, NOW + 1, idMaker("b"), "update"));
     expect(updated.groups).toHaveLength(1);
@@ -270,10 +271,10 @@ describe("group codes", () => {
 
   it("sharing Work produces a schedule share named after Work; importing it never touches state.workItems", () => {
     const sender = { ...createInitialGameState(), playerId: "player-7", workItems: [shift("w1"), shift("w2", { linkId: "x" })] };
-    const built = buildGroupShare(sender, "work", "Trabalho");
+    const built = buildGroupShare(sender, "work", NOW, "Trabalho");
     expect(built).toMatchObject({ sourceId: "player-7:work", name: "Trabalho", kind: "schedule", tasks: [] });
     expect(built.workItems).toHaveLength(2);
-    expect(buildGroupShare(sender, "personal", "Pessoal")).toMatchObject({ sourceId: "player-7:personal", name: "Pessoal", kind: "list" });
+    expect(buildGroupShare(sender, "personal", NOW, "Pessoal")).toMatchObject({ sourceId: "player-7:personal", name: "Pessoal", kind: "list" });
 
     const receiver = { ...createInitialGameState(), playerId: "player-9", coins: 40, workItems: [shift("mine")] };
     const imported = asState(importGroupCode(receiver, decodeOk(encodeGroupCode(built)), NOW, idMaker(), "new"));
@@ -286,11 +287,11 @@ describe("group codes", () => {
 
   it("an imported Personal or Work is named '<name> (shared)'; a group share keeps its name", () => {
     const sender = { ...createInitialGameState(), playerId: "player-7", workItems: [shift("w1")] };
-    const work = decodeOk(encodeGroupCode(buildGroupShare(sender, "work", "Work")));
+    const work = decodeOk(encodeGroupCode(buildGroupShare(sender, "work", NOW, "Work")));
     const imported = asState(importGroupCode(createInitialGameState(), work, NOW, idMaker(), "new", "(shared)"));
     expect(imported.groups[0].name).toBe("Work (shared)");
     // Passed on again, it is not suffixed twice.
-    const passedOn = decodeOk(encodeGroupCode(buildGroupShare(imported, imported.groups[0].id)));
+    const passedOn = decodeOk(encodeGroupCode(buildGroupShare(imported, imported.groups[0].id, NOW)));
     const again = asState(importGroupCode(createInitialGameState(), passedOn, NOW, idMaker(), "new", "(shared)"));
     expect(again.groups[0].name).toBe("Work (shared)");
     // The suffix always fits the name limit.
@@ -298,7 +299,7 @@ describe("group codes", () => {
     const clipped = asState(importGroupCode(createInitialGameState(), long, NOW, idMaker(), "new", "(partilhado)"));
     expect(clipped.groups[0].name).toBe(`${"W".repeat(11)} (partilhado)`);
     const team = withGroup(createInitialGameState(), { id: "g1", name: "Team", kind: "schedule", workItems: [shift("w1")] });
-    const group = decodeOk(encodeGroupCode(buildGroupShare(team, "g1")));
+    const group = decodeOk(encodeGroupCode(buildGroupShare(team, "g1", NOW)));
     expect(asState(importGroupCode(createInitialGameState(), group, NOW, idMaker(), "new", "(shared)")).groups[0].name).toBe("Team");
   });
 });
@@ -314,12 +315,87 @@ describe("extractGroupCode", () => {
   it("joins a code a messenger wrapped over several lines", () => {
     const wrapped = `Paste this code: ${code.slice(0, 20)}\n${code.slice(20, 31)} \r\n ${code.slice(31)}`;
     expect(extractGroupCode(wrapped)).toBe(code);
-    expect(decodeGroupCode(extractGroupCode(wrapped))).toEqual({ share: expect.objectContaining({ name: "Team" }) });
+    expect(decodeGroupCode(extractGroupCode(wrapped), NOW)).toEqual({ share: expect.objectContaining({ name: "Team" }) });
     // Words after the code are left out.
     expect(extractGroupCode(`${code.slice(0, 25)}\n${code.slice(25)}\nThanks!`)).toBe(code);
   });
 
   it("gives back text without a code unchanged", () => {
     expect(extractGroupCode("hello")).toBe("hello");
+  });
+});
+
+describe("group code limits", () => {
+  const scheduleCode = (items: unknown[], sourceId = "g1") =>
+    encodeShareCode("GROWRA-GROUP-", 1, JSON.stringify([sourceId, "Team", "#00aa88", "s", items]));
+  const packed = (fields: Record<string, unknown> = {}) => ({ n: "Shift", s: 540, e: 1020, a: "2026-10-26", r: ["d", 1], ...fields });
+
+  it("drops schedule items dated far outside today - 2 years .. today + 5 years, so imports stay fast", () => {
+    const code = scheduleCode(Array.from({ length: 500 }, () => packed({ a: "1950-01-01" })));
+    const share = decodeOk(code);
+    expect(share.workItems).toEqual([]);
+
+    // Even a hand-built share with such items brings none in, and reading today stays quick.
+    const hostile: GroupShare = { ...share, workItems: Array.from({ length: 500 }, (_, i) => shift(`w${i}`, { startDateKey: "1950-01-01", repeat: { kind: "days", interval: 1 } })) };
+    const imported = asState(importGroupCode(createInitialGameState(), hostile, NOW, idMaker(), "new"));
+    expect(imported.groups[0].workItems).toEqual([]);
+    const started = Date.now();
+    getOccurrencesBetween(imported.groups.flatMap((group) => group.workItems), "2026-10-28", "2026-10-29");
+    expect(Date.now() - started).toBeLessThan(50);
+  });
+
+  it("keeps dates inside the window and drops unreal dates or an 'until' outside it", () => {
+    const share = decodeOk(
+      scheduleCode([
+        packed({ n: "Oldest", a: "2024-10-28" }),
+        packed({ n: "Too old", a: "2024-10-27" }),
+        packed({ n: "Latest", a: "2031-10-28" }),
+        packed({ n: "Too late", a: "2031-10-29" }),
+        packed({ n: "Not a day", a: "2026-02-30" }),
+        packed({ n: "Month 13", a: "2026-13-01" }),
+        packed({ n: "Until ok", z: ["u", "2027-01-01"] }),
+        packed({ n: "Until far", z: ["u", "2099-01-01"] }),
+        packed({ n: "Until unreal", z: ["u", "2027-02-31"] }),
+        packed({ n: "Bad exception day", x: { "2026-11-31": 0 } }),
+      ]),
+    );
+    expect(share.workItems.map((item) => item.name)).toEqual(["Oldest", "Latest", "Until ok"]);
+  });
+
+  it("reads at most 200 schedule items", () => {
+    const share = decodeOk(scheduleCode(Array.from({ length: 300 }, (_, i) => packed({ n: `S${i}` }))));
+    expect(share.workItems).toHaveLength(200);
+    expect(share.workItems[199].name).toBe("S199");
+  });
+
+  it("the share builder leaves out what a decode would drop, so what is sent is what arrives", () => {
+    const items = [
+      shift("w1", { name: "Now" }),
+      shift("w2", { name: "Ancient", startDateKey: "1990-05-05", repeat: { kind: "days", interval: 1 } }),
+      shift("w3", { name: "Far end", end: { kind: "until", dateKey: "2090-01-01" } }),
+      ...Array.from({ length: 250 }, (_, i) => shift(`x${i}`, { name: `X${i}` })),
+    ];
+    const state = withGroup(createInitialGameState(), { id: "g1", kind: "schedule", workItems: items });
+    const built = buildGroupShare(state, "g1", NOW);
+    expect(built.workItems).toHaveLength(200);
+    expect(built.workItems.map((item) => item.name)).not.toEqual(expect.arrayContaining(["Ancient", "Far end"]));
+    expect(decodeOk(encodeGroupCode(built))).toEqual(built);
+    expect(buildGroupShare({ ...state, workItems: items }, "work", NOW, "Work").workItems).toHaveLength(200);
+  });
+
+  it("cuts a task's tag to 40 characters and the source id to 128", () => {
+    const code = encodeShareCode(
+      "GROWRA-GROUP-", 1, JSON.stringify(["s".repeat(300), "Home", "#00aa88", "l", [{ n: "Tidy", c: "t".repeat(90) }]]),
+    );
+    const share = decodeOk(code);
+    expect(share.sourceId).toBe("s".repeat(128));
+    expect(share.tasks[0].category).toBe("t".repeat(40));
+
+    const task = { ...createCustomTask("Tidy", "", "t".repeat(90), TaskFrequency.ONCE, "", 0) };
+    const state = withGroup(createInitialGameState(), { id: "g1", kind: "list", sourceId: "s".repeat(300), tasks: [task] });
+    const built = buildGroupShare(state, "g1", NOW);
+    expect(built.sourceId).toBe("s".repeat(128));
+    expect(built.tasks[0].category).toBe("t".repeat(40));
+    expect(decodeOk(encodeGroupCode(built))).toEqual(built);
   });
 });

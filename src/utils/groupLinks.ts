@@ -222,6 +222,18 @@ export function applyLinkedOccurrenceEdit(
   });
 }
 
+/**
+ * The linked items a delete of `dateKey` should reach. A one-off copy is the same single event even when it was
+ * moved to another date, so it is matched by linkId alone; a "following" delete also takes a copy whose series only
+ * starts on or after that date. Otherwise as for edits (a "one" delete leaves a copy that skips the date alone).
+ */
+function reachesDelete(item: WorkItem, linkId: string, dateKey: string, scope: WorkEditScope): boolean {
+  if (item.linkId !== linkId) return false;
+  if (item.repeat.kind === "none") return true;
+  if (scope === "following" && item.startDateKey >= dateKey) return true;
+  return reaches(item, linkId, dateKey, scope === "one");
+}
+
 /** Runs deleteOccurrence on each chosen holder's own linked item ("one": skip that date; "following": end there). */
 export function applyLinkedOccurrenceDelete(
   state: GameState,
@@ -231,7 +243,7 @@ export function applyLinkedOccurrenceDelete(
   scope: WorkEditScope,
 ): GameState {
   return updateWorkItems(state, holders, (items) => {
-    const targets = items.filter((item) => reaches(item, linkId, dateKey, scope === "one"));
+    const targets = items.filter((item) => reachesDelete(item, linkId, dateKey, scope));
     let next = items;
     for (const target of targets) next = deleteOccurrence(next, target.id, dateKey, scope);
     return next;

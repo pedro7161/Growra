@@ -421,4 +421,18 @@ describe('groups save (v22)', () => {
     const again = await gameStateService.loadGame();
     expect(again.status === 'loaded' && again.saveData.gameState.groups).toEqual([]);
   });
+
+  it('a group task saved without a timer (or other later fields) loads with the same defaults Personal tasks get', async () => {
+    const { timer: _timer, priority: _priority, calendarColor: _color, ...bare } = createCustomTask('Water plants', '', 'home', TaskFrequency.DAILY, '', 0);
+    const group = { id: 'g1', name: 'Home', color: '#0a8', kind: 'list', createdAt: 1, tasks: [bare], workItems: [] };
+    const state = { ...createInitialGameState(), tasks: [bare], groups: [group] };
+    await AsyncStorage.setItem('growra_save_data', JSON.stringify(createSaveData(state as never)));
+    const result = await gameStateService.loadGame();
+    expect(result.status).toBe('loaded');
+    if (result.status !== 'loaded') return;
+    const [loaded] = result.saveData.gameState.groups[0].tasks;
+    expect(loaded.timer).toMatchObject({ enabled: false, duration: 0, remainingMs: 0 });
+    expect(loaded).toEqual(result.saveData.gameState.tasks[0]);
+    expect(() => syncRecurringTasks(result.saveData.gameState, Date.now())).not.toThrow();
+  });
 });

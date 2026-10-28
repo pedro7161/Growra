@@ -124,6 +124,21 @@ function editOneOffs(state: GameState, linkId: string, holders: HolderId[], chan
 }
 
 /**
+ * True when the work form's edit of `item` on `dateKey` would change something in `scope` (null for a one-off item),
+ * the same test applyLinkedWorkEdit makes, so an untouched form never asks about the copies.
+ */
+export function changesWorkItem(item: WorkItem, dateKey: string, fields: WorkItemFields, scope: WorkEditScope | null): boolean {
+  if (scope === null) return Object.keys(changedWorkFields(item, fields)).length > 0;
+  const occurrence = getOccurrencesBetween([item], dateKey, addDaysToKey(dateKey, 1))[0];
+  if (!occurrence) return false;
+  if (Object.keys(occurrenceChange(occurrence, fields)).length > 0) return true;
+  return (
+    scope === "following" &&
+    (item.calendarColor !== fields.calendarColor || !same(item.repeat, fields.repeat) || !same(item.end, fields.end))
+  );
+}
+
+/**
  * Applies the work form's edit of `item` on `dateKey` to its linked copy in each chosen holder (the item's own holder
  * included when chosen). `scope` is null for a one-off item. "Only this one" writes the same partial change
  * occurrenceChange gives; "This and all following" splits each copy and also carries a changed colour, repeat or

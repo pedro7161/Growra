@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-nati
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, HolderId } from "../types";
+import { fillText } from "../utils/groups";
 import { LinkedCopy } from "../utils/linkedEdits";
 
 export type { LinkedCopy };
@@ -90,7 +91,7 @@ export function LinkedCopiesCard({ settings, copies, onUnlink }: { settings: App
     <View style={[styles.linkedCard, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
       <View style={styles.linkedText}>
         <Text style={[styles.linkedNames, { color: theme.text }]}>
-          {copy.linkAlsoIn.replace("{names}", copies.map((entry) => entry.name).join(", "))}
+          {fillText(copy.linkAlsoIn, { names: copies.map((entry) => entry.name).join(", ") })}
         </Text>
         <Text style={[styles.note, { color: theme.mutedText }]}>{copy.linkUnlinkHint}</Text>
       </View>

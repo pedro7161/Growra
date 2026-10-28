@@ -6,7 +6,7 @@ import { getAppTheme } from "../constants/appTheme";
 import { taskCalendarColors } from "../constants/taskConfig";
 import { AppSettings, GameState, Group, HolderId } from "../types";
 import { GroupShare, buildGroupShare, encodeGroupCode, findImportedGroup, shareSummary } from "../utils/groupCode";
-import { MAX_GROUPS, groupItemCount } from "../utils/groups";
+import { MAX_GROUPS, fillText, groupAddOptions, groupItemCount } from "../utils/groups";
 import { getTodayTasks } from "../utils/taskSchedule";
 import { buildWorkPreview } from "../utils/workPreview";
 import GroupFormModal, { GroupFields } from "./GroupFormModal";
@@ -33,7 +33,7 @@ type Dialog =
   | { kind: "form"; editing?: Group }
   | { kind: "import" };
 
-/** Personal, Work and the player's groups, each with a ⋯ menu, then "+ Add group" (hidden at the cap). */
+/** Personal, Work and the player's groups, each with a ⋯ menu, then "+ Add group" ("New group" is off at the cap). */
 export default function TasksChooser({
   settings,
   gameState,
@@ -64,12 +64,12 @@ export default function TasksChooser({
 
   const menuCard = dialog?.kind === "menu" ? cards.find((card) => card.id === dialog.holder) : undefined;
   // Built-ins send their name as the player sees it, so the receiver's new group is called "Work", not "work".
-  const menuShare = menuCard ? buildGroupShare(gameState, menuCard.id, menuCard.group ? undefined : menuCard.title) : undefined;
+  const menuShare = menuCard ? buildGroupShare(gameState, menuCard.id, now, menuCard.group ? undefined : menuCard.title) : undefined;
   const menuSummary = menuShare ? shareSummary(menuShare) : undefined;
 
   const share = (groupShare: GroupShare) => {
     close();
-    const message = copy.groupShareMessage.replace("{name}", groupShare.name).replace("{code}", encodeGroupCode(groupShare));
+    const message = fillText(copy.groupShareMessage, { name: groupShare.name, code: encodeGroupCode(groupShare) });
     void Share.share({ message }).catch(() => undefined);
   };
 
@@ -77,6 +77,9 @@ export default function TasksChooser({
     onUiTap();
     setDialog(next);
   };
+
+  // At the cap the sheet still opens, so a code can update a group it came from; only "New group" is off.
+  const addOptions = groupAddOptions(gameState.groups.length);
 
   // A new group starts on the first palette colour no group uses yet.
   const usedColors = new Set(gameState.groups.map((group) => group.color));
@@ -110,21 +113,19 @@ export default function TasksChooser({
               onPress={() => openDialog({ kind: "menu", holder: card.id })}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityRole="button"
-              accessibilityLabel={copy.groupMenuLabel.replace("{name}", card.title)}
+              accessibilityLabel={fillText(copy.groupMenuLabel, { name: card.title })}
             >
               <Text style={[styles.moreText, { color: theme.mutedText }]}>⋯</Text>
             </TouchableOpacity>
           </View>
         ))}
-        {gameState.groups.length < MAX_GROUPS ? (
-          <TouchableOpacity
-            style={[styles.addCard, { borderColor: theme.border }]}
-            onPress={() => openDialog({ kind: "add" })}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.addText, { color: theme.accent }]}>{copy.groupAddCard}</Text>
-          </TouchableOpacity>
-        ) : null}
+        <TouchableOpacity
+          style={[styles.addCard, { borderColor: theme.border }]}
+          onPress={() => openDialog({ kind: "add" })}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.addText, { color: theme.accent }]}>{copy.groupAddCard}</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {menuCard && menuSummary && menuShare ? (
@@ -151,8 +152,18 @@ export default function TasksChooser({
           <Pressable style={StyleSheet.absoluteFill} onPress={close} accessible={false} />
           <View style={[styles.sheet, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.sheetTitle, { color: theme.text }]}>{copy.groupAddTitle}</Text>
-            <TouchableOpacity onPress={() => setDialog({ kind: "form" })} accessibilityRole="button">
-              <Text style={[styles.sheetItem, { color: theme.text }]}>{copy.groupAddNew}</Text>
+            <TouchableOpacity
+              onPress={() => setDialog({ kind: "form" })}
+              disabled={!addOptions.newGroup}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !addOptions.newGroup }}
+            >
+              <Text style={[styles.sheetItem, { color: addOptions.newGroup ? theme.text : theme.mutedText }]}>{copy.groupAddNew}</Text>
+              {addOptions.newGroup ? null : (
+                <Text style={[styles.sheetNote, { color: theme.mutedText }]}>
+                  {fillText(copy.groupAddCapNote, { max: String(MAX_GROUPS) })}
+                </Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setDialog({ kind: "import" })} accessibilityRole="button">
               <Text style={[styles.sheetItem, { color: theme.text }]}>{copy.groupAddFromCode}</Text>
@@ -208,4 +219,5 @@ const styles = StyleSheet.create({
   sheet: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 4 },
   sheetTitle: { fontSize: 18, fontWeight: "700", marginBottom: 4 },
   sheetItem: { fontSize: 16, fontWeight: "600", paddingVertical: 10 },
+  sheetNote: { fontSize: 13, marginTop: -6, paddingBottom: 6 },
 });

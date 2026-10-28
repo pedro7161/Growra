@@ -278,4 +278,53 @@ describe("groupLinks", () => {
     expect(linkTargets(state, "list", "ana").map((group) => group.id)).toEqual(["rui"]);
     expect(linkTargets(state, "schedule", "bea").map((group) => group.id)).toEqual(["shifts"]);
   });
+
+  it("a linked delete of a one-off reaches a copy moved to another date", () => {
+    const oneOff = { ...dailyShift(), repeat: { kind: "none" as const } };
+    let state = withGroups([
+      ["a", "schedule"],
+      ["b", "schedule"],
+    ]);
+    state = addWorkItemWithCopies(state, "work", oneOff, ["a", "b"], ids("c"));
+    const linkId = state.workItems[0].linkId!;
+    state = setHolderWorkItems(state, "a", getHolderWorkItems(state, "a").map((item) => ({ ...item, startDateKey: "2026-11-22" })));
+
+    for (const scope of ["one", "following"] as const) {
+      const deleted = applyLinkedOccurrenceDelete(state, linkId, ["work", "a", "b"], "2026-11-20", scope);
+      expect(deleted.workItems).toHaveLength(0);
+      expect(getHolderWorkItems(deleted, "a")).toHaveLength(0);
+      expect(getHolderWorkItems(deleted, "b")).toHaveLength(0);
+    }
+    // An unticked holder keeps its copy.
+    expect(getHolderWorkItems(applyLinkedOccurrenceDelete(state, linkId, ["work", "b"], "2026-11-20", "one"), "a")).toHaveLength(1);
+  });
+
+  it("a linked 'following' delete removes a copy whose series starts later; 'one' keeps a copy's own skip", () => {
+    let state = withGroups([
+      ["a", "schedule"],
+      ["b", "schedule"],
+    ]);
+    state = addWorkItemWithCopies(state, "work", { ...dailyShift(), repeat: { kind: "weeks", interval: 1, weekdays: [5] } }, ["a", "b"], ids("c"));
+    const linkId = state.workItems[0].linkId!;
+    // A's copy moved to start a day later (a Saturday series), so it has no 2026-11-20 at all.
+    state = setHolderWorkItems(state, "a", getHolderWorkItems(state, "a").map((item) => ({
+      ...item,
+      startDateKey: "2026-11-21",
+      repeat: { kind: "weeks" as const, interval: 1, weekdays: [6] },
+    })));
+    const following = applyLinkedOccurrenceDelete(state, linkId, ["work", "a", "b"], "2026-11-20", "following");
+    expect(following.workItems).toHaveLength(0);
+    expect(getHolderWorkItems(following, "a")).toHaveLength(0);
+    expect(getHolderWorkItems(following, "b")).toHaveLength(0);
+
+    // "one" only skips the date in copies whose own series has it; a copy that already skips it is left alone.
+    const bSkips = setHolderWorkItems(state, "b", getHolderWorkItems(state, "b").map((item) => ({
+      ...item,
+      exceptions: { "2026-11-20": { kind: "skip" as const } },
+    })));
+    const one = applyLinkedOccurrenceDelete(bSkips, linkId, ["work", "a", "b"], "2026-11-20", "one");
+    expect(one.workItems[0].exceptions["2026-11-20"]).toEqual({ kind: "skip" });
+    expect(getHolderWorkItems(one, "a")).toEqual(getHolderWorkItems(bSkips, "a"));
+    expect(getHolderWorkItems(one, "b")).toEqual(getHolderWorkItems(bSkips, "b"));
+  });
 });

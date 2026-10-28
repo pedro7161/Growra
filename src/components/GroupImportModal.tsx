@@ -4,7 +4,7 @@ import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, Group } from "../types";
 import { GroupShare, decodeGroupCode, extractGroupCode } from "../utils/groupCode";
-import { MAX_GROUPS } from "../utils/groups";
+import { MAX_GROUPS, fillText } from "../utils/groups";
 
 interface GroupImportModalProps {
   settings: AppSettings;
@@ -34,7 +34,7 @@ export default function GroupImportModal({ settings, findExisting, onImport, onC
   };
 
   const submit = () => {
-    const decoded = decodeGroupCode(extractGroupCode(text));
+    const decoded = decodeGroupCode(extractGroupCode(text), Date.now());
     if ("error" in decoded) {
       setError(copy.groupImportErrors[decoded.error]);
       return;
@@ -51,7 +51,7 @@ export default function GroupImportModal({ settings, findExisting, onImport, onC
       <View style={styles.backdrop}>
         {pending ? (
           <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.title, { color: theme.text }]}>{copy.groupImportUpdateTitle.replace("{name}", pending.existing.name)}</Text>
+            <Text style={[styles.title, { color: theme.text }]}>{fillText(copy.groupImportUpdateTitle, { name: pending.existing.name })}</Text>
             <Text style={[styles.hint, { color: theme.mutedText }]}>{copy.groupImportUpdateBody}</Text>
             <View style={styles.actions}>
               <TouchableOpacity onPress={onClose} accessibilityRole="button">

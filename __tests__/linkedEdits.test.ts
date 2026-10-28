@@ -4,6 +4,7 @@ import { createGroup, getHolderTasks, getHolderWorkItems } from "../src/utils/gr
 import { createInitialGameState } from "../src/utils/initialState";
 import {
   applyLinkedWorkEdit,
+  changesWorkItem,
   deleteTaskCopies,
   editTaskCopies,
   linkedCopies,
@@ -199,5 +200,26 @@ describe("applyLinkedWorkEdit", () => {
     // Only the edited fields travel: Ana's own note stays.
     expect(getHolderWorkItems(next, "ana")[0]).toMatchObject({ endMinutes: 1080, startDateKey: "2026-11-22", description: "Ana's note" });
     expect(getHolderWorkItems(next, "rui")[0]).toMatchObject({ endMinutes: 17 * 60, startDateKey: "2026-11-21" });
+  });
+});
+
+describe("changesWorkItem", () => {
+  it("is false for an untouched form in every scope, so the copies prompt is not shown", () => {
+    const item = saturdays();
+    const oneOff = { ...item, repeat: { kind: "none" as const } };
+    expect(changesWorkItem(oneOff, "2026-11-21", fieldsOf(oneOff), null)).toBe(false);
+    expect(changesWorkItem(item, "2026-11-28", fieldsOf(item), "one")).toBe(false);
+    expect(changesWorkItem(item, "2026-11-28", fieldsOf(item), "following")).toBe(false);
+  });
+
+  it("is true for a change that reaches the copies in that scope", () => {
+    const item = saturdays();
+    const oneOff = { ...item, repeat: { kind: "none" as const } };
+    expect(changesWorkItem(oneOff, "2026-11-21", { ...fieldsOf(oneOff), calendarColor: "#ff0000" }, null)).toBe(true);
+    expect(changesWorkItem(item, "2026-11-28", { ...fieldsOf(item), name: "Late shift" }, "one")).toBe(true);
+    expect(changesWorkItem(item, "2026-11-28", { ...fieldsOf(item), endMinutes: 18 * 60 }, "following")).toBe(true);
+    expect(changesWorkItem(item, "2026-11-28", { ...fieldsOf(item), calendarColor: "#ff0000" }, "following")).toBe(true);
+    // A colour is not a one-day change, so "only this one" with just a new colour changes nothing.
+    expect(changesWorkItem(item, "2026-11-28", { ...fieldsOf(item), calendarColor: "#ff0000" }, "one")).toBe(false);
   });
 });

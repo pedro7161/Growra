@@ -5,6 +5,8 @@ import {
   completeGroupTask,
   createGroup,
   deleteGroup,
+  fillText,
+  groupAddOptions,
   getHolderTasks,
   getHolderWorkItems,
   groupItemCount,
@@ -188,5 +190,21 @@ describe("groups", () => {
     let schedule = create(createInitialGameState(), "Shifts", "g2", "schedule");
     schedule = setHolderWorkItems(schedule, "g2", [shift({ repeat: { kind: "days", interval: 1 } }), shift({}, "w2")]);
     expect(groupItemCount(schedule.groups[0])).toBe(2);
+  });
+});
+
+describe("group copy helpers", () => {
+  it("fillText puts names in as typed, even with $ patterns or a placeholder inside the name", () => {
+    expect(fillText("Update {name}?", { name: "Tom $& Ana $' $` $$" })).toBe("Update Tom $& Ana $' $` $$?");
+    expect(fillText("My {name} group: {code}", { name: "{code} club", code: "GROWRA-GROUP-1-x" })).toBe(
+      "My {code} club group: GROWRA-GROUP-1-x",
+    );
+    expect(fillText("{name} and {other}", { name: "A" })).toBe("A and {other}");
+  });
+
+  it("groupAddOptions turns off only 'New group' at the cap, so a code can still update a group", () => {
+    expect(groupAddOptions(0)).toEqual({ newGroup: true, fromCode: true });
+    expect(groupAddOptions(MAX_GROUPS - 1)).toEqual({ newGroup: true, fromCode: true });
+    expect(groupAddOptions(MAX_GROUPS)).toEqual({ newGroup: false, fromCode: true });
   });
 });

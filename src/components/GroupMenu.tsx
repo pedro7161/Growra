@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "reac
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, GroupKind } from "../types";
+import { fillText } from "../utils/groups";
 
 interface GroupMenuProps {
   settings: AppSettings;
@@ -39,7 +40,7 @@ export default function GroupMenu({
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const [step, setStep] = useState<Step>("menu");
-  const fill = (text: string, count: number) => text.replace("{name}", name).replace("{count}", String(count));
+  const fill = (text: string, count: number) => fillText(text, { name, count: String(count) });
 
   const shareText =
     shareKind === "list"
@@ -95,7 +96,7 @@ export default function GroupMenu({
             {isGroup ? menuItem(copy.groupMenuDelete, () => setStep("delete"), true) : null}
           </View>
         ) : step === "share" ? (
-          confirm(copy.groupShareTitle.replace("{name}", name), shareText, copy.groupShareNote, copy.groupShareConfirm, onShare, false)
+          confirm(fillText(copy.groupShareTitle, { name }), shareText, copy.groupShareNote, copy.groupShareConfirm, onShare, false)
         ) : (
           confirm(copy.groupDeleteTitle, deleteText, null, copy.groupDeleteConfirm, onDelete, true)
         )}

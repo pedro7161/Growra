@@ -6,6 +6,7 @@ import { getAppTheme } from "../constants/appTheme";
 import { taskCalendarColors } from "../constants/taskConfig";
 import { AppSettings, HolderId, WorkEditScope, WorkItem, WorkOccurrence } from "../types";
 import { getLocaleFromSettings } from "../utils/settings";
+import { changesWorkItem } from "../utils/linkedEdits";
 import {
   changesSeriesRule,
   draftFromItem,
@@ -117,9 +118,15 @@ export default function WorkItemModal({
     else afterScope("edit", null, result.fields);
   };
 
-  /** With other copies, asks which ones to include; otherwise applies to this one only. */
+  /**
+   * With other copies, asks which ones to include; otherwise applies to this one only. Like the task form, an edit
+   * that changes nothing doesn't ask about the copies.
+   */
   const afterScope = (action: "edit" | "delete", scope: WorkEditScope | null, fields?: WorkItemFields) => {
-    if (linkedCopies.length > 0) setLinkPrompt({ action, fields, scope });
+    const changes =
+      action === "delete" ||
+      (fields !== undefined && editing !== null && changesWorkItem(editing.item, editing.occurrence.dateKey, fields, scope));
+    if (linkedCopies.length > 0 && changes) setLinkPrompt({ action, fields, scope });
     else if (action === "edit" && fields) onSave(fields, scope, []);
     else if (action === "delete") onDelete(scope, []);
   };
