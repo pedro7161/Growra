@@ -48,3 +48,22 @@ export function shiftEncouragement(copy: AppCopy, stage: ShiftStage, petName: st
   const slot = Math.floor(now / SHIFT_LINE_ROTATION_MS);
   return lines[slot % lines.length].replace("{name}", petName);
 }
+
+/**
+ * The companion's praise for a completed task or shift. Never the same line twice in a row
+ * (`previous` is the last line shown); `random` is injectable so tests are deterministic.
+ */
+export function pickPraiseLine(
+  copy: AppCopy,
+  kind: "task" | "shift",
+  name: string,
+  previous: string | null = null,
+  random: () => number = Math.random,
+): string {
+  const lines = (kind === "shift" ? copy.praiseShiftLines : copy.praiseLines).map((line) =>
+    line.replace("{name}", name),
+  );
+  const options = lines.filter((line) => line !== previous);
+  const pool = options.length > 0 ? options : lines;
+  return pool[Math.min(Math.floor(random() * pool.length), pool.length - 1)];
+}

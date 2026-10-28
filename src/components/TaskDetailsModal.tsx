@@ -13,10 +13,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { formatTaskDuration, taskCalendarColors, taskDurationOptions, taskPriorityOptions } from "../constants/taskConfig";
+import { taskCalendarColors, taskPriorityOptions } from "../constants/taskConfig";
 import { AppSettings, CustomTaskTemplate, Task, TaskFrequency, TaskPriority, TaskType } from "../types";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import { updateTaskTimerDuration } from "../utils/taskTimer";
+import DurationField from "./DurationField";
+import { formatTaskDuration } from "../utils/taskDuration";
 import TaskDatePicker from "./TaskDatePicker";
 import { taskCategoryLabel } from "../utils/taskLabels";
 import { categorySuggestions, matchExistingCategory } from "../utils/categorySuggestions";
@@ -42,7 +44,11 @@ export default function TaskDetailsModal({
   onDelete,
 }: TaskDetailsModalProps) {
   const copy = getAppCopy(settings.language);
-  const durationUnits = { minutes: copy.tasksDurationMinutesUnit, hours: copy.tasksDurationHoursUnit };
+  const durationUnits = {
+    seconds: copy.tasksDurationSecondsUnit,
+    minutes: copy.tasksDurationMinutesUnit,
+    hours: copy.tasksDurationHoursUnit,
+  };
   const theme = getAppTheme(settings.theme);
   // categorySuggestions drops blank categories, so a template saved without one can't
   // render an empty chip (#47). Unbounded on purpose: this modal has never capped its
@@ -280,23 +286,12 @@ export default function TaskDetailsModal({
                 {copy.tasksDuration}
                 {draftTask.durationMinutes ? ` ≈ ${formatTaskDuration(draftTask.durationMinutes, durationUnits)}` : ""}
               </Text>
-              <View style={styles.row}>
-                <ChipButton
-                  label={copy.tasksDurationNone}
-                  active={!draftTask.durationMinutes}
-                  onPress={() => setDraftTask({ ...draftTask, durationMinutes: undefined })}
-                  settings={settings}
-                />
-                {taskDurationOptions.map((option) => (
-                  <ChipButton
-                    key={option}
-                    label={formatTaskDuration(option, durationUnits)}
-                    active={draftTask.durationMinutes === option}
-                    onPress={() => setDraftTask({ ...draftTask, durationMinutes: option })}
-                    settings={settings}
-                  />
-                ))}
-              </View>
+              <DurationField
+                settings={settings}
+                copy={copy}
+                minutes={draftTask.durationMinutes}
+                onChange={(minutes) => setDraftTask({ ...draftTask, durationMinutes: minutes ?? undefined })}
+              />
             </View>
 
             <View style={styles.field}>

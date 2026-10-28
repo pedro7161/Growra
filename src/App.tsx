@@ -3,6 +3,8 @@ import { Alert, AlertButton, AppState, BackHandler, Platform, Share, StyleSheet,
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
+import PraiseBubble from "./components/PraiseBubble";
+import { pickPraiseLine } from "./utils/companionText";
 import SettingsModal from "./components/SettingsModal";
 import GrowraPlusModal from "./components/GrowraPlusModal";
 import WhatsNewModal from "./components/WhatsNewModal";
@@ -152,6 +154,9 @@ export default function App() {
   // Latest state for event handlers. Reading `gameState` from the render closure lets two
   // quick taps both act on the same old state (e.g. completing one task twice).
   const gameStateRef = useRef<GameState | null>(null);
+  const [praise, setPraise] = useState<string | null>(null);
+  const lastPraiseRef = useRef<string | null>(null);
+  const praiseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaveWarningRef = useRef(0);
   const [returnRecap, setReturnRecap] = useState<ReturnRecap | null>(null);
   const [backupNudgeVisible, setBackupNudgeVisible] = useState(false);
@@ -420,6 +425,21 @@ export default function App() {
     void playGrowraCue(companionCue ?? "task-added", gameState.settings.sfxEnabled);
   };
 
+  /** The active companion's short line after a tick, for ~2.5 s; a new tick replaces it. No companion, no bubble. */
+  const showPraise = (state: GameState, kind: "task" | "shift") => {
+    const companion = getActiveCompanion(state);
+    if (!companion) return;
+    const line = pickPraiseLine(getAppCopy(state.settings.language), kind, companion.name, lastPraiseRef.current);
+    lastPraiseRef.current = line;
+    setPraise(line);
+    if (praiseTimerRef.current) clearTimeout(praiseTimerRef.current);
+    praiseTimerRef.current = setTimeout(() => setPraise(null), 2500);
+  };
+
+  useEffect(() => () => {
+    if (praiseTimerRef.current) clearTimeout(praiseTimerRef.current);
+  }, []);
+
   const handleCompleteTask = async (taskId: string) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
@@ -430,7 +450,7 @@ export default function App() {
   };
 
   /** Saves a completed task or shift and plays the moment's cue (the biggest milestone it reached wins). */
-  const persistCompletion = async (gameState: GameState, updated: GameState) => {
+  const persistCompletion = async (gameState: GameState, updated: GameState, kind: "task" | "shift" = "task") => {
     const companionCue = newCompanionAudioCue(gameState, updated);
     const tilesBefore = getRoadPosition(gameState.days).tiles;
     const tilesAfter = getRoadPosition(updated.days).tiles;
@@ -451,6 +471,7 @@ export default function App() {
               : "task-complete"
     );
     void playGrowraCue(cue, gameState.settings.sfxEnabled);
+    showPraise(updated, kind);
     // A camp is a natural, happy moment: offer Play's review popup there (once per install),
     // after the camp cue has had a moment to play.
     if (reachedCamp(tilesBefore, tilesAfter)) setTimeout(() => void maybeAskForReview(), 1500);
@@ -710,7 +731,7 @@ export default function App() {
     const updated = completeWorkOccurrence(gameState, itemId, dateKey);
     if (updated === gameState) return;
     setWorkNow(Date.now());
-    await persistCompletion(gameState, updated);
+    await persistCompletion(gameState, updated, "shift");
   };
 
   const openWorkScreen = async () => {
@@ -1182,6 +1203,9 @@ export default function App() {
         style={[styles.container, { backgroundColor: appTheme.background }]}
       >
         {renderScreen()}
+        {praise && gameState && getActiveCompanion(gameState) ? (
+          <PraiseBubble text={praise} pet={getActiveCompanion(gameState)!} settings={viewState.settings} />
+        ) : null}
         <BottomNavigation
           activeScreen={
             activeScreen === "task-calendar" || activeScreen === "work-calendar" ? "tasks" : activeScreen
