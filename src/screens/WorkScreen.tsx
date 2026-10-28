@@ -1,19 +1,16 @@
 import React, { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import CompanionArtwork from "../components/CompanionArtwork";
+import ShiftCheerCard from "../components/ShiftCheerCard";
 import WorkItemModal from "../components/WorkItemModal";
 import WorkOccurrenceRow from "../components/WorkOccurrenceRow";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { getPetImage } from "../constants/petImages";
 import { AppSettings, GameState, WorkEditScope, WorkItem, WorkOccurrence } from "../types";
-import { getShiftStage, shiftEncouragement } from "../utils/companionText";
 import { getActiveCompanion } from "../utils/companions";
 import { generateId } from "../utils/idUtils";
 import { getLocaleFromSettings } from "../utils/settings";
 import { addDaysToKey, weekStartKey, WorkItemFields } from "../utils/workForm";
-import { formatClock } from "../utils/workPreview";
 import {
   canCompleteOccurrence,
   createWorkItem,
@@ -182,21 +179,7 @@ export default function WorkScreen({
 
       <ScrollView contentContainerStyle={styles.content}>
         {running && companion ? (
-          <View style={[styles.cheer, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
-            <CompanionArtwork
-              source={getPetImage(companion.templateId, companion.evolutionStage, companion.activeImageVariantId)}
-              templateId={companion.templateId}
-              style={styles.cheerArt}
-            />
-            <View style={styles.cheerText}>
-              <Text style={[styles.cheerLine, { color: theme.text }]}>
-                {shiftEncouragement(copy, getShiftStage(running, now), companion.name, now)}
-              </Text>
-              <Text style={[styles.cheerShift, { color: theme.mutedText }]} numberOfLines={1}>
-                {copy.workNow}: {running.name} · {formatClock(running.start)}–{formatClock(running.end)}
-              </Text>
-            </View>
-          </View>
+          <ShiftCheerCard occurrence={running} companion={companion} settings={settings} now={now} />
         ) : null}
 
         {items.length === 0 ? (
@@ -273,11 +256,6 @@ const styles = StyleSheet.create({
   headerButton: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   headerButtonText: { fontSize: 14, fontWeight: "700" },
   content: { padding: 16, gap: 12, paddingBottom: 32 },
-  cheer: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderRadius: 16, padding: 12 },
-  cheerArt: { width: 56, height: 56 },
-  cheerText: { flex: 1, gap: 4 },
-  cheerLine: { fontSize: 15, fontWeight: "700", lineHeight: 20 },
-  cheerShift: { fontSize: 13 },
   emptyCard: { borderWidth: 1, borderRadius: 12, padding: 20, gap: 10 },
   emptyTitle: { fontSize: 18, fontWeight: "700" },
   emptyBody: { fontSize: 14, lineHeight: 20 },

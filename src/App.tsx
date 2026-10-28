@@ -176,9 +176,11 @@ export default function App() {
   const [roomEditorId, setRoomEditorId] = useState<string | null>(null);
   const [appActive, setAppActive] = useState(true);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
-  // The Work screen's clock: it moves the running shift and its encouragement along while the screen is open.
+  // The Work screen's and dashboard Work section's clock: it moves the running shift and its encouragement along while shown.
   const [workNow, setWorkNow] = useState(() => Date.now());
-  const workScreenOpen = activeScreen === "tasks" && gameState?.settings.tasksSection === "work";
+  const workScreenOpen =
+    (activeScreen === "tasks" && gameState?.settings.tasksSection === "work") ||
+    (activeScreen === "dashboard" && (gameState?.workItems.length ?? 0) > 0);
   useEffect(() => {
     if (!workScreenOpen || !appActive) return;
     setWorkNow(Date.now());
@@ -711,6 +713,25 @@ export default function App() {
     await persistCompletion(gameState, updated);
   };
 
+  const openWorkScreen = async () => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection: "work" } });
+    setActiveScreen("tasks");
+    playUiTap();
+  };
+
+  const handleToggleDashboardSection = async (section: "personal" | "work") => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const dashboardCollapsed = {
+      ...gameState.settings.dashboardCollapsed,
+      [section]: !gameState.settings.dashboardCollapsed[section],
+    };
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, dashboardCollapsed } });
+    playUiTap();
+  };
+
   const handleWorkViewChange = async (workView: GameState["settings"]["workView"]) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
@@ -992,6 +1013,10 @@ export default function App() {
               setReturnRecap(null);
               playUiTap();
             }}
+            onCompleteWorkOccurrence={(itemId, dateKey) => void handleCompleteWorkOccurrence(itemId, dateKey)}
+            onOpenWork={() => void openWorkScreen()}
+            onToggleSection={(section) => void handleToggleDashboardSection(section)}
+            workNow={workNow}
             backupNudgeVisible={backupNudgeVisible}
             onShareBackup={() => {
               setBackupNudgeVisible(false);

@@ -13,6 +13,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AddTaskModal from "../components/AddTaskModal";
 import TaskTimerControls from "../components/TaskTimerControls";
 import CompanionArtwork from "../components/CompanionArtwork";
+import DashboardSectionHeader from "../components/DashboardSectionHeader";
+import ShiftCheerCard from "../components/ShiftCheerCard";
+import WorkOccurrenceRow from "../components/WorkOccurrenceRow";
 import { getAppCopy } from "../constants/appCopy";
 import { companionLine } from "../utils/companionText";
 import { getAppTheme } from "../constants/appTheme";
@@ -22,9 +25,11 @@ import {
     CustomTaskTemplate,
     GameState,
     Task,
+    TaskPriority,
     TaskStatus,
 } from "../types";
 import {
+    getActiveCompanion,
     getActiveStyle,
     getCompanionMood,
     getPerkStreakBonus,
@@ -34,6 +39,22 @@ import { getRoadPosition } from "../utils/journey";
 import { taskCategoryLabel } from "../utils/taskLabels";
 import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
+import { getTodayWorkOccurrences, nextFirst } from "../utils/workDashboard";
+
+const PRIORITY_RANK: Record<TaskPriority, number> = {
+  [TaskPriority.HIGH]: 0,
+  [TaskPriority.MEDIUM]: 1,
+  [TaskPriority.LOW]: 2,
+};
+
+/** Moves the next task to do (highest priority, then name) to the front; the rest keep their order. */
+function nextTaskFirst(tasks: Task[]): Task[] {
+  if (tasks.length < 2) return tasks;
+  const next = tasks.reduce((best, task) =>
+    PRIORITY_RANK[task.priority] - PRIORITY_RANK[best.priority] || task.name.localeCompare(best.name) < 0 ? task : best,
+  );
+  return [next, ...tasks.filter((task) => task !== next)];
+}
 
 interface DashboardScreenProps {
   gameState: GameState;
@@ -53,6 +74,12 @@ interface DashboardScreenProps {
   backupNudgeVisible: boolean;
   onShareBackup: () => void;
   onDismissBackupNudge: () => void;
+  /** Work section: confirm a shift, open the Work screen, and remember which sections are collapsed. */
+  onCompleteWorkOccurrence: (itemId: string, dateKey: string) => void;
+  onOpenWork: () => void;
+  onToggleSection: (section: "personal" | "work") => void;
+  /** Clock for the Work section; it moves the running shift along. */
+  workNow: number;
 }
 
 export default function DashboardScreen({
@@ -71,6 +98,10 @@ export default function DashboardScreen({
   backupNudgeVisible,
   onShareBackup,
   onDismissBackupNudge,
+  onCompleteWorkOccurrence,
+  onOpenWork,
+  onToggleSection,
+  workNow,
 }: DashboardScreenProps) {
   const copy = getAppCopy(gameState.settings.language);
   const locale = getLocaleFromSettings(gameState.settings);
@@ -82,6 +113,14 @@ export default function DashboardScreen({
     (p) => p.id === gameState.equippedPetId,
   );
   const pendingTasks = getTodayTasks(gameState.tasks, now);
+  const hasWork = gameState.workItems.length > 0;
+  const workOccurrences = hasWork ? nextFirst(getTodayWorkOccurrences(gameState.workItems, workNow), workNow) : [];
+  const runningShift = workOccurrences.find((o) => !o.completed && o.start <= workNow && o.end > workNow) ?? null;
+  const shiftCompanion = getActiveCompanion(gameState);
+  // With a Work section the Personal list leads with its next task; without one the list stays as it was.
+  const personalTasks = hasWork ? nextTaskFirst(pendingTasks) : pendingTasks;
+  const collapsed = gameState.settings.dashboardCollapsed;
+  const pendingCount = pendingTasks.length + workOccurrences.filter((o) => !o.completed).length;
   const completedTasks = gameState.tasks.filter(
     (task) => task.status === TaskStatus.COMPLETED,
   );
@@ -126,7 +165,7 @@ export default function DashboardScreen({
                 {copy.dashboardToday}
               </Text>
               <Text style={[styles.heroValue, { color: theme.heroText }]}>
-                {pendingTasks.length} {copy.dashboardPendingTasks}
+                {pendingCount} {copy.dashboardPendingTasks}
               </Text>
               <Text style={[styles.heroMeta, { color: theme.heroMuted }]}>
                 x{activeMultiplier.toFixed(2)} {copy.dashboardRewardMultiplier}
@@ -235,60 +274,111 @@ export default function DashboardScreen({
             </TouchableOpacity>
           </View>
 
-          {pendingTasks.length === 0 ? (
-            <View
-              style={[styles.emptyTaskCard, { backgroundColor: theme.surface }]}
-            >
-              <Text style={[styles.emptyText, { color: theme.mutedText }]}>
-                {copy.dashboardNoTasksYet}
-              </Text>
-            </View>
-          ) : (
-            pendingTasks.map((task) => (
-              <View key={task.id} style={styles.todayTaskWrapper}>
+          {hasWork && (
+            <DashboardSectionHeader
+              title={copy.tasksChoosePersonal}
+              collapsed={collapsed.personal}
+              settings={gameState.settings}
+              onToggle={() => onToggleSection("personal")}
+            />
+          )}
+          {hasWork && collapsed.personal ? null : (
+            <>
+              {pendingTasks.length === 0 ? (
                 <View
-                  style={[
-                    styles.todayTaskItem,
-                    {
-                      backgroundColor: theme.surface,
-                      borderLeftColor: theme.accent,
-                    },
-                  ]}
+                  style={[styles.emptyTaskCard, { backgroundColor: theme.surface }]}
                 >
-                  <TouchableOpacity
-                    style={[styles.checkbox, { borderColor: theme.border }]}
-                    onPress={() => onCompleteTask(task.id)}
-                    disabled={tutorialLocked}
-                    hitSlop={10}
-                    accessibilityRole="checkbox"
-                    accessibilityLabel={task.name}
-                    accessibilityState={{ checked: false, disabled: tutorialLocked }}
-                  />
-                  <View style={styles.todayTaskContent}>
-                    <Text style={[styles.taskName, { color: theme.text }]}>
-                      {task.name}
-                    </Text>
-                    <Text
-                      style={[styles.taskStatus, { color: theme.mutedText }]}
-                    >
-                      {taskCategoryLabel(
-                        gameState.settings.language,
-                        task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId).category : task.category,
-                      )}
-                    </Text>
-                    <TaskTimerControls
-                      task={task}
-                      settings={gameState.settings}
-                      disabled={tutorialLocked}
-                      onStart={onStartTimer}
-                      onPause={onPauseTimer}
-                      onReset={onResetTimer}
-                      onReady={onTimerReady}
-                    />
-                  </View>
+                  <Text style={[styles.emptyText, { color: theme.mutedText }]}>
+                    {copy.dashboardNoTasksYet}
+                  </Text>
                 </View>
-              </View>
-            ))
+              ) : (
+                personalTasks.map((task) => (
+                  <View key={task.id} style={styles.todayTaskWrapper}>
+                    <View
+                      style={[
+                        styles.todayTaskItem,
+                        {
+                          backgroundColor: theme.surface,
+                          borderLeftColor: theme.accent,
+                        },
+                      ]}
+                    >
+                      <TouchableOpacity
+                        style={[styles.checkbox, { borderColor: theme.border }]}
+                        onPress={() => onCompleteTask(task.id)}
+                        disabled={tutorialLocked}
+                        hitSlop={10}
+                        accessibilityRole="checkbox"
+                        accessibilityLabel={task.name}
+                        accessibilityState={{ checked: false, disabled: tutorialLocked }}
+                      />
+                      <View style={styles.todayTaskContent}>
+                        <Text style={[styles.taskName, { color: theme.text }]}>
+                          {task.name}
+                        </Text>
+                        <Text
+                          style={[styles.taskStatus, { color: theme.mutedText }]}
+                        >
+                          {taskCategoryLabel(
+                            gameState.settings.language,
+                            task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId).category : task.category,
+                          )}
+                        </Text>
+                        <TaskTimerControls
+                          task={task}
+                          settings={gameState.settings}
+                          disabled={tutorialLocked}
+                          onStart={onStartTimer}
+                          onPause={onPauseTimer}
+                          onReset={onResetTimer}
+                          onReady={onTimerReady}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                ))
+              )}
+            </>
+          )}
+
+          {hasWork && (
+            <View style={styles.workSection}>
+              <DashboardSectionHeader
+                title={copy.tasksChooseWork}
+                collapsed={collapsed.work}
+                settings={gameState.settings}
+                onToggle={() => onToggleSection("work")}
+              />
+              {collapsed.work ? null : (
+                <View style={styles.workList}>
+                  {runningShift && shiftCompanion ? (
+                    <ShiftCheerCard
+                      occurrence={runningShift}
+                      companion={shiftCompanion}
+                      settings={gameState.settings}
+                      now={workNow}
+                    />
+                  ) : null}
+                  {workOccurrences.length === 0 ? (
+                    <View style={[styles.emptyTaskCard, { backgroundColor: theme.surface }]}>
+                      <Text style={[styles.emptyText, { color: theme.mutedText }]}>{copy.workNoShiftsDay}</Text>
+                    </View>
+                  ) : (
+                    workOccurrences.map((occurrence) => (
+                      <WorkOccurrenceRow
+                        key={`${occurrence.itemId}-${occurrence.dateKey}`}
+                        occurrence={occurrence}
+                        settings={gameState.settings}
+                        now={workNow}
+                        onOpen={onOpenWork}
+                        onComplete={() => onCompleteWorkOccurrence(occurrence.itemId, occurrence.dateKey)}
+                      />
+                    ))
+                  )}
+                </View>
+              )}
+            </View>
           )}
         </View>
 
@@ -425,6 +515,12 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+  },
+  workSection: {
+    marginTop: 12,
+  },
+  workList: {
+    gap: 8,
   },
   noticeCard: { borderRadius: 16, borderWidth: 1.5, padding: 16, marginBottom: 20, gap: 8 },
   noticeTitle: { fontSize: 16, fontWeight: "700" },
