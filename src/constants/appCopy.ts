@@ -47,8 +47,58 @@ interface AppCopy {
   tasksChooseWorkNone: string;
   tasksChooseWorkSetup: string;
   workTitle: string;
-  workComingTitle: string;
-  workComingBody: string;
+  tasksChooseWorkNoMore: string;
+  workEmptyTitle: string;
+  workEmptyBody: string;
+  workEmptyAdd: string;
+  workAdd: string;
+  workCalendar: string;
+  workViewDay: string;
+  workViewWeek: string;
+  workToday: string;
+  workPrevious: string;
+  workNext: string;
+  workNoShiftsDay: string;
+  workDone: string;
+  workMarkDone: string;
+  workNow: string;
+  workFormNewTitle: string;
+  workFormEditTitle: string;
+  workFormSave: string;
+  workFormName: string;
+  workFormNamePlaceholder: string;
+  workFormNameMissing: string;
+  workFormDescriptionPlaceholder: string;
+  workFormStartTime: string;
+  workFormEndTime: string;
+  workFormTimeInvalid: string;
+  workFormOvernight: string;
+  workFormStartsOn: string;
+  workFormRepeat: string;
+  workRepeatNone: string;
+  workRepeatDaily: string;
+  workRepeatEveryDays: string;
+  workRepeatWeekly: string;
+  workRepeatEveryWeeks: string;
+  workRepeatMonthly: string;
+  workFormEvery: string;
+  workFormDays: string;
+  workFormWeeks: string;
+  workFormOnDays: string;
+  workFormEndsRule: string;
+  workEndsNever: string;
+  workEndsCount: string;
+  workEndsUntil: string;
+  workFormTimes: string;
+  workFormNumberInvalid: string;
+  workFormUntilInvalid: string;
+  workScopeEditTitle: string;
+  workScopeEditBody: string;
+  workScopeDeleteTitle: string;
+  workScopeDeleteBody: string;
+  workScopeOne: string;
+  workScopeFollowing: string;
+  workScopeRuleHint: string;
   tasksActiveToday: string;
   tasksAdd: string;
   tasksFilterAll: string;
@@ -463,8 +513,58 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksChooseWorkNone: "No shifts today",
     tasksChooseWorkSetup: "Set up your work schedule",
     workTitle: "Work",
-    workComingTitle: "Your work schedule",
-    workComingBody: "Your shifts will live here, with a calendar and your companion cheering you on.",
+    tasksChooseWorkNoMore: "No more shifts today",
+    workEmptyTitle: "Your work schedule",
+    workEmptyBody: "Add your shifts and meetings, one-off or repeating. Tick a shift off once you've worked it, and your companion cheers you on while it runs.",
+    workEmptyAdd: "Add your first shift",
+    workAdd: "+ Add",
+    workCalendar: "Calendar",
+    workViewDay: "Day",
+    workViewWeek: "Week",
+    workToday: "Today",
+    workPrevious: "Previous",
+    workNext: "Next",
+    workNoShiftsDay: "No shifts this day",
+    workDone: "Done",
+    workMarkDone: "Mark as worked",
+    workNow: "Now",
+    workFormNewTitle: "New shift",
+    workFormEditTitle: "Edit shift",
+    workFormSave: "Save",
+    workFormName: "Name",
+    workFormNamePlaceholder: "e.g. Morning shift, Ward 3",
+    workFormNameMissing: "Give the shift a name.",
+    workFormDescriptionPlaceholder: "Notes (optional)",
+    workFormStartTime: "Starts at",
+    workFormEndTime: "Ends at",
+    workFormTimeInvalid: "Write the time as HH:MM, e.g. 07:00.",
+    workFormOvernight: "Ends the next day",
+    workFormStartsOn: "First day: {date}",
+    workFormRepeat: "Repeat",
+    workRepeatNone: "Doesn't repeat",
+    workRepeatDaily: "Every day",
+    workRepeatEveryDays: "Every X days",
+    workRepeatWeekly: "Weekly",
+    workRepeatEveryWeeks: "Every X weeks",
+    workRepeatMonthly: "Monthly",
+    workFormEvery: "Every",
+    workFormDays: "days",
+    workFormWeeks: "weeks",
+    workFormOnDays: "On these days",
+    workFormEndsRule: "Stops repeating",
+    workEndsNever: "Never",
+    workEndsCount: "After N times",
+    workEndsUntil: "On a date",
+    workFormTimes: "times",
+    workFormNumberInvalid: "Use a whole number, 1 or more.",
+    workFormUntilInvalid: "The end date is before the first day.",
+    workScopeEditTitle: "This shift repeats",
+    workScopeEditBody: "Change only this one, or this and all the following ones?",
+    workScopeDeleteTitle: "Delete a repeating shift",
+    workScopeDeleteBody: "Delete only this one, or this and all the following ones?",
+    workScopeOne: "Only this one",
+    workScopeFollowing: "This and all following",
+    workScopeRuleHint: "Colour and repeat changes apply to this and all following.",
     tasksActiveToday: "active today",
     tasksAdd: "+ Add",
     tasksFilterAll: "All",
@@ -1019,8 +1119,58 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksChooseWorkNone: "Sem turnos hoje",
     tasksChooseWorkSetup: "Define o teu horário de trabalho",
     workTitle: "Trabalho",
-    workComingTitle: "O teu horário de trabalho",
-    workComingBody: "Os teus turnos vão ficar aqui, com um calendário e o teu companheiro a dar-te força.",
+    tasksChooseWorkNoMore: "Sem mais turnos hoje",
+    workEmptyTitle: "O teu horário de trabalho",
+    workEmptyBody: "Adiciona os teus turnos e reuniões, únicos ou repetidos. Marca um turno quando o fizeres, e o teu companheiro dá-te força enquanto decorre.",
+    workEmptyAdd: "Adicionar o primeiro turno",
+    workAdd: "+ Adicionar",
+    workCalendar: "Calendário",
+    workViewDay: "Dia",
+    workViewWeek: "Semana",
+    workToday: "Hoje",
+    workPrevious: "Anterior",
+    workNext: "Seguinte",
+    workNoShiftsDay: "Sem turnos neste dia",
+    workDone: "Feito",
+    workMarkDone: "Marcar como feito",
+    workNow: "Agora",
+    workFormNewTitle: "Novo turno",
+    workFormEditTitle: "Editar turno",
+    workFormSave: "Guardar",
+    workFormName: "Nome",
+    workFormNamePlaceholder: "ex.: Turno da manhã, Piso 3",
+    workFormNameMissing: "Dá um nome ao turno.",
+    workFormDescriptionPlaceholder: "Notas (opcional)",
+    workFormStartTime: "Começa às",
+    workFormEndTime: "Acaba às",
+    workFormTimeInvalid: "Escreve a hora como HH:MM, ex.: 07:00.",
+    workFormOvernight: "Acaba no dia seguinte",
+    workFormStartsOn: "Primeiro dia: {date}",
+    workFormRepeat: "Repetir",
+    workRepeatNone: "Não repete",
+    workRepeatDaily: "Todos os dias",
+    workRepeatEveryDays: "De X em X dias",
+    workRepeatWeekly: "Todas as semanas",
+    workRepeatEveryWeeks: "De X em X semanas",
+    workRepeatMonthly: "Todos os meses",
+    workFormEvery: "A cada",
+    workFormDays: "dias",
+    workFormWeeks: "semanas",
+    workFormOnDays: "Nestes dias",
+    workFormEndsRule: "Deixa de repetir",
+    workEndsNever: "Nunca",
+    workEndsCount: "Após N vezes",
+    workEndsUntil: "Numa data",
+    workFormTimes: "vezes",
+    workFormNumberInvalid: "Usa um número inteiro, 1 ou mais.",
+    workFormUntilInvalid: "A data final é antes do primeiro dia.",
+    workScopeEditTitle: "Este turno repete-se",
+    workScopeEditBody: "Alterar só este, ou este e todos os seguintes?",
+    workScopeDeleteTitle: "Eliminar um turno que se repete",
+    workScopeDeleteBody: "Eliminar só este, ou este e todos os seguintes?",
+    workScopeOne: "Só este",
+    workScopeFollowing: "Este e todos os seguintes",
+    workScopeRuleHint: "Mudanças de cor e de repetição aplicam-se a este e a todos os seguintes.",
     tasksActiveToday: "ativas hoje",
     tasksAdd: "+ Adicionar",
     tasksFilterAll: "Todas",

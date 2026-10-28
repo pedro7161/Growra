@@ -45,7 +45,8 @@ import JourneyScreen from "./screens/JourneyScreen";
 import TaskCalendarScreen from "./screens/TaskCalendarScreen";
 import TasksScreen from "./screens/TasksScreen";
 import WorkScreen from "./screens/WorkScreen";
-import TasksChooser, { buildWorkPreview } from "./components/TasksChooser";
+import TasksChooser from "./components/TasksChooser";
+import { buildWorkPreview } from "./utils/workPreview";
 import { gameStateService } from "./services/gameStateService";
 import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/reviewService";
 import { ensureNotificationPermission, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
@@ -60,6 +61,8 @@ import {
   TaskType,
   TimerAlertMode,
   Room,
+  WorkEditScope,
+  WorkItem,
 } from "./types";
 import { upsertCustomTaskTemplate } from "./utils/customTaskTemplates";
 import {
@@ -68,8 +71,13 @@ import {
   applyTaskDeleted,
   applyTaskUpdated,
   completeTask,
+  completeWorkOccurrence,
   equipPet,
+  upsertWorkItems,
 } from "./utils/gameplay";
+import { deleteOccurrence, editOccurrence } from "./utils/workSchedule";
+import { WorkItemFields } from "./utils/workForm";
+import { generateId } from "./utils/idUtils";
 import {
   buyDecoration,
   getRoadPosition,
@@ -168,6 +176,15 @@ export default function App() {
   const [roomEditorId, setRoomEditorId] = useState<string | null>(null);
   const [appActive, setAppActive] = useState(true);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
+  // The Work screen's clock: it moves the running shift and its encouragement along while the screen is open.
+  const [workNow, setWorkNow] = useState(() => Date.now());
+  const workScreenOpen = activeScreen === "tasks" && gameState?.settings.tasksSection === "work";
+  useEffect(() => {
+    if (!workScreenOpen || !appActive) return;
+    setWorkNow(Date.now());
+    const interval = setInterval(() => setWorkNow(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, [workScreenOpen, appActive]);
 
   // Android Back: close the room editor, then return to the dashboard, then (optionally) ask
   // before leaving. Open modals handle Back themselves (onRequestClose) and never reach this.
@@ -407,6 +424,11 @@ export default function App() {
 
     const updated = completeTask(gameState, taskId);
     if (updated === gameState) return;
+    await persistCompletion(gameState, updated);
+  };
+
+  /** Saves a completed task or shift and plays the moment's cue (the biggest milestone it reached wins). */
+  const persistCompletion = async (gameState: GameState, updated: GameState) => {
     const companionCue = newCompanionAudioCue(gameState, updated);
     const tilesBefore = getRoadPosition(gameState.days).tiles;
     const tilesAfter = getRoadPosition(updated.days).tiles;
@@ -629,6 +651,70 @@ export default function App() {
     const gameState = gameStateRef.current;
     if (!gameState) return;
     await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection } });
+  };
+
+  const persistWorkItems = async (items: WorkItem[]) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState(upsertWorkItems(gameState, items));
+  };
+
+  const handleSaveWorkItem = async (item: WorkItem) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const exists = gameState.workItems.some((candidate) => candidate.id === item.id);
+    await persistWorkItems(
+      exists ? gameState.workItems.map((candidate) => (candidate.id === item.id ? item : candidate)) : [...gameState.workItems, item],
+    );
+    void playGrowraCue(exists ? "task-saved" : "task-added", gameState.settings.sfxEnabled);
+  };
+
+  const handleEditWorkOccurrence = async (itemId: string, dateKey: string, fields: WorkItemFields, scope: WorkEditScope) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const original = gameState.workItems.find((item) => item.id === itemId);
+    if (!original) return;
+    const change = {
+      name: fields.name,
+      description: fields.description,
+      startMinutes: fields.startMinutes,
+      endMinutes: fields.endMinutes,
+    };
+    let continuedId: string | null = null;
+    const edited = editOccurrence(gameState.workItems, itemId, dateKey, change, scope, () => (continuedId = generateId()));
+    // "This and all following" may also change the colour and the repeat rule; an unchanged end rule keeps the
+    // remaining count editOccurrence worked out.
+    const endChanged = JSON.stringify(fields.end) !== JSON.stringify(original.end);
+    const items = edited.map((item) =>
+      item.id === continuedId
+        ? { ...item, calendarColor: fields.calendarColor, repeat: fields.repeat, end: endChanged ? fields.end : item.end }
+        : item,
+    );
+    await persistWorkItems(items);
+    void playGrowraCue("task-saved", gameState.settings.sfxEnabled);
+  };
+
+  const handleDeleteWorkOccurrence = async (itemId: string, dateKey: string, scope: WorkEditScope) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistWorkItems(deleteOccurrence(gameState.workItems, itemId, dateKey, scope));
+    void playGrowraCue("task-removed", gameState.settings.sfxEnabled);
+  };
+
+  const handleCompleteWorkOccurrence = async (itemId: string, dateKey: string) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const updated = completeWorkOccurrence(gameState, itemId, dateKey);
+    if (updated === gameState) return;
+    setWorkNow(Date.now());
+    await persistCompletion(gameState, updated);
+  };
+
+  const handleWorkViewChange = async (workView: GameState["settings"]["workView"]) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, workView } });
+    playUiTap();
   };
 
   const handleTaskToolsOpenChange = async (taskToolsOpen: boolean) => {
@@ -939,8 +1025,15 @@ export default function App() {
         if (section === "work") {
           return (
             <WorkScreen
+              gameState={viewState}
               settings={viewState.settings}
+              now={workNow}
               onBackToChooser={() => void handleTasksSectionChange("choose")}
+              onSaveItem={(item) => void handleSaveWorkItem(item)}
+              onEditOccurrence={(itemId, dateKey, fields, scope) => void handleEditWorkOccurrence(itemId, dateKey, fields, scope)}
+              onDeleteOccurrence={(itemId, dateKey, scope) => void handleDeleteWorkOccurrence(itemId, dateKey, scope)}
+              onCompleteOccurrence={(itemId, dateKey) => void handleCompleteWorkOccurrence(itemId, dateKey)}
+              onSetView={(view) => void handleWorkViewChange(view)}
             />
           );
         }

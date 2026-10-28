@@ -3,29 +3,13 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { AppSettings, WorkItem } from "../types";
-import { getOccurrencesBetween, getRunningOccurrence, toDateKey } from "../utils/workSchedule";
+import { AppSettings } from "../types";
 
 interface TasksChooserProps {
   settings: AppSettings;
   personalCount: number;
   workPreview: string;
   onChoose: (section: "personal" | "work") => void;
-}
-
-const pad = (n: number) => String(n).padStart(2, "0");
-const clock = (ts: number) => `${pad(new Date(ts).getHours())}:${pad(new Date(ts).getMinutes())}`;
-
-/** One-line summary for the Work card: today's (or the running) shift, or a prompt to set up. */
-export function buildWorkPreview(items: WorkItem[], now: number, settings: AppSettings): string {
-  const copy = getAppCopy(settings.language);
-  if (items.length === 0) return copy.tasksChooseWorkSetup;
-  const running = getRunningOccurrence(items, now);
-  const todayKey = toDateKey(now);
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const shift = running ?? getOccurrencesBetween(items, todayKey, toDateKey(tomorrow.getTime()))[0];
-  return shift ? `${copy.tasksChooseWorkShift} ${clock(shift.start)}–${clock(shift.end)}` : copy.tasksChooseWorkNone;
 }
 
 export default function TasksChooser({ settings, personalCount, workPreview, onChoose }: TasksChooserProps) {
