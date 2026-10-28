@@ -20,6 +20,10 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
         "Every task can now have a length, and longer tasks pay more.",
         "No more daily coin limit: the more you do, the more you earn.",
         "New shop prices to match the new rewards.",
+        "Groups: create your own Schedule or List groups beside Personal and Work. Groups never pay coins or experience, so they are free to use however you like.",
+        "Groups show on the dashboard and as coloured chips on the calendar, and you can pick which ones the calendar shows.",
+        "Add an item to several groups at once with \"Also add to…\" and edit or delete the linked copies together.",
+        "Share any group, Personal or Work as a code, and import a friend's code as new or as an update of the same list.",
       ],
     },
     {
@@ -187,6 +191,10 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
         "Cada tarefa pode agora ter uma duração, e as tarefas mais longas pagam mais.",
         "Acabou o limite diário de moedas: quanto mais fazes, mais ganhas.",
         "Novos preços na loja para acompanhar as novas recompensas.",
+        "Grupos: cria os teus próprios grupos de Horário ou Lista ao lado de Pessoal e Trabalho. Os grupos nunca dão moedas nem experiência, por isso usa-os como quiseres.",
+        "Os grupos aparecem no painel e como etiquetas coloridas no calendário, e podes escolher quais o calendário mostra.",
+        "Adiciona um item a vários grupos de uma vez com \"Adicionar também a…\" e edita ou apaga as cópias ligadas em conjunto.",
+        "Partilha qualquer grupo, Pessoal ou Trabalho como um código, e importa o código de um amigo como novo ou como atualização da mesma lista.",
       ],
     },
     {

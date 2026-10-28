@@ -23,6 +23,7 @@ import TaskDatePicker from "./TaskDatePicker";
 import { getCustomTaskTemplateGroups } from "../utils/customTaskTemplates";
 import { taskCategoryLabel } from "../utils/taskLabels";
 import { customTaskDraftProblem } from "../utils/taskDraft";
+import LinkTargetsRow, { LinkTarget } from "./LinkTargetsRow";
 
 function getPriorityLabel(copy: ReturnType<typeof getAppCopy>, priority: TaskPriority): string {
   if (priority === TaskPriority.HIGH) return copy.tasksPriorityHigh;
@@ -64,7 +65,10 @@ interface AddTaskModalProps {
     taskType: TaskType;
     selectedPredefinedTaskId: string;
   }) => void;
-  onSubmit: (values: TaskFormValues) => void;
+  /** `alsoAddTo`: the ticked "Also add to…" groups. */
+  onSubmit: (values: TaskFormValues, alsoAddTo: string[]) => void;
+  /** The groups a new task can also go to; the row is hidden without any. */
+  linkTargets?: LinkTarget[];
 }
 
 export default function AddTaskModal({
@@ -77,6 +81,7 @@ export default function AddTaskModal({
   tutorialTarget,
   onTutorialStateChange,
   onSubmit,
+  linkTargets = [],
 }: AddTaskModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
@@ -112,6 +117,7 @@ export default function AddTaskModal({
   const [dueDate, setDueDate] = useState(() => getStartOfDay(Date.now()));
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [showSaveTemplateHelp, setShowSaveTemplateHelp] = useState(false);
+  const [alsoAddTo, setAlsoAddTo] = useState<string[]>([]);
   const [tutorialSelectedPredefinedTaskId, setTutorialSelectedPredefinedTaskId] =
     useState("");
   const selectedPredefinedTask = localizePredefinedTask(getPredefinedTask(predefinedTaskId), settings.language);
@@ -171,7 +177,7 @@ export default function AddTaskModal({
         timerDurationMinutes,
         durationMinutes,
         saveAsTemplate,
-      });
+      }, alsoAddTo);
       resetForm();
       return;
     }
@@ -191,7 +197,7 @@ export default function AddTaskModal({
         timerDurationMinutes,
         durationMinutes,
         saveAsTemplate: false,
-      });
+      }, alsoAddTo);
       resetForm();
     }
   };
@@ -213,6 +219,7 @@ export default function AddTaskModal({
     setDueDate(getStartOfDay(Date.now()));
     setSaveAsTemplate(false);
     setShowSaveTemplateHelp(false);
+    setAlsoAddTo([]);
     setTutorialSelectedPredefinedTaskId("");
     onClose();
   };
@@ -704,6 +711,14 @@ export default function AddTaskModal({
                 </View>
               )}
             </View>
+
+            <LinkTargetsRow
+              settings={settings}
+              targets={linkTargets}
+              selected={alsoAddTo}
+              onChange={setAlsoAddTo}
+              disabled={tutorialOn}
+            />
           </View>
         </ScrollView>
       </SafeAreaView>

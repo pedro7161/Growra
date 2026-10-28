@@ -3,6 +3,7 @@ import type { CompanionMood, CompanionStyle } from "../utils/companions";
 import type { TileFeature } from "../utils/journey";
 import type { Holiday, Season } from "../utils/seasons";
 import type { RoomCodeError } from "../utils/roomCode";
+import type { GroupCodeError } from "../utils/groupCode";
 
 interface CompanionStyleCopy {
   loves: string;
@@ -59,6 +60,80 @@ export interface AppCopy {
   workPrevious: string;
   workNext: string;
   workNoShiftsDay: string;
+  groupScheduleEmptyTitle: string;
+  groupScheduleEmptyBody: string;
+  groupScheduleEmptyAdd: string;
+  groupScheduleNoItemsDay: string;
+  groupItemNewTitle: string;
+  groupItemEditTitle: string;
+  groupItemNamePlaceholder: string;
+  groupItemMarkDone: string;
+  groupDashboardOpen: string;
+  groupDashboardToggle: string;
+  groupAddCard: string;
+  groupAddTitle: string;
+  groupAddNew: string;
+  groupAddFromCode: string;
+  groupAddCapNote: string;
+  groupFormNewTitle: string;
+  groupFormEditTitle: string;
+  groupFormName: string;
+  groupFormNamePlaceholder: string;
+  groupFormNameMissing: string;
+  groupFormColor: string;
+  groupFormType: string;
+  groupKindSchedule: string;
+  groupKindScheduleHint: string;
+  groupKindList: string;
+  groupKindListHint: string;
+  groupFormTypeLocked: string;
+  groupFormCreate: string;
+  groupFormSave: string;
+  groupCapReached: string;
+  groupMenuLabel: string;
+  groupMenuShare: string;
+  groupMenuEdit: string;
+  groupMenuDelete: string;
+  groupDeleteTitle: string;
+  groupDeleteBody: string;
+  groupDeleteBodyOne: string;
+  groupDeleteBodyEmpty: string;
+  groupDeleteConfirm: string;
+  groupShareTitle: string;
+  groupShareTasks: string;
+  groupShareTasksOne: string;
+  groupShareItems: string;
+  groupShareItemsOne: string;
+  groupShareNote: string;
+  groupShareConfirm: string;
+  groupShareMessage: string;
+  groupImportTitle: string;
+  groupImportHint: string;
+  groupImportAdd: string;
+  groupImportUpdateTitle: string;
+  groupImportUpdateBody: string;
+  groupImportUpdate: string;
+  groupImportAddNew: string;
+  groupPreviewNow: string;
+  groupPreviewNext: string;
+  groupPreviewNone: string;
+  groupPreviewNoMore: string;
+  groupPreviewEmpty: string;
+  groupImportErrors: Record<GroupCodeError | "cap", string>;
+  groupImportSharedLabel: string;
+  groupShareNothing: string;
+  linkAlsoAddTo: string;
+  linkAlsoAddToHint: string;
+  linkEditTitle: string;
+  linkDeleteTitle: string;
+  linkApplyTo: string;
+  linkThisOne: string;
+  linkUntickedNote: string;
+  linkApply: string;
+  linkDelete: string;
+  linkAlsoIn: string;
+  linkUnlink: string;
+  linkUnlinkHint: string;
   workDone: string;
   workMarkDone: string;
   workNow: string;
@@ -467,8 +542,9 @@ export interface AppCopy {
   csvExportTasks: string;
   csvExportCompletions: string;
   csvExportWork: string;
-  calendarShowBoth: string;
-  calendarWorkMarker: string;
+  csvExportGroups: string;
+  csvExportWorkAndGroups: string;
+  calendarShowHolders: string;
   workCalendarTitle: string;
   csvExportError: string;
   timerLabel: string;
@@ -534,6 +610,85 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     workPrevious: "Previous",
     workNext: "Next",
     workNoShiftsDay: "No shifts this day",
+    groupScheduleEmptyTitle: "Nothing scheduled yet",
+    groupScheduleEmptyBody: "Add times to this group, one-off or repeating. Tick one off once it's done.",
+    groupScheduleEmptyAdd: "Add the first one",
+    groupScheduleNoItemsDay: "Nothing this day",
+    groupItemNewTitle: "New item",
+    groupItemEditTitle: "Edit item",
+    groupItemNamePlaceholder: "e.g. Swimming, Piano lesson",
+    groupItemMarkDone: "Mark as done",
+    groupDashboardOpen: "Open group",
+    groupDashboardToggle: "Show or hide this group",
+    groupAddCard: "+ Add group",
+    groupAddTitle: "Add a group",
+    groupAddNew: "New group",
+    groupAddFromCode: "From a code",
+    groupAddCapNote: "{max} groups max",
+    groupFormNewTitle: "New group",
+    groupFormEditTitle: "Edit group",
+    groupFormName: "Name",
+    groupFormNamePlaceholder: "e.g. Leo, Groceries",
+    groupFormNameMissing: "Give the group a name.",
+    groupFormColor: "Colour",
+    groupFormType: "Type",
+    groupKindSchedule: "Schedule",
+    groupKindScheduleHint: "Times on days, like classes or someone's week.",
+    groupKindList: "List",
+    groupKindListHint: "Things to tick off, like Personal.",
+    groupFormTypeLocked: "The type can't be changed once the group exists.",
+    groupFormCreate: "Create",
+    groupFormSave: "Save",
+    groupCapReached: "You already have {max} groups.",
+    groupMenuLabel: "More for {name}",
+    groupMenuShare: "Share group",
+    groupMenuEdit: "Rename or change colour",
+    groupMenuDelete: "Delete group",
+    groupDeleteTitle: "Delete group?",
+    groupDeleteBody: "Delete {name} and its {count} items?",
+    groupDeleteBodyOne: "Delete {name} and its 1 item?",
+    groupDeleteBodyEmpty: "Delete {name}? It has no items.",
+    groupDeleteConfirm: "Delete",
+    groupShareTitle: "Share {name}",
+    groupShareTasks: "{count} tasks from {name} will be shared.",
+    groupShareTasksOne: "1 task from {name} will be shared.",
+    groupShareItems: "{count} items from {name} will be shared.",
+    groupShareItemsOne: "1 item from {name} will be shared.",
+    groupShareNote: "Only the items go in the code: names, times and repeats. Nothing ticked, no coins or streak.",
+    groupShareConfirm: "Share",
+    groupShareMessage: "My {name} group in Growra. Paste this code in Growra (Tasks, + Add group, From a code): {code}",
+    groupImportTitle: "Add group from code",
+    groupImportHint: "Paste a group code someone shared with you.",
+    groupImportAdd: "Add",
+    groupImportUpdateTitle: "Update {name}?",
+    groupImportUpdateBody: "You already have a group from this code. Update replaces its items; Add as new keeps both.",
+    groupImportUpdate: "Update",
+    groupImportAddNew: "Add as new",
+    groupPreviewNow: "Now",
+    groupPreviewNext: "Next",
+    groupPreviewNone: "Nothing today",
+    groupPreviewNoMore: "Nothing more today",
+    groupPreviewEmpty: "Nothing scheduled yet",
+    groupImportErrors: {
+      format: "This code doesn't look complete. Ask for it again.",
+      checksum: "This code doesn't look complete. Ask for it again.",
+      newer: "This code is from a newer Growra. Update the app to use it.",
+      cap: "You already have {max} groups. Delete one to add this.",
+    },
+    groupImportSharedLabel: "(shared)",
+    groupShareNothing: "Nothing to share yet.",
+    linkAlsoAddTo: "Also add to…",
+    linkAlsoAddToHint: "A copy goes in each group you tick. Later changes can reach them all.",
+    linkEditTitle: "Change the copies too?",
+    linkDeleteTitle: "Delete the copies too?",
+    linkApplyTo: "Apply to:",
+    linkThisOne: "This one",
+    linkUntickedNote: "Unticked copies stay as they are.",
+    linkApply: "Apply",
+    linkDelete: "Delete",
+    linkAlsoIn: "Also in: {names}",
+    linkUnlink: "Unlink",
+    linkUnlinkHint: "Unlink to stop changes here reaching the other copies.",
     workDone: "Done",
     workMarkDone: "Mark as worked",
     workNow: "Now",
@@ -933,8 +1088,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     csvExportTasks: "Tasks",
     csvExportCompletions: "Completions",
     csvExportWork: "Work",
-    calendarShowBoth: "Show both",
-    calendarWorkMarker: "Work",
+    csvExportGroups: "Groups",
+    csvExportWorkAndGroups: "Work & groups",
+    calendarShowHolders: "Show in this calendar",
     workCalendarTitle: "Work calendar",
     csvExportError: "The file couldn't be created or shared. Please try again.",
     exploreButton: "Send {name} exploring",
@@ -1161,6 +1317,85 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     workPrevious: "Anterior",
     workNext: "Seguinte",
     workNoShiftsDay: "Sem turnos neste dia",
+    groupScheduleEmptyTitle: "Ainda nada marcado",
+    groupScheduleEmptyBody: "Adiciona horários a este grupo, únicos ou repetidos. Marca cada um quando estiver feito.",
+    groupScheduleEmptyAdd: "Adicionar o primeiro",
+    groupScheduleNoItemsDay: "Nada neste dia",
+    groupItemNewTitle: "Novo item",
+    groupItemEditTitle: "Editar item",
+    groupItemNamePlaceholder: "ex.: Natação, Aula de piano",
+    groupItemMarkDone: "Marcar como feito",
+    groupDashboardOpen: "Abrir grupo",
+    groupDashboardToggle: "Mostrar ou esconder este grupo",
+    groupAddCard: "+ Adicionar grupo",
+    groupAddTitle: "Adicionar um grupo",
+    groupAddNew: "Novo grupo",
+    groupAddFromCode: "A partir de um código",
+    groupAddCapNote: "Máximo de {max} grupos",
+    groupFormNewTitle: "Novo grupo",
+    groupFormEditTitle: "Editar grupo",
+    groupFormName: "Nome",
+    groupFormNamePlaceholder: "ex.: Leo, Compras",
+    groupFormNameMissing: "Dá um nome ao grupo.",
+    groupFormColor: "Cor",
+    groupFormType: "Tipo",
+    groupKindSchedule: "Horário",
+    groupKindScheduleHint: "Horas em dias, como aulas ou a semana de alguém.",
+    groupKindList: "Lista",
+    groupKindListHint: "Coisas para marcar como feitas, como em Pessoal.",
+    groupFormTypeLocked: "O tipo não pode ser mudado depois de o grupo existir.",
+    groupFormCreate: "Criar",
+    groupFormSave: "Guardar",
+    groupCapReached: "Já tens {max} grupos.",
+    groupMenuLabel: "Mais para {name}",
+    groupMenuShare: "Partilhar grupo",
+    groupMenuEdit: "Mudar nome ou cor",
+    groupMenuDelete: "Apagar grupo",
+    groupDeleteTitle: "Apagar grupo?",
+    groupDeleteBody: "Apagar {name} e os seus {count} itens?",
+    groupDeleteBodyOne: "Apagar {name} e o seu item?",
+    groupDeleteBodyEmpty: "Apagar {name}? Não tem itens.",
+    groupDeleteConfirm: "Apagar",
+    groupShareTitle: "Partilhar {name}",
+    groupShareTasks: "Vão ser partilhadas {count} tarefas de {name}.",
+    groupShareTasksOne: "Vai ser partilhada 1 tarefa de {name}.",
+    groupShareItems: "Vão ser partilhados {count} itens de {name}.",
+    groupShareItemsOne: "Vai ser partilhado 1 item de {name}.",
+    groupShareNote: "Só os itens vão no código: nomes, horas e repetições. Nada do que marcaste, nem moedas ou sequência.",
+    groupShareConfirm: "Partilhar",
+    groupShareMessage: "O meu grupo {name} no Growra. Cola este código no Growra (Tarefas, + Adicionar grupo, A partir de um código): {code}",
+    groupImportTitle: "Adicionar grupo a partir de código",
+    groupImportHint: "Cola um código de grupo que alguém partilhou contigo.",
+    groupImportAdd: "Adicionar",
+    groupImportUpdateTitle: "Atualizar {name}?",
+    groupImportUpdateBody: "Já tens um grupo deste código. Atualizar substitui os itens; Adicionar como novo mantém os dois.",
+    groupImportUpdate: "Atualizar",
+    groupImportAddNew: "Adicionar como novo",
+    groupPreviewNow: "Agora",
+    groupPreviewNext: "A seguir",
+    groupPreviewNone: "Nada hoje",
+    groupPreviewNoMore: "Nada mais hoje",
+    groupPreviewEmpty: "Ainda nada marcado",
+    groupImportErrors: {
+      format: "Este código não parece completo. Pede-o outra vez.",
+      checksum: "Este código não parece completo. Pede-o outra vez.",
+      newer: "Este código é de um Growra mais recente. Atualiza a app para o usar.",
+      cap: "Já tens {max} grupos. Apaga um para adicionar este.",
+    },
+    groupImportSharedLabel: "(partilhado)",
+    groupShareNothing: "Ainda não há nada para partilhar.",
+    linkAlsoAddTo: "Adicionar também a…",
+    linkAlsoAddToHint: "Vai uma cópia para cada grupo que marcares. Mudanças futuras podem chegar a todas.",
+    linkEditTitle: "Alterar também as cópias?",
+    linkDeleteTitle: "Apagar também as cópias?",
+    linkApplyTo: "Aplicar a:",
+    linkThisOne: "Este",
+    linkUntickedNote: "As cópias por marcar ficam como estão.",
+    linkApply: "Aplicar",
+    linkDelete: "Apagar",
+    linkAlsoIn: "Também em: {names}",
+    linkUnlink: "Desligar",
+    linkUnlinkHint: "Desliga para as mudanças aqui deixarem de chegar às outras cópias.",
     workDone: "Feito",
     workMarkDone: "Marcar como feito",
     workNow: "Agora",
@@ -1576,8 +1811,9 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     csvExportTasks: "Tarefas",
     csvExportCompletions: "Conclusões",
     csvExportWork: "Trabalho",
-    calendarShowBoth: "Mostrar ambos",
-    calendarWorkMarker: "Trabalho",
+    csvExportGroups: "Grupos",
+    csvExportWorkAndGroups: "Trabalho e grupos",
+    calendarShowHolders: "Mostrar neste calendário",
     workCalendarTitle: "Calendário de trabalho",
     csvExportError: "Não foi possível criar ou partilhar o ficheiro. Tenta outra vez.",
     exploreButton: "Enviar {name} a explorar",

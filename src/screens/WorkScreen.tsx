@@ -2,12 +2,15 @@ import React, { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ShiftCheerCard from "../components/ShiftCheerCard";
+import { LinkTarget } from "../components/LinkTargetsRow";
 import WorkItemModal from "../components/WorkItemModal";
 import WorkOccurrenceRow from "../components/WorkOccurrenceRow";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { AppSettings, GameState, WorkEditScope, WorkItem, WorkOccurrence } from "../types";
+import { AppSettings, GameState, HolderId, WorkEditScope, WorkItem, WorkOccurrence } from "../types";
 import { getActiveCompanion } from "../utils/companions";
+import { isBuiltIn } from "../utils/groups";
+import { LinkedCopy } from "../utils/linkedEdits";
 import { generateId } from "../utils/idUtils";
 import { getLocaleFromSettings } from "../utils/settings";
 import { addDaysToKey, weekStartKey, WorkItemFields } from "../utils/workForm";
@@ -23,15 +26,30 @@ import {
 
 interface WorkScreenProps {
   gameState: GameState;
+  /** Work, or a schedule group. */
+  holder: HolderId;
+  title: string;
+  /** The holder's colour, shown beside a group's title. */
+  accentColor: string;
+  /** The holder's own items. */
+  items: WorkItem[];
   settings: AppSettings;
   now: number;
   onBackToChooser: () => void;
   /** The work calendar; the button is hidden until there is one. */
   onOpenCalendar?: () => void;
-  /** Adds a new item or replaces an existing one with the same id. */
-  onSaveItem: (item: WorkItem) => void;
+  /** Adds a new item (with a linked copy in each `alsoAddTo` group) or replaces an existing one with the same id. */
+  onSaveItem: (item: WorkItem, alsoAddTo?: string[]) => void;
   onEditOccurrence: (itemId: string, dateKey: string, fields: WorkItemFields, scope: WorkEditScope) => void;
-  onDeleteOccurrence: (itemId: string, dateKey: string, scope: WorkEditScope) => void;
+  /** An edit of a linked item that also reaches the copies in `others`; scope is null for a one-off item. */
+  onEditLinked: (item: WorkItem, dateKey: string, fields: WorkItemFields, scope: WorkEditScope | null, others: HolderId[]) => void;
+  /** `others`: the copies to delete with it. */
+  onDeleteOccurrence: (itemId: string, dateKey: string, scope: WorkEditScope, others: HolderId[]) => void;
+  onUnlink: (itemId: string) => void;
+  /** The groups a new item can also go to. */
+  linkTargets: LinkTarget[];
+  /** The other copies of a linked item. */
+  linkedCopiesOf: (item: WorkItem) => LinkedCopy[];
   onCompleteOccurrence: (itemId: string, dateKey: string) => void;
   onSetView: (view: AppSettings["workView"]) => void;
 }
@@ -42,20 +60,28 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 
 export default function WorkScreen({
   gameState,
+  holder,
+  title: screenTitle,
+  accentColor,
+  items,
   settings,
   now,
   onBackToChooser,
   onOpenCalendar,
   onSaveItem,
   onEditOccurrence,
+  onEditLinked,
   onDeleteOccurrence,
+  onUnlink,
+  linkTargets,
+  linkedCopiesOf,
   onCompleteOccurrence,
   onSetView,
 }: WorkScreenProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const locale = getLocaleFromSettings(settings);
-  const items = gameState.workItems;
+  const isGroup = !isBuiltIn(holder);
   const view = settings.workView;
   const todayKey = toDateKey(now);
   const [selectedKey, setSelectedKey] = useState(todayKey);
@@ -67,7 +93,8 @@ export default function WorkScreen({
   const rangeEnd = addDaysToKey(rangeStart, view === "day" ? 1 : 7);
   const occurrences = useMemo(() => getOccurrencesBetween(items, rangeStart, rangeEnd), [items, rangeStart, rangeEnd]);
   const running = getRunningOccurrence(items, now);
-  const companion = getActiveCompanion(gameState);
+  // The companion cheers on Work shifts only; groups stay out of the game.
+  const companion = holder === "work" ? getActiveCompanion(gameState) : null;
 
   const format = (key: string, options: Intl.DateTimeFormatOptions) =>
     capitalize(new Intl.DateTimeFormat(locale, options).format(new Date(dateKeyToStart(key))));
@@ -89,16 +116,18 @@ export default function WorkScreen({
   };
   const closeModal = () => setModalOpen(false);
 
-  const handleSave = (fields: WorkItemFields, scope: WorkEditScope | null) => {
-    if (!editing) onSaveItem(createWorkItem(fields, generateId(), Date.now()));
+  const handleSave = (fields: WorkItemFields, scope: WorkEditScope | null, holders: HolderId[]) => {
+    if (!editing) onSaveItem(createWorkItem(fields, generateId(), Date.now()), holders);
+    else if (holders.length > 0) onEditLinked(editing.item, editing.occurrence.dateKey, fields, scope, holders);
     else if (scope === null) onSaveItem(withValidCompletions({ ...editing.item, ...fields }));
     else onEditOccurrence(editing.item.id, editing.occurrence.dateKey, fields, scope);
     closeModal();
   };
-  const handleDelete = (scope: WorkEditScope | null) => {
-    if (editing) onDeleteOccurrence(editing.item.id, editing.occurrence.dateKey, scope ?? "one");
+  const handleDelete = (scope: WorkEditScope | null, holders: HolderId[]) => {
+    if (editing) onDeleteOccurrence(editing.item.id, editing.occurrence.dateKey, scope ?? "one", holders);
     closeModal();
   };
+  const editingCopies = editing ? linkedCopiesOf(editing.item) : [];
 
   const row = (occurrence: WorkOccurrence, compact: boolean) => (
     <WorkOccurrenceRow
@@ -107,6 +136,7 @@ export default function WorkScreen({
       settings={settings}
       now={now}
       compact={compact}
+      forGroup={isGroup}
       onOpen={() => openOccurrence(occurrence)}
       onComplete={() => onCompleteOccurrence(occurrence.itemId, occurrence.dateKey)}
     />
@@ -125,7 +155,7 @@ export default function WorkScreen({
 
   const renderDay = () =>
     occurrences.length === 0 ? (
-      <Text style={[styles.empty, { color: theme.mutedText }]}>{copy.workNoShiftsDay}</Text>
+      <Text style={[styles.empty, { color: theme.mutedText }]}>{isGroup ? copy.groupScheduleNoItemsDay : copy.workNoShiftsDay}</Text>
     ) : (
       occurrences.map((occurrence) => row(occurrence, false))
     );
@@ -160,13 +190,18 @@ export default function WorkScreen({
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <View style={styles.headerText}>
+        {/* A group's own name can be wider than the screen: its header column shrinks so the title can truncate. */}
+        <View style={[styles.headerText, isGroup && styles.headerTextShrink]}>
           <TouchableOpacity onPress={onBackToChooser} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button">
             <Text style={[styles.back, { color: theme.accent }]}>{copy.tasksBackToChooser}</Text>
           </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>
-            {copy.workTitle}
-          </Text>
+          <View style={styles.titleRow}>
+            {isGroup ? <View style={[styles.titleDot, { backgroundColor: accentColor }]} /> : null}
+            {/* A group name is the user's own and may be long; built-in titles keep their exact look. */}
+            <Text style={[styles.title, { color: theme.text }]} numberOfLines={isGroup ? 1 : undefined}>
+              {screenTitle}
+            </Text>
+          </View>
         </View>
         {onOpenCalendar ? (
           <TouchableOpacity style={[styles.headerButton, { borderColor: theme.border }]} onPress={onOpenCalendar} accessibilityRole="button">
@@ -187,10 +222,10 @@ export default function WorkScreen({
 
         {items.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>{copy.workEmptyTitle}</Text>
-            <Text style={[styles.emptyBody, { color: theme.mutedText }]}>{copy.workEmptyBody}</Text>
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>{isGroup ? copy.groupScheduleEmptyTitle : copy.workEmptyTitle}</Text>
+            <Text style={[styles.emptyBody, { color: theme.mutedText }]}>{isGroup ? copy.groupScheduleEmptyBody : copy.workEmptyBody}</Text>
             <TouchableOpacity style={[styles.emptyButton, { backgroundColor: theme.accent }]} onPress={openNew} accessibilityRole="button">
-              <Text style={[styles.emptyButtonText, { color: theme.accentText }]}>{copy.workEmptyAdd}</Text>
+              <Text style={[styles.emptyButtonText, { color: theme.accentText }]}>{isGroup ? copy.groupScheduleEmptyAdd : copy.workEmptyAdd}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -237,6 +272,17 @@ export default function WorkScreen({
         onClose={closeModal}
         onSave={handleSave}
         onDelete={handleDelete}
+        forGroup={isGroup}
+        linkTargets={linkTargets}
+        linkedCopies={editingCopies}
+        onUnlink={
+          editing && editingCopies.length > 0
+            ? () => {
+                onUnlink(editing.item.id);
+                closeModal();
+              }
+            : undefined
+        }
         onComplete={
           editing && editingCompletable
             ? () => {
@@ -254,8 +300,11 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
   headerText: { flexGrow: 1, flexShrink: 0 },
+  headerTextShrink: { flexShrink: 1, minWidth: 0 },
   back: { fontSize: 13, fontWeight: "600", marginBottom: 2 },
-  title: { fontSize: 24, fontWeight: "700" },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  titleDot: { width: 14, height: 14, borderRadius: 7 },
+  title: { fontSize: 24, fontWeight: "700", flexShrink: 1 },
   headerButton: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   headerButtonText: { fontSize: 14, fontWeight: "700" },
   content: { padding: 16, gap: 12, paddingBottom: 32 },

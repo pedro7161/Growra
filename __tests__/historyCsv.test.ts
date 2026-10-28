@@ -1,6 +1,7 @@
-import { buildCompletionsCsv, buildTasksCsv, buildWorkCsv, csvField } from '../src/utils/historyCsv';
+import { buildCompletionsCsv, buildGroupsCsv, buildTasksCsv, buildWorkCsv, csvField } from '../src/utils/historyCsv';
+import { createInitialGameState } from '../src/utils/initialState';
 import { createCustomTask } from '../src/utils/taskFactory';
-import { TaskFrequency, WorkItem } from '../src/types';
+import { TaskFrequency, TaskStatus, WorkItem } from '../src/types';
 
 describe('history CSV', () => {
   it('escapes commas, quotes and newlines (RFC 4180)', () => {
@@ -60,5 +61,29 @@ describe('history CSV', () => {
       'date,start,end,name,completed\r\n2026-10-05,22:00,06:00 (+1),"Shift, early",no\r\n',
     );
     expect(buildWorkCsv([], '2026-10-05', '2026-10-07')).toBe('date,start,end,name,completed\r\n');
+  });
+  it('buildGroupsCsv lists list tasks and schedule occurrences with group names, escaped', () => {
+    const task = { ...createCustomTask('=Pay, rent', '', 'Home', TaskFrequency.ONCE), dueDate: new Date(2026, 9, 6, 12).getTime() };
+    const done = { ...createCustomTask('Done one', '', 'Home', TaskFrequency.ONCE), dueDate: new Date(2026, 9, 5, 12).getTime(), status: TaskStatus.COMPLETED, completedAt: new Date(2026, 9, 5, 13).getTime() };
+    const night: WorkItem = {
+      id: 'w1', name: 'Night "shift"', description: '', calendarColor: '#123456',
+      startMinutes: 22 * 60, endMinutes: 6 * 60, startDateKey: '2026-10-05',
+      repeat: { kind: 'none' }, end: { kind: 'never' }, exceptions: {}, completedDateKeys: ['2026-10-05'], createdAt: 0,
+    };
+    const base = createInitialGameState();
+    const state = {
+      ...base,
+      groups: [
+        { id: 'g1', name: 'Home, sweet', color: '#fff', kind: 'list' as const, createdAt: 0, tasks: [task, done], workItems: [] },
+        { id: 'g2', name: 'Band', color: '#000', kind: 'schedule' as const, createdAt: 0, tasks: [], workItems: [night] },
+      ],
+    };
+    expect(buildGroupsCsv(state, '2026-10-05', '2026-10-07')).toBe(
+      'group,type,date,start,end,name,completed\r\n' +
+        '"Home, sweet",task,2026-10-05,,,Done one,yes\r\n' +
+        '"Home, sweet",task,2026-10-06,,,"\'=Pay, rent",no\r\n' +
+        'Band,schedule,2026-10-05,22:00,06:00 (+1),"Night ""shift""",yes\r\n',
+    );
+    expect(buildGroupsCsv(base, '2026-10-05', '2026-10-07')).toBe('group,type,date,start,end,name,completed\r\n');
   });
 });

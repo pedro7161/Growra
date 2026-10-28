@@ -3,9 +3,11 @@ import {
   changesSeriesRule,
   draftFromItem,
   draftToFields,
+  editWorkItems,
   newWorkDraft,
   occurrenceChange,
   parseClock,
+  saveWorkItem,
   weekStartKey,
 } from "../src/utils/workForm";
 import { createWorkItem, editOccurrence, getOccurrencesBetween } from "../src/utils/workSchedule";
@@ -124,5 +126,43 @@ describe("only this one, then this and all following", () => {
   it("a weekly repeat with no weekday chosen keeps the first day's weekday", () => {
     const result = draftToFields({ ...newWorkDraft("2026-11-04"), name: "Gym", repeatChoice: "weekly", weekdays: [] });
     expect(result).toEqual({ fields: expect.objectContaining({ repeat: { kind: "weeks", interval: 1, weekdays: [3] } }) });
+  });
+});
+
+describe("editing a holder's items", () => {
+  const fields = {
+    name: "Swim",
+    description: "",
+    calendarColor: "#2d6ea8",
+    startMinutes: 7 * 60,
+    endMinutes: 8 * 60,
+    startDateKey: "2026-11-02",
+    repeat: { kind: "days" as const, interval: 1 },
+    end: { kind: "never" as const },
+  };
+  const daily = createWorkItem(fields, "w1", local(2026, 11, 1));
+
+  it("adds a new item and replaces one with the same id", () => {
+    const other = { ...daily, id: "w2" };
+    expect(saveWorkItem([daily], other).map((item) => item.id)).toEqual(["w1", "w2"]);
+    const renamed = saveWorkItem([daily, other], { ...daily, name: "Pool" });
+    expect(renamed.map((item) => [item.id, item.name])).toEqual([["w1", "Pool"], ["w2", "Swim"]]);
+  });
+
+  it("only this one writes just the change on that date", () => {
+    const edited = editWorkItems([daily], "w1", "2026-11-05", { ...fields, startMinutes: 9 * 60 }, "one", () => "unused");
+    expect(edited).toHaveLength(1);
+    expect(edited![0].exceptions["2026-11-05"]).toEqual({ kind: "change", startMinutes: 540 });
+  });
+
+  it("returns null when only this one changed nothing, or the item is gone", () => {
+    expect(editWorkItems([daily], "w1", "2026-11-05", fields, "one", () => "unused")).toBeNull();
+    expect(editWorkItems([daily], "missing", "2026-11-05", fields, "following", () => "w2")).toBeNull();
+  });
+
+  it("this and all following continues in a new series that takes the new colour", () => {
+    const edited = editWorkItems([daily], "w1", "2026-11-05", { ...fields, calendarColor: "#e07a5f" }, "following", () => "w2");
+    const continued = edited!.find((item) => item.id === "w2");
+    expect(continued).toEqual(expect.objectContaining({ calendarColor: "#e07a5f", startDateKey: "2026-11-05" }));
   });
 });

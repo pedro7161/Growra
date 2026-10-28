@@ -59,3 +59,23 @@ describe("buildWorkPreview", () => {
     );
   });
 });
+
+describe("buildWorkPreview for a Schedule group", () => {
+  const morning = shift("morning", 7, 11);
+  const evening = shift("evening", 18, 22);
+  const groupPreview = (items: WorkItem[], now: number) => buildWorkPreview(items, now, defaultSettings, true);
+
+  it("words an empty group without asking for a work schedule", () => {
+    expect(groupPreview([], local(2026, 11, 2, 9))).toBe("Nothing scheduled yet");
+  });
+
+  it("says Now for the running item and Next for a later one", () => {
+    expect(groupPreview([morning, evening], local(2026, 11, 2, 9))).toBe("Now 07:00–11:00");
+    expect(groupPreview([morning, evening], local(2026, 11, 2, 12))).toBe("Next 18:00–22:00");
+  });
+
+  it("says nothing more or nothing today without the word shift", () => {
+    expect(groupPreview([morning, evening], local(2026, 11, 2, 23))).toBe("Nothing more today");
+    expect(groupPreview([morning, evening], local(2026, 11, 3, 9))).toBe("Nothing today");
+  });
+});
