@@ -123,6 +123,8 @@ export interface AppCopy {
   groupImportSharedLabel: string;
   groupShareNothing: string;
   linkAlsoAddTo: string;
+  linkSelectAll: string;
+  linkUnselectAll: string;
   linkAlsoAddToHint: string;
   linkEditTitle: string;
   linkDeleteTitle: string;
@@ -678,6 +680,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     groupImportSharedLabel: "(shared)",
     groupShareNothing: "Nothing to share yet.",
     linkAlsoAddTo: "Also add to…",
+    linkSelectAll: "Select all",
+    linkUnselectAll: "Unselect all",
     linkAlsoAddToHint: "A copy goes in each group you tick. Later changes can reach them all.",
     linkEditTitle: "Change the copies too?",
     linkDeleteTitle: "Delete the copies too?",
@@ -1385,6 +1389,8 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     groupImportSharedLabel: "(partilhado)",
     groupShareNothing: "Ainda não há nada para partilhar.",
     linkAlsoAddTo: "Adicionar também a…",
+    linkSelectAll: "Selecionar todos",
+    linkUnselectAll: "Desmarcar todos",
     linkAlsoAddToHint: "Vai uma cópia para cada grupo que marcares. Mudanças futuras podem chegar a todas.",
     linkEditTitle: "Alterar também as cópias?",
     linkDeleteTitle: "Apagar também as cópias?",

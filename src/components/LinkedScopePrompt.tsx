@@ -4,6 +4,7 @@ import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, HolderId } from "../types";
 import { fillText } from "../utils/groups";
+import { allSelected, showSelectAll, toggleAll } from "../utils/selectAll";
 import { LinkedCopy } from "../utils/linkedEdits";
 
 export type { LinkedCopy };
@@ -54,12 +55,22 @@ export default function LinkedScopePrompt({ settings, action, copies, onConfirm,
     </TouchableOpacity>
   );
 
+  const holders = copies.map((entry) => entry.holder);
   const danger = action === "delete";
   return (
     <View style={styles.backdrop}>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <Text style={[styles.title, { color: theme.text }]}>{danger ? copy.linkDeleteTitle : copy.linkEditTitle}</Text>
-        <Text style={[styles.body, { color: theme.mutedText }]}>{copy.linkApplyTo}</Text>
+        <View style={styles.header}>
+          <Text style={[styles.body, styles.headerText, { color: theme.mutedText }]}>{copy.linkApplyTo}</Text>
+          {showSelectAll(copies.length) ? (
+            <TouchableOpacity onPress={() => setTicked((current) => toggleAll(holders, current))} accessibilityRole="button" hitSlop={8}>
+              <Text style={[styles.selectAll, { color: theme.accent }]}>
+                {allSelected(holders, ticked) ? copy.linkUnselectAll : copy.linkSelectAll}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
         <ScrollView style={styles.list}>
           {row("this", copy.linkThisOne, true)}
           {copies.map((entry) => row(entry.holder, entry.name, ticked.includes(entry.holder), () => toggle(entry.holder)))}
@@ -121,6 +132,9 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 16, padding: 20, gap: 8, maxHeight: "90%" },
   title: { fontSize: 18, fontWeight: "700" },
   body: { fontSize: 14, lineHeight: 20 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  headerText: { flexShrink: 1 },
+  selectAll: { fontSize: 14, fontWeight: "700" },
   list: { flexGrow: 0 },
   row: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   box: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, alignItems: "center", justifyContent: "center" },
