@@ -1,5 +1,6 @@
 import { getAppCopy } from "../src/constants/appCopy";
-import { companionDescription, companionLine } from "../src/utils/companionText";
+import { companionDescription, companionLine, getShiftStage, shiftEncouragement } from "../src/utils/companionText";
+import type { WorkOccurrence } from "../src/types";
 import { getPetTemplates } from "../src/utils/gameplay";
 
 describe("companion descriptions", () => {
@@ -49,5 +50,50 @@ describe("seasonal companion lines", () => {
     for (const holiday of ["halloween", "christmasEve", "christmas", "newYear"] as const) {
       expect(pt.companionHolidayGreeting[holiday]).toContain("{name}");
     }
+  });
+});
+
+describe("shift encouragement", () => {
+  const H = 60 * 60 * 1000;
+  const shift = (hours: number): WorkOccurrence => ({
+    itemId: "w", dateKey: "2026-10-28", start: 1_000_000_000_000, end: 1_000_000_000_000 + hours * H,
+    name: "Shift", description: "", calendarColor: "#000", completed: false,
+  });
+
+  it("finds the stage of an 8 hour shift", () => {
+    const o = shift(8);
+    expect(getShiftStage(o, o.start + 0.5 * H)).toBe("start");
+    expect(getShiftStage(o, o.start + 4 * H)).toBe("middle");
+    expect(getShiftStage(o, o.start + 7.5 * H)).toBe("last-hour");
+  });
+
+  it("lets the last hour win in short shifts", () => {
+    const two = shift(2);
+    expect(getShiftStage(two, two.start + 0.5 * H)).toBe("start");
+    expect(getShiftStage(two, two.start + 1.5 * H)).toBe("last-hour");
+    const one = shift(1);
+    expect(getShiftStage(one, one.start)).toBe("last-hour");
+  });
+
+  it("names the pet and has own Portuguese lines for every stage", () => {
+    const en = getAppCopy("en");
+    const pt = getAppCopy("pt");
+    for (const stage of ["start", "middle", "last-hour"] as const) {
+      const key = stage === "start" ? "shiftLinesStart" : stage === "middle" ? "shiftLinesMiddle" : "shiftLinesLastHour";
+      expect(pt[key].length).toBeGreaterThanOrEqual(3);
+      expect(en[key].length).toBeGreaterThanOrEqual(3);
+      pt[key].forEach((line, i) => {
+        expect(line.trim()).not.toBe("");
+        expect(line).not.toBe(en[key][i]);
+      });
+      for (let slot = 0; slot < 8; slot++) {
+        const now = slot * 15 * 60 * 1000;
+        expect(shiftEncouragement(en, stage, "Moss", now)).not.toContain("{name}");
+        expect(shiftEncouragement(pt, stage, "Moss", now)).not.toContain("{name}");
+      }
+    }
+    const names = [0, 1, 2, 3].map((n) => shiftEncouragement(en, "middle", "Moss", n * 15 * 60 * 1000));
+    expect(names.some((l) => l.includes("Moss"))).toBe(true);
+    expect(shiftEncouragement(en, "middle", "Moss", 5)).toBe(shiftEncouragement(en, "middle", "Moss", 5));
   });
 });

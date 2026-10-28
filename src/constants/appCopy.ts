@@ -222,6 +222,10 @@ interface AppCopy {
   companionSeasonMood: Record<Season, Record<CompanionMood, string>>;
   /** Greetings on the day itself (shown instead of the mood line, unless the companion is asleep). */
   companionHolidayGreeting: Record<Holiday, string>;
+  /** Companion encouragement while a work shift runs, by stage; each line holds the {name} placeholder. */
+  shiftLinesStart: string[];
+  shiftLinesMiddle: string[];
+  shiftLinesLastHour: string[];
   companionStyles: Record<CompanionStyle, CompanionStyleCopy>;
   /** Companion descriptions by companion id; a missing entry falls back to the English original in utils/gameplay.ts. */
   companionBios: Partial<Record<string, string>>;
@@ -639,6 +643,22 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       newYear: "{name} says: Happy New Year! ✨",
     },
     companionBios: {},
+    shiftLinesStart: [
+      "{name} is by your side. Have a good start!",
+      "Shift on! {name} is cheering you on.",
+      "{name} says: one step at a time, you've got this.",
+    ],
+    shiftLinesMiddle: [
+      "Halfway there, {name} is cheering!",
+      "{name} is proud of how steady you are.",
+      "Keep going, {name} is right here with you.",
+      "A little water and a stretch? {name} says you earned it.",
+    ],
+    shiftLinesLastHour: [
+      "Last hour, you've got this.",
+      "{name} can see the finish line. Almost there!",
+      "Final stretch! {name} is cheering for you.",
+    ],
     companionStyles: {
       "getting-started": { loves: "getting started", perk: "+2 coins on your first task each day", joins: "Joins after {target} active days" },
       flow: { loves: "going with the flow", perk: "+1 Bond when you move a task to later", joins: "Joins when you move a task to a later day" },
@@ -1180,6 +1200,22 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       gloam: "Um fantasma-abóbora com um manto roxo, que brilha mais nas noites mais escuras de outono.",
       holly: "Uma pequena corça de inverno com hastes de azevinho e um cachecol vermelho, que toca um sininho dourado.",
     },
+    shiftLinesStart: [
+      "{name} está ao teu lado. Bom começo!",
+      "Turno a começar! {name} está a torcer por ti.",
+      "{name} diz: um passo de cada vez, tu consegues.",
+    ],
+    shiftLinesMiddle: [
+      "Já vais a meio, {name} está a torcer por ti!",
+      "{name} está orgulhoso da tua calma.",
+      "Continua, {name} está aqui contigo.",
+      "Um copo de água e um alongamento? {name} diz que mereces.",
+    ],
+    shiftLinesLastHour: [
+      "Última hora, tu consegues.",
+      "{name} já vê a meta. Quase lá!",
+      "Reta final! {name} está a torcer por ti.",
+    ],
     companionStyles: {
       "getting-started": { loves: "começar", perk: "+2 moedas na primeira tarefa de cada dia", joins: "Junta-se após {target} dias ativos" },
       flow: { loves: "ir com a corrente", perk: "+1 de Laço quando adias uma tarefa", joins: "Junta-se quando adias uma tarefa para outro dia" },
