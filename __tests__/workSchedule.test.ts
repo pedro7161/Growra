@@ -272,6 +272,12 @@ describe("now-based lookups", () => {
     expect(getRunningOccurrence([night], local(2026, 11, 3, 12))).toBeNull();
   });
 
+  it("a completed shift is not running", () => {
+    const w = { ...night, completedDateKeys: ["2026-11-02"] };
+    expect(getRunningOccurrence([w], local(2026, 11, 3, 2))).toBeNull();
+    expect(getRunningOccurrence([w], local(2026, 11, 3, 23))?.dateKey).toBe("2026-11-03");
+  });
+
   it("next occurrence is the first not completed whose end is still ahead", () => {
     const w = { ...night, completedDateKeys: ["2026-11-03"] };
     expect(getNextOccurrence([w], local(2026, 11, 3, 2))?.dateKey).toBe("2026-11-02");

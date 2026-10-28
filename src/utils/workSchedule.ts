@@ -137,10 +137,10 @@ export function getNextOccurrence(items: WorkItem[], now: number): WorkOccurrenc
   return earliest(items, now, (o) => !o.completed && o.end > now);
 }
 
-/** The occurrence running at `now` (start <= now < end), whether or not it was already ticked off. */
+/** The occurrence running at `now` (start <= now < end) that has not been ticked off yet. */
 export function getRunningOccurrence(items: WorkItem[], now: number): WorkOccurrence | null {
-  // Each item's first occurrence that has not ended is the only one that can be running, so the scan stays short.
-  const first = earliest(items, now, (o) => o.end > now);
+  // Each item's first open occurrence that has not ended is the only one that can be running, so the scan stays short.
+  const first = earliest(items, now, (o) => !o.completed && o.end > now);
   return first && first.start <= now ? first : null;
 }
 
