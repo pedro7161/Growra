@@ -7,7 +7,7 @@ const copy: AppCopy = {
   navJourney: "旅",
   navCompanions: "なかま",
   dashboardToday: "今日",
-  dashboardPendingTasks: "件の未完了タスク",
+  dashboardPendingTasks: "件が未完了",
   dashboardRewardMultiplier: "報酬倍率",
   dashboardProgress: "進み具合",
   dashboardCoins: "コイン",
