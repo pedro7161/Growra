@@ -1,5 +1,6 @@
 import { GameState, SaveData, Streak } from "../types";
 import { defaultSettings } from "./settings";
+import { deviceLanguage } from "../constants/languages";
 import { generateId } from "./idUtils";
 import { createEmptyUsage } from "./companions";
 
@@ -21,7 +22,7 @@ export function createInitialGameState(): GameState {
     totalTasksCompleted: 0,
     tutorialCompleted: false,
     tutorialRewardGranted: false,
-    settings: defaultSettings,
+    settings: { ...defaultSettings, language: deviceLanguage() },
     tasks: [],
     customTaskTemplates: [],
     pets: [],

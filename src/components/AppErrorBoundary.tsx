@@ -2,6 +2,7 @@ import React from "react";
 import { Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
+import { isAppLanguage } from "../constants/languages";
 import { gameStateService } from "../services/gameStateService";
 import { AppLanguage } from "../types";
 
@@ -26,7 +27,7 @@ export default class AppErrorBoundary extends React.Component<{ children: React.
   componentDidCatch(error: unknown) {
     console.error("Growra crashed:", error);
     void gameStateService.readStoredLanguage().then((language) => {
-      if (language === "pt" || language === "en") this.setState({ language });
+      if (isAppLanguage(language)) this.setState({ language });
     });
   }
 

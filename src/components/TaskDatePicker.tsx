@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getAppTheme } from "../constants/appTheme";
+import { LANGUAGE_LOCALES } from "../constants/languages";
 import { AppSettings } from "../types";
 import { getStartOfDay } from "../utils/taskSchedule";
 
@@ -19,7 +20,7 @@ interface TaskDatePickerProps {
 }
 
 function getLocale(language: AppSettings["language"]): string {
-  return language === "pt" ? "pt-PT" : "en-US";
+  return LANGUAGE_LOCALES[language] ?? "en-US";
 }
 
 function getMonthStart(date: Date): Date {

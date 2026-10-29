@@ -21,7 +21,7 @@ export enum TaskPriority {
   HIGH = "high",
 }
 
-export type AppLanguage = "en" | "pt";
+export type AppLanguage = "en" | "pt" | "es" | "fr" | "de" | "it" | "ru" | "tr" | "id" | "ja" | "ko" | "zh";
 
 export type AppThemeId = "mint" | "sunset" | "ocean" | "dusk" | "blossom" | "forest";
 
