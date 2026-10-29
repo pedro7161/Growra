@@ -24,6 +24,10 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
         "Groups show on the dashboard and as coloured chips on the calendar, and you can pick which ones the calendar shows.",
         "Add an item to several groups at once with \"Also add to…\" and edit or delete the linked copies together.",
         "Share any group, Personal or Work as a code, and import a friend's code as new or as an update of the same list.",
+        "Type any task length yourself, in seconds, minutes or hours.",
+        "Personal and Work on the dashboard scroll on their own when the list gets long.",
+        "Your companion cheers when you tick something off.",
+        "\"Select all\" when adding to or changing three or more groups.",
       ],
     },
     {
@@ -195,6 +199,10 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
         "Os grupos aparecem no painel e como etiquetas coloridas no calendário, e podes escolher quais o calendário mostra.",
         "Adiciona um item a vários grupos de uma vez com \"Adicionar também a…\" e edita ou apaga as cópias ligadas em conjunto.",
         "Partilha qualquer grupo, Pessoal ou Trabalho como um código, e importa o código de um amigo como novo ou como atualização da mesma lista.",
+        "Escreve tu a duração de qualquer tarefa, em segundos, minutos ou horas.",
+        "Pessoal e Trabalho no painel deslizam por si quando a lista fica longa.",
+        "O teu companheiro festeja quando concluis algo.",
+        "\"Selecionar todos\" ao adicionar ou alterar três ou mais grupos.",
       ],
     },
     {
