@@ -1,4 +1,5 @@
 import { AppLanguage, PredefinedTaskTemplate, TaskFrequency } from "../types";
+import { getAppCopy } from "./appCopy";
 
 export const predefinedTasks: PredefinedTaskTemplate[] = [
   {
@@ -159,29 +160,9 @@ export function getPredefinedTask(taskId: string): PredefinedTaskTemplate {
 }
 
 /** Portuguese names and descriptions for the ready-made tasks (English lives in the list above). */
-const predefinedTaskTextPt: Record<string, { name: string; description: string }> = {
-  "drink-water": { name: "Beber água", description: "Cumpre a tua meta diária de água." },
-  "morning-walk": { name: "Caminhada matinal", description: "Sai para uma caminhada curta para começar o dia." },
-  "stretch-session": { name: "Alongamentos", description: "Faz uma sessão rápida de alongamentos." },
-  "deep-focus": { name: "Bloco de foco", description: "Completa um bloco de foco sem distrações." },
-  "email-zero": { name: "Limpar o email", description: "Esvazia a caixa de entrada ou trata os itens mais importantes." },
-  "study-session": { name: "Sessão de estudo", description: "Completa um bloco de estudo focado." },
-  "read-pages": { name: "Ler 20 páginas", description: "Lê pelo menos vinte páginas de um livro ou material de estudo." },
-  "tidy-room": { name: "Arrumar o quarto", description: "Arruma o teu quarto ou a tua secretária." },
-  "laundry": { name: "Tratar da roupa", description: "Lava e arruma a tua roupa." },
-  "budget-check": { name: "Rever o orçamento", description: "Revê as tuas despesas e atualiza o teu orçamento." },
-  "save-money": { name: "Poupar dinheiro", description: "Transfere uma pequena quantia para as poupanças." },
-  "weekly-review": { name: "Revisão semanal", description: "Revê a tua semana e planeia a próxima." },
-  "journal": { name: "Diário", description: "Escreve uma pequena reflexão sobre o teu dia." },
-  "gym-session": { name: "Ginásio", description: "Completa o treino que planeaste." },
-  "mobility": { name: "Mobilidade", description: "Faz uma rotina curta de mobilidade e recuperação." },
-  "family-checkin": { name: "Falar com a família", description: "Liga ou manda mensagem a alguém da família." },
-  "friend-reachout": { name: "Falar com um amigo", description: "Manda uma mensagem ou combina algo com um amigo." },
-};
 
 /** A ready-made task in the player's language (the created task keeps that name). */
 export function localizePredefinedTask(task: PredefinedTaskTemplate, language: AppLanguage): PredefinedTaskTemplate {
-  if (language !== "pt") return task;
-  const text = predefinedTaskTextPt[task.id];
+  const text = getAppCopy(language).predefinedTasks[task.id];
   return text ? { ...task, ...text } : task;
 }

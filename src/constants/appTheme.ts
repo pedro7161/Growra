@@ -1,4 +1,5 @@
 import { AppAppearance, AppLanguage, AppThemeId } from "../types";
+import { getAppCopy } from "./appCopy";
 
 export interface AppTheme {
   id: AppThemeId;
@@ -290,16 +291,7 @@ export function getAppTheme(themeId: AppThemeId): AppTheme {
   return darkActive ? appDarkThemes[themeId] : appThemes[themeId];
 }
 
-/** Theme names as shown in Settings (English names live in appThemes). */
-const THEME_NAMES_PT: Record<AppThemeId, string> = {
-  mint: "Menta",
-  sunset: "Pôr do sol",
-  ocean: "Oceano",
-  dusk: "Crepúsculo",
-  blossom: "Flor",
-  forest: "Floresta",
-};
 
 export function themeName(themeId: AppThemeId, language: AppLanguage): string {
-  return language === "pt" ? THEME_NAMES_PT[themeId] : appThemes[themeId].name;
+  return getAppCopy(language).themeNames[themeId] ?? appThemes[themeId].name;
 }

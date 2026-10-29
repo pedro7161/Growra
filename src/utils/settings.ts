@@ -1,14 +1,10 @@
-import { AppLanguage, AppSettings, GameState, TaskStatus, TimerAlertSettings } from "../types";
+import { LANGUAGE_LOCALES } from "../constants/languages";
+import { AppSettings, GameState, TaskStatus, TimerAlertSettings } from "../types";
 import { getRoadPosition } from "./journey";
 import { getTodayTasks } from "./taskSchedule";
 
-const LOCALE_MAP: Record<AppLanguage, string> = {
-  en: "en-US",
-  pt: "pt-PT",
-};
-
 export function getLocaleFromSettings(settings: AppSettings): string {
-  return LOCALE_MAP[settings.language] ?? "en-US";
+  return LANGUAGE_LOCALES[settings.language] ?? "en-US";
 }
 
 export const defaultTimerAlertSettings: TimerAlertSettings = {

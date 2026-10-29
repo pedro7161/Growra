@@ -10,11 +10,14 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  StyleProp,
+  ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { appThemes, getAppTheme, themeName } from "../constants/appTheme";
 import { getChangelog } from "../constants/changelog";
+import { APP_LANGUAGES, LANGUAGE_NAMES } from "../constants/languages";
 import { AppAppearance, AppLanguage, AppThemeId, DailyReminderSettings, GameState, TimerAlertMode } from "../types";
 import { getGameStatsSummary } from "../utils/settings";
 import { isPlusTheme } from "../utils/plus";
@@ -130,19 +133,17 @@ export default function SettingsModal({
         <ScrollView contentContainerStyle={styles.content}>
           <View style={[styles.section, { backgroundColor: theme.surface }]}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsLanguage}</Text>
-            <View style={styles.optionRow}>
-              <OptionButton
-                label={copy.settingsLanguageEnglish}
-                active={gameState.settings.language === "en"}
-                onPress={() => onLanguageChange("en")}
-                themeId={theme.id}
-              />
-              <OptionButton
-                label={copy.settingsLanguagePortuguese}
-                active={gameState.settings.language === "pt"}
-                onPress={() => onLanguageChange("pt")}
-                themeId={theme.id}
-              />
+            <View style={[styles.optionRow, styles.languageGrid]}>
+              {APP_LANGUAGES.map((language) => (
+                <OptionButton
+                  key={language}
+                  label={LANGUAGE_NAMES[language]}
+                  active={gameState.settings.language === language}
+                  onPress={() => onLanguageChange(language)}
+                  themeId={theme.id}
+                  style={styles.languageButton}
+                />
+              ))}
             </View>
           </View>
 
@@ -456,11 +457,13 @@ function OptionButton({
   active,
   onPress,
   themeId,
+  style,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
   themeId: AppThemeId;
+  style?: StyleProp<ViewStyle>;
 }) {
   const theme = getAppTheme(themeId);
 
@@ -468,6 +471,7 @@ function OptionButton({
     <TouchableOpacity
       style={[
         styles.optionButton,
+        style,
         {
           backgroundColor: active ? theme.accent : theme.surfaceMuted,
           borderColor: active ? theme.accent : theme.border,
@@ -567,6 +571,14 @@ const styles = StyleSheet.create({
   optionRow: {
     flexDirection: "row",
     gap: 10,
+  },
+  languageGrid: {
+    flexWrap: "wrap",
+  },
+  // Three a row; "Bahasa Indonesia" wraps to two lines at 360 px.
+  languageButton: {
+    flexGrow: 1,
+    flexBasis: "30%",
   },
   optionButton: {
     flex: 1,
