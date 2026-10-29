@@ -1,6 +1,6 @@
 # Growra Christmas icon
 
-`app-icon.png` is a 1254×1254 opaque seasonal icon master. It keeps Sprout's red mushroom cap, cream face and green sprout, with a knitted red scarf, holly and light snow in Growra's pixel-art style.
+`app-icon.png` is a 1254×1254 opaque seasonal icon master. It keeps Sprout's red mushroom cap, cream face and green sprout, with a knitted red scarf, holly and light snow in Growra's painted style (redrawn 2026-10-29 for the new companions).
 
 `santa-hat-overlay.png` is the reusable pixel-art Santa hat for companion artwork. It was the reference for the hatted companion art in `pets/<id>/{base,evo1,evo2}.webp`, which `getPetImage` shows during Christmas (not for Gloam or Holly); the app does not show the overlay itself.
 
