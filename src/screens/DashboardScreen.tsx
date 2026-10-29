@@ -13,6 +13,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AddTaskModal from "../components/AddTaskModal";
 import TaskTimerControls from "../components/TaskTimerControls";
 import CompanionArtwork from "../components/CompanionArtwork";
+import DashboardGroupSection from "../components/DashboardGroupSection";
+import DashboardSectionHeader from "../components/DashboardSectionHeader";
+import ShiftCheerCard from "../components/ShiftCheerCard";
+import WorkOccurrenceRow from "../components/WorkOccurrenceRow";
 import { getAppCopy } from "../constants/appCopy";
 import { companionLine } from "../utils/companionText";
 import { getAppTheme } from "../constants/appTheme";
@@ -21,10 +25,12 @@ import { getPredefinedTask } from "../constants/predefinedTasks";
 import {
     CustomTaskTemplate,
     GameState,
+    HolderId,
     Task,
     TaskStatus,
 } from "../types";
 import {
+    getActiveCompanion,
     getActiveStyle,
     getCompanionMood,
     getPerkStreakBonus,
@@ -34,6 +40,7 @@ import { getRoadPosition } from "../utils/journey";
 import { taskCategoryLabel } from "../utils/taskLabels";
 import { buildTaskFromFormValues, TaskFormValues } from "../utils/taskFactory";
 import { getTodayTasks } from "../utils/taskSchedule";
+import { getTodayWorkOccurrences, groupNextItem, nextFirst, nextTaskFirst } from "../utils/workDashboard";
 
 interface DashboardScreenProps {
   gameState: GameState;
@@ -42,10 +49,10 @@ interface DashboardScreenProps {
   onCompleteTask: (taskId: string) => void;
   onOpenSettings: () => void;
   onUiTap: () => void;
-  onStartTimer: (taskId: string) => void;
-  onPauseTimer: (taskId: string) => void;
-  onResetTimer: (taskId: string) => void;
-  onTimerReady: (taskId: string) => void;
+  onStartTimer: (taskId: string, holder?: HolderId) => void;
+  onPauseTimer: (taskId: string, holder?: HolderId) => void;
+  onResetTimer: (taskId: string, holder?: HolderId) => void;
+  onTimerReady: (taskId: string, holder?: HolderId) => void;
   /** Shown once after 2+ days away (#53); null otherwise. */
   returnRecap: ReturnRecap | null;
   onDismissReturnRecap: () => void;
@@ -53,6 +60,16 @@ interface DashboardScreenProps {
   backupNudgeVisible: boolean;
   onShareBackup: () => void;
   onDismissBackupNudge: () => void;
+  /** Work section: confirm a shift, open the Work screen, and remember which sections are collapsed. */
+  onCompleteWorkOccurrence: (itemId: string, dateKey: string) => void;
+  onOpenWork: () => void;
+  onToggleSection: (section: HolderId) => void;
+  /** Group rows: tick the group's next item (reward-free) and open the group's own screen. */
+  onCompleteGroupTask: (groupId: string, taskId: string) => void;
+  onCompleteGroupOccurrence: (groupId: string, itemId: string, dateKey: string) => void;
+  onOpenGroup: (groupId: string) => void;
+  /** Clock for the Work section; it moves the running shift along. */
+  workNow: number;
 }
 
 export default function DashboardScreen({
@@ -71,6 +88,13 @@ export default function DashboardScreen({
   backupNudgeVisible,
   onShareBackup,
   onDismissBackupNudge,
+  onCompleteWorkOccurrence,
+  onOpenWork,
+  onToggleSection,
+  onCompleteGroupTask,
+  onCompleteGroupOccurrence,
+  onOpenGroup,
+  workNow,
 }: DashboardScreenProps) {
   const copy = getAppCopy(gameState.settings.language);
   const locale = getLocaleFromSettings(gameState.settings);
@@ -82,6 +106,20 @@ export default function DashboardScreen({
     (p) => p.id === gameState.equippedPetId,
   );
   const pendingTasks = getTodayTasks(gameState.tasks, now);
+  const hasWork = gameState.workItems.length > 0;
+  const workOccurrences = hasWork ? nextFirst(getTodayWorkOccurrences(gameState.workItems, workNow), workNow) : [];
+  const runningShift = workOccurrences.find((o) => !o.completed && o.start <= workNow && o.end > workNow) ?? null;
+  const shiftCompanion = getActiveCompanion(gameState);
+  // With a Work section the Personal list leads with its next task; without one the list stays as it was.
+  const personalTasks = hasWork ? nextTaskFirst(pendingTasks) : pendingTasks;
+  const collapsed = gameState.settings.dashboardCollapsed;
+  // Group rows never count in the header total; that stays Personal and Work.
+  const groupRows = gameState.groups.flatMap((group) => {
+    // workNow only moves while the ticker runs for schedule groups; list groups follow the real clock like Personal.
+    const next = groupNextItem(group, group.kind === "schedule" ? workNow : now);
+    return next ? [{ group, next }] : [];
+  });
+  const pendingCount = pendingTasks.length + workOccurrences.filter((o) => !o.completed).length;
   const completedTasks = gameState.tasks.filter(
     (task) => task.status === TaskStatus.COMPLETED,
   );
@@ -126,7 +164,7 @@ export default function DashboardScreen({
                 {copy.dashboardToday}
               </Text>
               <Text style={[styles.heroValue, { color: theme.heroText }]}>
-                {pendingTasks.length} {copy.dashboardPendingTasks}
+                {pendingCount} {copy.dashboardPendingTasks}
               </Text>
               <Text style={[styles.heroMeta, { color: theme.heroMuted }]}>
                 x{activeMultiplier.toFixed(2)} {copy.dashboardRewardMultiplier}
@@ -235,61 +273,144 @@ export default function DashboardScreen({
             </TouchableOpacity>
           </View>
 
-          {pendingTasks.length === 0 ? (
-            <View
-              style={[styles.emptyTaskCard, { backgroundColor: theme.surface }]}
-            >
-              <Text style={[styles.emptyText, { color: theme.mutedText }]}>
-                {copy.dashboardNoTasksYet}
-              </Text>
-            </View>
-          ) : (
-            pendingTasks.map((task) => (
-              <View key={task.id} style={styles.todayTaskWrapper}>
-                <View
-                  style={[
-                    styles.todayTaskItem,
-                    {
-                      backgroundColor: theme.surface,
-                      borderLeftColor: theme.accent,
-                    },
-                  ]}
-                >
-                  <TouchableOpacity
-                    style={[styles.checkbox, { borderColor: theme.border }]}
-                    onPress={() => onCompleteTask(task.id)}
-                    disabled={tutorialLocked}
-                    hitSlop={10}
-                    accessibilityRole="checkbox"
-                    accessibilityLabel={task.name}
-                    accessibilityState={{ checked: false, disabled: tutorialLocked }}
-                  />
-                  <View style={styles.todayTaskContent}>
-                    <Text style={[styles.taskName, { color: theme.text }]}>
-                      {task.name}
-                    </Text>
-                    <Text
-                      style={[styles.taskStatus, { color: theme.mutedText }]}
-                    >
-                      {taskCategoryLabel(
-                        gameState.settings.language,
-                        task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId).category : task.category,
-                      )}
-                    </Text>
-                    <TaskTimerControls
-                      task={task}
-                      settings={gameState.settings}
-                      disabled={tutorialLocked}
-                      onStart={onStartTimer}
-                      onPause={onPauseTimer}
-                      onReset={onResetTimer}
-                      onReady={onTimerReady}
-                    />
-                  </View>
-                </View>
-              </View>
-            ))
+          {hasWork && (
+            <DashboardSectionHeader
+              title={copy.tasksChoosePersonal}
+              collapsed={collapsed.personal === true}
+              settings={gameState.settings}
+              onToggle={() => onToggleSection("personal")}
+            />
           )}
+          {hasWork && collapsed.personal === true ? null : (
+            <>
+              {pendingTasks.length === 0 ? (
+                <View
+                  style={[styles.emptyTaskCard, { backgroundColor: theme.surface }]}
+                >
+                  <Text style={[styles.emptyText, { color: theme.mutedText }]}>
+                    {copy.dashboardNoTasksYet}
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView
+                  style={styles.sectionList}
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator
+                >
+                {personalTasks.map((task) => (
+                  <View key={task.id} style={styles.todayTaskWrapper}>
+                    <View
+                      style={[
+                        styles.todayTaskItem,
+                        {
+                          backgroundColor: theme.surface,
+                          borderLeftColor: theme.accent,
+                        },
+                      ]}
+                    >
+                      <TouchableOpacity
+                        style={[styles.checkbox, { borderColor: theme.border }]}
+                        onPress={() => onCompleteTask(task.id)}
+                        disabled={tutorialLocked}
+                        hitSlop={10}
+                        accessibilityRole="checkbox"
+                        accessibilityLabel={task.name}
+                        accessibilityState={{ checked: false, disabled: tutorialLocked }}
+                      />
+                      <View style={styles.todayTaskContent}>
+                        <Text style={[styles.taskName, { color: theme.text }]}>
+                          {task.name}
+                        </Text>
+                        <Text
+                          style={[styles.taskStatus, { color: theme.mutedText }]}
+                        >
+                          {taskCategoryLabel(
+                            gameState.settings.language,
+                            task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId).category : task.category,
+                          )}
+                        </Text>
+                        <TaskTimerControls
+                          task={task}
+                          settings={gameState.settings}
+                          disabled={tutorialLocked}
+                          onStart={onStartTimer}
+                          onPause={onPauseTimer}
+                          onReset={onResetTimer}
+                          onReady={onTimerReady}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                ))}
+                </ScrollView>
+              )}
+            </>
+          )}
+
+          {hasWork && (
+            <View style={styles.workSection}>
+              <DashboardSectionHeader
+                title={copy.tasksChooseWork}
+                collapsed={collapsed.work === true}
+                settings={gameState.settings}
+                onToggle={() => onToggleSection("work")}
+              />
+              {collapsed.work === true ? null : (
+                <View style={styles.workList}>
+                  {runningShift && shiftCompanion ? (
+                    <ShiftCheerCard
+                      occurrence={runningShift}
+                      companion={shiftCompanion}
+                      settings={gameState.settings}
+                      now={workNow}
+                    />
+                  ) : null}
+                  {workOccurrences.length === 0 ? (
+                    <View style={[styles.emptyTaskCard, { backgroundColor: theme.surface }]}>
+                      <Text style={[styles.emptyText, { color: theme.mutedText }]}>{copy.workNoShiftsDay}</Text>
+                    </View>
+                  ) : (
+                    <ScrollView
+                      style={styles.sectionList}
+                      nestedScrollEnabled
+                      showsVerticalScrollIndicator
+                    >
+                    {workOccurrences.map((occurrence) => (
+                      <WorkOccurrenceRow
+                        key={`${occurrence.itemId}-${occurrence.dateKey}`}
+                        occurrence={occurrence}
+                        settings={gameState.settings}
+                        now={workNow}
+                        onOpen={onOpenWork}
+                        onComplete={() => onCompleteWorkOccurrence(occurrence.itemId, occurrence.dateKey)}
+                      />
+                    ))}
+                    </ScrollView>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+
+          {groupRows.map(({ group, next }) => (
+            <DashboardGroupSection
+              key={group.id}
+              group={group}
+              next={next}
+              collapsed={collapsed[group.id] === true}
+              settings={gameState.settings}
+              now={workNow}
+              disabled={tutorialLocked}
+              onToggle={() => onToggleSection(group.id)}
+              onOpen={() => onOpenGroup(group.id)}
+              onCompleteTask={(taskId) => onCompleteGroupTask(group.id, taskId)}
+              onCompleteOccurrence={(itemId, dateKey) => onCompleteGroupOccurrence(group.id, itemId, dateKey)}
+              onStartTimer={(taskId) => onStartTimer(taskId, group.id)}
+              onPauseTimer={(taskId) => onPauseTimer(taskId, group.id)}
+              onResetTimer={(taskId) => onResetTimer(taskId, group.id)}
+              onTimerReady={(taskId) => onTimerReady(taskId, group.id)}
+            />
+          ))}
         </View>
 
         <View style={styles.section}>
@@ -413,6 +534,8 @@ export default function DashboardScreen({
 }
 
 const styles = StyleSheet.create({
+  // About five rows show; longer lists scroll inside the section. Shorter lists keep their natural height.
+  sectionList: { maxHeight: 360 },
   tutorialDisabled: {
     opacity: 0.34,
   },
@@ -425,6 +548,12 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+  },
+  workSection: {
+    marginTop: 12,
+  },
+  workList: {
+    gap: 8,
   },
   noticeCard: { borderRadius: 16, borderWidth: 1.5, padding: 16, marginBottom: 20, gap: 8 },
   noticeTitle: { fontSize: 16, fontWeight: "700" },

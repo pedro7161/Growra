@@ -27,6 +27,10 @@ export const defaultSettings: AppSettings = {
   musicEnabled: false,
   sfxEnabled: false,
   timerAlert: defaultTimerAlertSettings,
+  tasksSection: "choose",
+  workView: "day",
+  dashboardCollapsed: { personal: false, work: false },
+  calendarShow: [],
 };
 
 export interface GameStatsSummary {

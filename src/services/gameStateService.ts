@@ -18,6 +18,9 @@ import {
   CompanionEvent,
   GameNotice,
   UsageStats,
+  WorkItem,
+  Group,
+  HolderId,
 } from "../types";
 import { DEFAULT_TASK_CALENDAR_COLOR } from "../constants/taskConfig";
 import { getPredefinedTask } from "../constants/predefinedTasks";
@@ -143,6 +146,9 @@ type PersistedGameState = Omit<
   | "roomShareFooter"
   | "backupNudgeShown"
   | "whatsNewHiddenFor"
+  | "workItems"
+  | "groups"
+  | "settings"
 > & {
   days?: DayRecord[];
   decorations?: Decoration[];
@@ -153,6 +159,8 @@ type PersistedGameState = Omit<
   roomShareFooter?: boolean;
   backupNudgeShown?: boolean;
   whatsNewHiddenFor?: string;
+  workItems?: WorkItem[];
+  groups?: Group[];
   usage?: UsageStats;
   companionEvents?: CompanionEvent[];
   notices?: GameNotice[];
@@ -161,7 +169,7 @@ type PersistedGameState = Omit<
   equippedPetId?: string;
   tutorialCompleted?: boolean;
   tutorialRewardGranted?: boolean;
-  settings?: AppSettings;
+  settings?: PersistedSettings;
   customTaskTemplates?: CustomTaskTemplate[];
   gearItems?: {
     id?: string;
@@ -250,9 +258,101 @@ function getEquippedPetId(gameState: PersistedGameState): string {
   return "";
 }
 
+/** Up to v21 the calendar had one "Show both" switch, and only Personal and Work could fold on the dashboard. */
+type PersistedSettings = Omit<AppSettings, "calendarShow" | "dashboardCollapsed"> & {
+  calendarShow?: unknown;
+  calendarShowBoth?: boolean;
+  dashboardCollapsed?: Record<string, unknown>;
+};
+
+/** Personal and Work always have a flag; group flags are kept as saved. */
+function normalizeDashboardCollapsed(stored: Record<string, unknown> | undefined): Record<string, boolean> {
+  const collapsed: Record<string, boolean> = { personal: false, work: false };
+  for (const [holder, value] of Object.entries(stored ?? {})) {
+    if (typeof value === "boolean") collapsed[holder] = value;
+  }
+  return collapsed;
+}
+
+/** v22 keeps a list of holders; older saves map "Show both" on to Personal and Work, off to none. */
+function normalizeCalendarShow(stored: PersistedSettings): HolderId[] {
+  if (Array.isArray(stored.calendarShow)) {
+    return stored.calendarShow.filter((holder): holder is string => typeof holder === "string");
+  }
+  return stored.calendarShowBoth === true ? ["personal", "work"] : [];
+}
+
+type PersistedTask = PersistedGameState["tasks"][number];
+
+/** A saved task with the fields later versions added filled in; Personal and group tasks both go through it. */
+function normalizeTask(task: PersistedTask): Task {
+  return {
+    ...task,
+    predefinedTaskId: task.predefinedTaskId !== undefined ? task.predefinedTaskId : "",
+    customTemplateId: task.customTemplateId !== undefined ? task.customTemplateId : "",
+    category:
+      task.category !== undefined
+        ? task.category
+        : task.predefinedTaskId
+          ? getPredefinedTask(task.predefinedTaskId).category
+          : "custom",
+    priority: task.priority !== undefined ? task.priority : TaskPriority.MEDIUM,
+    calendarColor:
+      task.calendarColor !== undefined
+        ? task.calendarColor
+        : task.predefinedTaskId
+          ? getPredefinedTask(task.predefinedTaskId).calendarColor
+          : DEFAULT_TASK_CALENDAR_COLOR,
+    dueDate:
+      task.dueDate !== undefined
+        ? task.dueDate
+        : task.status === TaskStatus.COMPLETED && task.completedAt
+          ? getNextAvailableDate(task, task.completedAt)
+          : getStartOfDay(task.createdAt),
+    timer: (() => {
+      const duration = Math.max(0, task.timer?.duration ?? 0);
+      const enabled = task.timer?.enabled ?? false;
+      const baseTimer = createTaskTimer(duration, enabled);
+      const remaining = Math.min(duration, Math.max(0, task.timer?.remainingMs ?? duration));
+
+      return {
+        ...baseTimer,
+        state: task.timer?.state ?? baseTimer.state,
+        startedAt: task.timer?.startedAt ?? 0,
+        remainingMs: enabled ? remaining : 0,
+      };
+    })(),
+  };
+}
+
+/**
+ * Groups from a save or backup, keeping only entries the app can render: an object with a string id, name and
+ * colour and a known kind (a missing createdAt becomes 0). Missing item lists become empty and non-object items are dropped, so a malformed backup can't crash syncRecurringTasks; tasks get the same defaults as Personal ones (a timer, a priority...).
+ */
+function normalizeGroups(stored: unknown): Group[] {
+  if (!Array.isArray(stored)) return [];
+  return stored
+    .filter(
+      (group): group is Record<string, unknown> =>
+        isObject(group) &&
+        typeof group.id === "string" &&
+        typeof group.name === "string" &&
+        typeof group.color === "string" &&
+        (group.kind === "list" || group.kind === "schedule"),
+    )
+    .map((group) => ({
+      ...(group as unknown as Group),
+      createdAt: typeof group.createdAt === "number" && Number.isFinite(group.createdAt) ? group.createdAt : 0,
+      tasks: Array.isArray(group.tasks) ? (group.tasks.filter(isObject) as unknown as PersistedTask[]).map(normalizeTask) : [],
+      workItems: Array.isArray(group.workItems) ? (group.workItems.filter(isObject) as unknown as WorkItem[]) : [],
+    }));
+}
+
 function migrateSaveData(saveData: PersistedSaveData): SaveData {
   const equippedPetId = getEquippedPetId(saveData.gameState);
-  const storedSettings = saveData.gameState.settings ? saveData.gameState.settings : defaultSettings;
+  const persistedSettings: PersistedSettings = saveData.gameState.settings ? saveData.gameState.settings : defaultSettings;
+  const { calendarShowBoth: _legacyShowBoth, ...storedSettings } = persistedSettings;
+  const groups = normalizeGroups(saveData.gameState.groups);
   const timerAlert = storedSettings.timerAlert
     ? {
         mode: storedSettings.timerAlert.mode,
@@ -363,6 +463,8 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     roomShareFooter: saveData.gameState.roomShareFooter ?? true,
     backupNudgeShown: saveData.gameState.backupNudgeShown === true,
     whatsNewHiddenFor: saveData.gameState.whatsNewHiddenFor ?? "",
+    workItems: saveData.gameState.workItems ?? [],
+    groups,
     totalTasksCompleted:
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted
@@ -388,49 +490,23 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       musicEnabled: storedSettings.musicEnabled === true,
       sfxEnabled: storedSettings.sfxEnabled === true,
       timerAlert,
+      // A remembered group that no longer exists falls back to the chooser.
+      tasksSection:
+        storedSettings.tasksSection === "personal" ||
+        storedSettings.tasksSection === "work" ||
+        groups.some((group) => group.id === storedSettings.tasksSection)
+          ? storedSettings.tasksSection
+          : "choose",
+      workView: storedSettings.workView === "week" ? "week" : "day",
+      dashboardCollapsed: normalizeDashboardCollapsed(storedSettings.dashboardCollapsed),
+      calendarShow: normalizeCalendarShow(persistedSettings),
     },
     customTaskTemplates: saveData.gameState.customTaskTemplates
       ? saveData.gameState.customTaskTemplates.map((template) => ({
           ...template,
         }))
       : [],
-    tasks: saveData.gameState.tasks.map((task) => ({
-      ...task,
-      predefinedTaskId: task.predefinedTaskId !== undefined ? task.predefinedTaskId : "",
-      customTemplateId: task.customTemplateId !== undefined ? task.customTemplateId : "",
-      category:
-        task.category !== undefined
-          ? task.category
-          : task.predefinedTaskId
-            ? getPredefinedTask(task.predefinedTaskId).category
-            : "custom",
-      priority: task.priority !== undefined ? task.priority : TaskPriority.MEDIUM,
-      calendarColor:
-        task.calendarColor !== undefined
-          ? task.calendarColor
-          : task.predefinedTaskId
-            ? getPredefinedTask(task.predefinedTaskId).calendarColor
-            : DEFAULT_TASK_CALENDAR_COLOR,
-      dueDate:
-        task.dueDate !== undefined
-          ? task.dueDate
-          : task.status === TaskStatus.COMPLETED && task.completedAt
-            ? getNextAvailableDate(task, task.completedAt)
-            : getStartOfDay(task.createdAt),
-      timer: (() => {
-        const duration = Math.max(0, task.timer?.duration ?? 0);
-        const enabled = task.timer?.enabled ?? false;
-        const baseTimer = createTaskTimer(duration, enabled);
-        const remaining = Math.min(duration, Math.max(0, task.timer?.remainingMs ?? duration));
-
-        return {
-          ...baseTimer,
-          state: task.timer?.state ?? baseTimer.state,
-          startedAt: task.timer?.startedAt ?? 0,
-          remainingMs: enabled ? remaining : 0,
-        };
-      })(),
-    })),
+    tasks: saveData.gameState.tasks.map(normalizeTask),
     pets,
     equippedPetId: activePetId,
   };

@@ -1,5 +1,6 @@
 import { Room, RoomItem, GameState } from "../types";
 import { MAX_ITEM_SCALE, MAX_ROOM_ITEMS, MIN_ITEM_SCALE } from "./rooms";
+import { ShareCodeError, decodeShareCode, encodeShareCode } from "./shareCode";
 
 /** Rooms spec §3: a room's layout as text, with no names or ids (#41). */
 export const ROOM_CODE_VERSION = 1;
@@ -21,23 +22,11 @@ export interface RoomLayout {
   items: RoomLayoutItem[];
 }
 
-export type RoomCodeError = "format" | "checksum" | "newer";
+export type RoomCodeError = ShareCodeError;
 
 const quantise = (value: number, min: number, max: number) =>
   Math.round((Math.min(max, Math.max(min, value)) - min) / (max - min) * 255);
 const expand = (step: number, min: number, max: number) => min + (Math.min(255, Math.max(0, step)) / 255) * (max - min);
-
-function checksum(text: string): string {
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return hash.toString(16).padStart(8, "0");
-}
-
-const toBase64Url = (text: string) => btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-const fromBase64Url = (text: string) => atob(text.replace(/-/g, "+").replace(/_/g, "/"));
 
 /** The layout of a room as the player sees it: real items by type, ghosts as what they stand for. */
 export function roomLayout(state: GameState, room: Room): RoomLayout {
@@ -71,19 +60,15 @@ export function encodeRoomCode(layout: RoomLayout): string {
       item.flip ? 1 : 0,
     ]),
   ]);
-  const body = toBase64Url(payload);
-  return `${PREFIX}${ROOM_CODE_VERSION}-${body}-${checksum(body)}`;
+  return encodeShareCode(PREFIX, ROOM_CODE_VERSION, payload);
 }
 
 /** Reads a pasted code (spaces and line breaks around it are fine); nothing is changed on an error. */
 export function decodeRoomCode(text: string): { layout: RoomLayout } | { error: RoomCodeError } {
-  const match = text.trim().match(/^GROWRA-ROOM-(\d+)-([A-Za-z0-9_-]+)-([0-9a-f]{8})$/);
-  if (!match) return { error: "format" };
-  const [, version, body, sum] = match;
-  if (Number(version) > ROOM_CODE_VERSION) return { error: "newer" };
-  if (checksum(body) !== sum) return { error: "checksum" };
+  const decoded = decodeShareCode(text, PREFIX, ROOM_CODE_VERSION);
+  if ("error" in decoded) return decoded;
   try {
-    const [styleId, rawItems] = JSON.parse(fromBase64Url(body)) as [unknown, unknown];
+    const [styleId, rawItems] = JSON.parse(decoded.payload) as [unknown, unknown];
     if (typeof styleId !== "string" || !Array.isArray(rawItems)) return { error: "format" };
     const items: RoomLayoutItem[] = [];
     for (const raw of rawItems.slice(0, MAX_ROOM_ITEMS)) {

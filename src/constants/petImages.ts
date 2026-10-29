@@ -294,7 +294,7 @@ export function getPetImage(
   return stages.base;
 }
 
-/** Sleepy-mood art (P4); companions without it fall back to their normal image. */
+/** Sleepy-mood art (curled up asleep); companions without it fall back to their normal image. */
 const SLEEPY_PET_IMAGES: Partial<Record<string, StageImages>> = {
   zephie: {
     base: require("../../assets/pets/zephie/sleepy/base.png"),
@@ -355,6 +355,21 @@ const SLEEPY_PET_IMAGES: Partial<Record<string, StageImages>> = {
     base: require("../../assets/pets/ember/sleepy/base.png"),
     evo1: require("../../assets/pets/ember/sleepy/evo1.png"),
     evo2: require("../../assets/pets/ember/sleepy/evo2.png"),
+  },
+  lumen: {
+    base: require("../../assets/pets/lumen/sleepy/base.png"),
+    evo1: require("../../assets/pets/lumen/sleepy/evo1.png"),
+    evo2: require("../../assets/pets/lumen/sleepy/evo2.png"),
+  },
+  gloam: {
+    base: require("../../assets/pets/gloam/sleepy/base.png"),
+    evo1: require("../../assets/pets/gloam/sleepy/evo1.png"),
+    evo2: require("../../assets/pets/gloam/sleepy/evo2.png"),
+  },
+  holly: {
+    base: require("../../assets/pets/holly/sleepy/base.png"),
+    evo1: require("../../assets/pets/holly/sleepy/evo1.png"),
+    evo2: require("../../assets/pets/holly/sleepy/evo2.png"),
   },
 };
 

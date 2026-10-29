@@ -15,6 +15,7 @@ import { getAppTheme } from "../constants/appTheme";
 import {
   AppSettings,
   CustomTaskTemplate,
+  HolderId,
   Task,
   TaskPriority,
   TaskStatus,
@@ -30,11 +31,21 @@ import { getLocaleFromSettings } from "../utils/settings";
 import { taskCategoryLabel, taskFrequencyLabel } from "../utils/taskLabels";
 import { customTaskDraftProblem } from "../utils/taskDraft";
 import { taskMatchesSearch } from "../utils/taskSearch";
+import { isBuiltIn } from "../utils/groups";
+import { LinkedCopy } from "../utils/linkedEdits";
+import { LinkTarget } from "../components/LinkTargetsRow";
 
 interface TasksScreenProps {
+  /** Personal, or a list group. */
+  holder: HolderId;
+  title: string;
+  /** The holder's colour: a group shows it beside the title and on its task cards. */
+  accentColor: string;
   settings: AppSettings;
+  /** The holder's own tasks. */
   tasks: Task[];
   customTaskTemplates: CustomTaskTemplate[];
+  onBackToChooser?: () => void;
   tutorialTarget:
     | "add-button"
     | "modal-type-predefined"
@@ -47,11 +58,19 @@ interface TasksScreenProps {
     taskType: TaskType;
     selectedPredefinedTaskId: string;
   }) => void;
-  onAddTask: (task: Task, customTemplate?: CustomTaskTemplate) => void;
+  /** `alsoAddTo`: groups that get a linked copy. */
+  onAddTask: (task: Task, customTemplate?: CustomTaskTemplate, alsoAddTo?: string[]) => void;
   onCompleteTask: (taskId: string) => void;
-  onUpdateTask: (task: Task) => void;
-  onDeleteTask: (taskId: string) => void;
-  onOpenCalendar: () => void;
+  /** `others`: the other copies of a linked task the edit also reaches. */
+  onUpdateTask: (task: Task, others: HolderId[]) => void;
+  onDeleteTask: (taskId: string, others: HolderId[]) => void;
+  onUnlink: (taskId: string) => void;
+  /** The groups a new task can also go to. */
+  linkTargets: LinkTarget[];
+  /** The other copies of a linked task. */
+  linkedCopiesOf: (task: Task) => LinkedCopy[];
+  /** The calendar button is hidden without it. */
+  onOpenCalendar?: () => void;
   onTaskToolsOpenChange: (open: boolean) => void;
   onUiTap: () => void;
   onStartTimer: (taskId: string) => void;
@@ -61,15 +80,22 @@ interface TasksScreenProps {
 }
 
 export default function TasksScreen({
+  holder,
+  title,
+  accentColor,
   settings,
   tasks,
   customTaskTemplates,
+  onBackToChooser,
   tutorialTarget,
   onTutorialStateChange,
   onAddTask,
   onCompleteTask,
   onUpdateTask,
   onDeleteTask,
+  onUnlink,
+  linkTargets,
+  linkedCopiesOf,
   onOpenCalendar,
   onTaskToolsOpenChange,
   onUiTap,
@@ -81,6 +107,7 @@ export default function TasksScreen({
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const tutorialOn = tutorialTarget !== null;
+  const groupColor = isBuiltIn(holder) ? null : accentColor;
   const tutorialCreateFlow =
     tutorialTarget === "add-button" ||
     tutorialTarget === "modal-type-predefined" ||
@@ -123,10 +150,11 @@ export default function TasksScreen({
       return rightTask.createdAt - leftTask.createdAt;
     });
 
-  const handleAddTask = (values: TaskFormValues) => {
+  const handleAddTask = (values: TaskFormValues, alsoAddTo: string[]) => {
     const { task, customTemplate } = buildTaskFromFormValues(values);
-    onAddTask(task, customTemplate);
+    onAddTask(task, customTemplate, alsoAddTo);
   };
+  const selectedCopies = selectedTask ? linkedCopiesOf(selectedTask) : [];
   const handleQuickAdd = () => {
     if (tutorialOn) {
       return;
@@ -158,26 +186,47 @@ export default function TasksScreen({
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <View>
-          <Text style={[styles.title, { color: theme.text }]}>{copy.tasksTitle}</Text>
+        {/* A group's own name can be wider than the screen: its header column shrinks so the title can truncate. */}
+        <View style={groupColor ? styles.headerTextShrink : undefined}>
+          {onBackToChooser && !tutorialOn ? (
+            <TouchableOpacity
+              onPress={() => {
+                onUiTap();
+                onBackToChooser();
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.backLink, { color: theme.accent }]}>{copy.tasksBackToChooser}</Text>
+            </TouchableOpacity>
+          ) : null}
+          <View style={styles.titleRow}>
+            {groupColor ? <View style={[styles.titleDot, { backgroundColor: groupColor }]} /> : null}
+            {/* A group name is the user's own and may be long; built-in titles keep their exact look. */}
+            <Text style={[styles.title, { color: theme.text }]} numberOfLines={groupColor ? 1 : undefined}>
+              {title}
+            </Text>
+          </View>
           <Text style={[styles.subtitle, { color: theme.mutedText }]}>
             {todayTasks.length} {copy.tasksActiveToday}
           </Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={[
-              styles.calendarButton,
-              { backgroundColor: theme.surfaceMuted, borderColor: theme.border },
-              tutorialOn && styles.tutorialDisabled,
-            ]}
-            onPress={onOpenCalendar}
-            disabled={tutorialOn}
-            hitSlop={{ top: 8, bottom: 8 }}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.calendarButtonText, { color: theme.text }]}>{copy.tasksCalendar}</Text>
-          </TouchableOpacity>
+          {onOpenCalendar ? (
+            <TouchableOpacity
+              style={[
+                styles.calendarButton,
+                { backgroundColor: theme.surfaceMuted, borderColor: theme.border },
+                tutorialOn && styles.tutorialDisabled,
+              ]}
+              onPress={onOpenCalendar}
+              disabled={tutorialOn}
+              hitSlop={{ top: 8, bottom: 8 }}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.calendarButtonText, { color: theme.text }]}>{copy.tasksCalendar}</Text>
+            </TouchableOpacity>
+          ) : null}
           <TouchableOpacity
             style={[
               styles.addButton,
@@ -336,6 +385,7 @@ export default function TasksScreen({
               key={task.id}
               task={task}
               onComplete={() => onCompleteTask(task.id)}
+              stripeColor={groupColor ?? undefined}
               onOpen={() => {
                 setSelectedTask(task);
                 onUiTap();
@@ -371,6 +421,7 @@ export default function TasksScreen({
         }
         onTutorialStateChange={onTutorialStateChange}
         onSubmit={handleAddTask}
+        linkTargets={linkTargets}
       />
       <TaskDetailsModal
         visible={selectedTask !== null}
@@ -381,14 +432,23 @@ export default function TasksScreen({
           setSelectedTask(null);
           onUiTap();
         }}
-        onSave={(task) => {
-          onUpdateTask(task);
+        onSave={(task, others) => {
+          onUpdateTask(task, others);
           setSelectedTask(null);
         }}
-        onDelete={(taskId) => {
-          onDeleteTask(taskId);
+        onDelete={(taskId, others) => {
+          onDeleteTask(taskId, others);
           setSelectedTask(null);
         }}
+        linkedCopies={selectedCopies}
+        onUnlink={
+          selectedTask && selectedCopies.length > 0
+            ? () => {
+                onUnlink(selectedTask.id);
+                setSelectedTask(null);
+              }
+            : undefined
+        }
       />
     </SafeAreaView>
   );
@@ -396,6 +456,7 @@ export default function TasksScreen({
 
 function TaskItem({
   task,
+  stripeColor,
   onComplete,
   onOpen,
   settings,
@@ -407,6 +468,8 @@ function TaskItem({
   tutorialTarget,
 }: {
   task: Task;
+  /** Replaces the theme accent on the card's left edge (a group's colour). */
+  stripeColor?: string;
   onComplete: () => void;
   onOpen: () => void;
   settings: AppSettings;
@@ -436,7 +499,7 @@ function TaskItem({
         styles.taskItem,
         {
           backgroundColor: theme.surface,
-          borderLeftColor: theme.accent,
+          borderLeftColor: stripeColor ?? theme.accent,
         },
         isCompleted && styles.taskItemCompleted,
         tutorialTarget && styles.tutorialHighlight,
@@ -566,7 +629,27 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
   },
+  backLink: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  headerTextShrink: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  titleDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
   title: {
+    flexShrink: 1,
     fontSize: 24,
     fontWeight: "700",
     color: "#333",

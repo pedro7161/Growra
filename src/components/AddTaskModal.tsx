@@ -18,10 +18,12 @@ import { AppSettings, CustomTaskTemplate, Task, TaskType, TaskFrequency, TaskPri
 import { getPredefinedTask, getPredefinedTaskGroups, localizePredefinedTask, predefinedTasks } from "../constants/predefinedTasks";
 import { taskPriorityOptions } from "../constants/taskConfig";
 import { getStartOfDay } from "../utils/taskSchedule";
+import DurationField from "./DurationField";
 import TaskDatePicker from "./TaskDatePicker";
 import { getCustomTaskTemplateGroups } from "../utils/customTaskTemplates";
 import { taskCategoryLabel } from "../utils/taskLabels";
 import { customTaskDraftProblem } from "../utils/taskDraft";
+import LinkTargetsRow, { LinkTarget } from "./LinkTargetsRow";
 
 function getPriorityLabel(copy: ReturnType<typeof getAppCopy>, priority: TaskPriority): string {
   if (priority === TaskPriority.HIGH) return copy.tasksPriorityHigh;
@@ -41,6 +43,7 @@ interface TaskFormValues {
   dueDate: number;
   timerEnabled: boolean;
   timerDurationMinutes: number;
+  durationMinutes: number | null;
   saveAsTemplate: boolean;
 }
 
@@ -62,7 +65,10 @@ interface AddTaskModalProps {
     taskType: TaskType;
     selectedPredefinedTaskId: string;
   }) => void;
-  onSubmit: (values: TaskFormValues) => void;
+  /** `alsoAddTo`: the ticked "Also add to…" groups. */
+  onSubmit: (values: TaskFormValues, alsoAddTo: string[]) => void;
+  /** The groups a new task can also go to; the row is hidden without any. */
+  linkTargets?: LinkTarget[];
 }
 
 export default function AddTaskModal({
@@ -75,6 +81,7 @@ export default function AddTaskModal({
   tutorialTarget,
   onTutorialStateChange,
   onSubmit,
+  linkTargets = [],
 }: AddTaskModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
@@ -104,11 +111,13 @@ export default function AddTaskModal({
     Object.fromEntries(customTaskGroups.map((group) => [group.category, false]))
   );
   const [priority, setPriority] = useState<TaskPriority>(TaskPriority.MEDIUM);
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timerDurationMinutes, setTimerDurationMinutes] = useState(5);
   const [dueDate, setDueDate] = useState(() => getStartOfDay(Date.now()));
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [showSaveTemplateHelp, setShowSaveTemplateHelp] = useState(false);
+  const [alsoAddTo, setAlsoAddTo] = useState<string[]>([]);
   const [tutorialSelectedPredefinedTaskId, setTutorialSelectedPredefinedTaskId] =
     useState("");
   const selectedPredefinedTask = localizePredefinedTask(getPredefinedTask(predefinedTaskId), settings.language);
@@ -166,8 +175,9 @@ export default function AddTaskModal({
         dueDate,
         timerEnabled,
         timerDurationMinutes,
+        durationMinutes,
         saveAsTemplate,
-      });
+      }, alsoAddTo);
       resetForm();
       return;
     }
@@ -185,8 +195,9 @@ export default function AddTaskModal({
         dueDate,
         timerEnabled,
         timerDurationMinutes,
+        durationMinutes,
         saveAsTemplate: false,
-      });
+      }, alsoAddTo);
       resetForm();
     }
   };
@@ -200,6 +211,7 @@ export default function AddTaskModal({
     setType(TaskType.CUSTOM);
     setFrequency(TaskFrequency.ONCE);
     setPriority(TaskPriority.MEDIUM);
+    setDurationMinutes(null);
     setCollapsedCategories(Object.fromEntries(predefinedTaskGroups.map((group) => [group.category, false])));
     setCollapsedCustomCategories(Object.fromEntries(customTaskGroups.map((group) => [group.category, false])));
     setTimerEnabled(false);
@@ -207,6 +219,7 @@ export default function AddTaskModal({
     setDueDate(getStartOfDay(Date.now()));
     setSaveAsTemplate(false);
     setShowSaveTemplateHelp(false);
+    setAlsoAddTo([]);
     setTutorialSelectedPredefinedTaskId("");
     onClose();
   };
@@ -606,6 +619,19 @@ export default function AddTaskModal({
               </View>
             </View>
 
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: theme.text }]}>{copy.tasksDuration}</Text>
+              <View style={tutorialOn && styles.tutorialDisabled}>
+                <DurationField
+                  settings={settings}
+                  copy={copy}
+                  minutes={durationMinutes}
+                  onChange={setDurationMinutes}
+                  disabled={tutorialOn}
+                />
+              </View>
+            </View>
+
             <View style={[styles.field, tutorialOn && styles.tutorialDisabled]}>
               <Text style={[styles.label, { color: theme.text }]}>{copy.addTaskDate}</Text>
               <TaskDatePicker
@@ -685,6 +711,14 @@ export default function AddTaskModal({
                 </View>
               )}
             </View>
+
+            <LinkTargetsRow
+              settings={settings}
+              targets={linkTargets}
+              selected={alsoAddTo}
+              onChange={setAlsoAddTo}
+              disabled={tutorialOn}
+            />
           </View>
         </ScrollView>
       </SafeAreaView>

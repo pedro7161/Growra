@@ -13,6 +13,24 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   en: [
     {
+      version: "1.10.0",
+      dateLabel: "Version 1.10.0 · November 2026",
+      items: [
+        "New Work schedule: add shifts with start and end times and repeats, see them in day and week views, and your companion cheers you on during a shift.",
+        "Every task can now have a length, and longer tasks pay more.",
+        "No more daily coin limit: the more you do, the more you earn.",
+        "New shop prices to match the new rewards.",
+        "Groups: create your own Schedule or List groups beside Personal and Work. Groups never pay coins or experience, so they are free to use however you like.",
+        "Groups show on the dashboard and as coloured chips on the calendar, and you can pick which ones the calendar shows.",
+        "Add an item to several groups at once with \"Also add to…\" and edit or delete the linked copies together.",
+        "Share any group, Personal or Work as a code, and import a friend's code as new or as an update of the same list.",
+        "Type any task length yourself, in seconds, minutes or hours.",
+        "Personal and Work on the dashboard scroll on their own when the list gets long.",
+        "Your companion cheers when you tick something off.",
+        "\"Select all\" when adding to or changing three or more groups.",
+      ],
+    },
+    {
       version: "1.9.1",
       dateLabel: "Version 1.9.1 · October 26, 2026",
       items: [
@@ -169,6 +187,24 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      version: "1.10.0",
+      dateLabel: "Versão 1.10.0 · novembro de 2026",
+      items: [
+        "Novo horário de trabalho: adiciona turnos com hora de início e fim e repetições, vê-os nas vistas de dia e semana, e o teu companheiro anima-te durante o turno.",
+        "Cada tarefa pode agora ter uma duração, e as tarefas mais longas pagam mais.",
+        "Acabou o limite diário de moedas: quanto mais fazes, mais ganhas.",
+        "Novos preços na loja para acompanhar as novas recompensas.",
+        "Grupos: cria os teus próprios grupos de Horário ou Lista ao lado de Pessoal e Trabalho. Os grupos nunca dão moedas nem experiência, por isso usa-os como quiseres.",
+        "Os grupos aparecem no painel e como etiquetas coloridas no calendário, e podes escolher quais o calendário mostra.",
+        "Adiciona um item a vários grupos de uma vez com \"Adicionar também a…\" e edita ou apaga as cópias ligadas em conjunto.",
+        "Partilha qualquer grupo, Pessoal ou Trabalho como um código, e importa o código de um amigo como novo ou como atualização da mesma lista.",
+        "Escreve tu a duração de qualquer tarefa, em segundos, minutos ou horas.",
+        "Pessoal e Trabalho no painel deslizam por si quando a lista fica longa.",
+        "O teu companheiro festeja quando concluis algo.",
+        "\"Selecionar todos\" ao adicionar ou alterar três ou mais grupos.",
+      ],
+    },
     {
       version: "1.9.1",
       dateLabel: "Versão 1.9.1 · 26 de outubro de 2026",

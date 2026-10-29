@@ -7,10 +7,14 @@ import {
   applyTaskUpdated,
   calculateUpdatedStreak,
   completeTask,
+  completeWorkOccurrence,
+  upsertWorkItems,
   BASE_TASK_COIN_REWARD,
+  getRewardScale,
 } from '../src/utils/gameplay';
-import { DAILY_BASE_BOND_CAP, DAILY_COIN_TASK_CAP, collectableCompanionCount, createEmptyUsage, getCompletionFacts, getPerkCoins } from '../src/utils/companions';
+import { DAILY_BASE_BOND_CAP, collectableCompanionCount, createEmptyUsage, getCompletionFacts, getPerkCoins } from '../src/utils/companions';
 import { createInitialGameState, createInitialStreak } from '../src/utils/initialState';
+import { createWorkItem } from '../src/utils/workSchedule';
 import { createCustomTask } from '../src/utils/taskFactory';
 
 const local = (y: number, m: number, d: number, h = 0) => new Date(y, m - 1, d, h).getTime();
@@ -34,6 +38,39 @@ describe('completeTask', () => {
   it('marks the task completed', () => {
     const { state, taskId } = stateWithTask();
     expect(completeTask(state, taskId).tasks[0].status).toBe(TaskStatus.COMPLETED);
+  });
+});
+
+describe('length-scaled rewards', () => {
+  const coinsFor = (task: ReturnType<typeof createCustomTask>) => {
+    const state = { ...createInitialGameState(), tasks: [task] };
+    return completeTask(state, task.id).coins - state.coins;
+  };
+  // The streak multiplier in effect for a first completion with no companion (ruling 4).
+  const multiplier = 1 + calculateUpdatedStreak(createInitialStreak(), Date.now()).bonus;
+
+  it('scales reward with task length, capped at 12 hours', () => {
+    expect(getRewardScale(null)).toBe(1);
+    expect(getRewardScale(60)).toBeCloseTo(1 + 2 / 3);
+    expect(getRewardScale(12 * 60)).toBeCloseTo(9);
+    expect(getRewardScale(20 * 60)).toBeCloseTo(9);
+  });
+
+  it('pays the base for a task with no length', () => {
+    const task = createCustomTask('Plain', '', 'misc', TaskFrequency.ONCE, '', 0);
+    expect(coinsFor(task)).toBe(Math.round(BASE_TASK_COIN_REWARD * multiplier));
+  });
+
+  it('pays more for a task with a length', () => {
+    const task = { ...createCustomTask('Long', '', 'misc', TaskFrequency.ONCE, '', 0), durationMinutes: 120 };
+    expect(coinsFor(task)).toBe(Math.round(BASE_TASK_COIN_REWARD * (1 + (2 / 3) * 2) * multiplier));
+    expect(coinsFor(task)).toBeGreaterThan(30);
+  });
+
+  it('uses the timer length when no duration is set', () => {
+    const task = createCustomTask('Focus', '', 'misc', TaskFrequency.ONCE, '', 0, true, 30);
+    const ready = { ...task, timer: { ...task.timer, state: 'ready' as const } };
+    expect(coinsFor(ready)).toBe(Math.round(BASE_TASK_COIN_REWARD * (1 + (2 / 3) * 0.5) * multiplier));
   });
 });
 
@@ -108,12 +145,19 @@ describe('companions', () => {
     expect(next.pets.find((pet) => pet.templateId === 'ripple')?.bond).toBe(DAILY_BASE_BOND_CAP);
   });
 
-  it('stops paying coins after the daily cap but still counts the task', () => {
-    const { state, ids } = withTasks(adoptStarter(createInitialGameState(), 'ripple'), DAILY_COIN_TASK_CAP + 1);
-    const capped = completeAll(state, ids.slice(0, DAILY_COIN_TASK_CAP));
-    const extra = completeTask(capped, ids[DAILY_COIN_TASK_CAP]);
-    expect(extra.coins).toBe(capped.coins);
-    expect(extra.totalTasksCompleted).toBe(capped.totalTasksCompleted + 1);
+  it('pays coins for every task with no daily cap', () => {
+    // No companion: the multiplier is the streak alone, which is the same for every completion today.
+    const { state, ids } = withTasks(createInitialGameState(), 20);
+    const first = completeTask(state, ids[0]);
+    const perTask = first.coins - state.coins;
+    expect(perTask).toBeGreaterThanOrEqual(BASE_TASK_COIN_REWARD);
+
+    const all = completeAll(state, ids);
+    expect(all.coins).toBe(state.coins + 20 * perTask);
+    expect(all.totalTasksCompleted).toBe(20);
+    // The 16th completion still pays.
+    const fifteen = completeAll(state, ids.slice(0, 15));
+    expect(completeTask(fifteen, ids[15]).coins - fifteen.coins).toBe(perTask);
   });
 
   it('brings in a companion when its style is used (Cindra on a 5-task day)', () => {
@@ -275,5 +319,34 @@ describe('event companions: Gloam (Halloween) and Holly (Christmas)', () => {
   it('event companions only count toward the total once they have joined', () => {
     expect(collectableCompanionCount(new Set(['sprout']))).toBe(12);
     expect(collectableCompanionCount(new Set(['sprout', 'gloam']))).toBe(13);
+  });
+});
+
+describe('completeWorkOccurrence', () => {
+  const shift = createWorkItem(
+    {
+      name: 'Shift', description: '', calendarColor: '#fff', startMinutes: 9 * 60, endMinutes: 17 * 60,
+      startDateKey: '2026-10-28', repeat: { kind: 'none' }, end: { kind: 'never' },
+    },
+    'w1',
+    0,
+  );
+  const base = upsertWorkItems(createInitialGameState(), [shift]);
+  const during = local(2026, 10, 28, 12);
+  const multiplier = 1 + calculateUpdatedStreak(createInitialStreak(), during).bonus;
+
+  it('completing an 8 h shift pays Math.round(15 * (1 + 2/3*8)) coins and counts for the streak', () => {
+    const done = completeWorkOccurrence(base, 'w1', '2026-10-28', during);
+    expect(done.coins).toBe(Math.round(15 * (1 + (2 / 3) * 8) * multiplier));
+    expect(done.totalTasksCompleted).toBe(1);
+    expect(done.streak.lastCompletedDate).toBe(local(2026, 10, 28));
+    expect(done.workItems[0].completedDateKeys).toEqual(['2026-10-28']);
+  });
+
+  it("a shift can't be completed before it starts or twice", () => {
+    expect(completeWorkOccurrence(base, 'w1', '2026-10-28', local(2026, 10, 28, 8))).toBe(base);
+    const done = completeWorkOccurrence(base, 'w1', '2026-10-28', during);
+    expect(completeWorkOccurrence(done, 'w1', '2026-10-28', during)).toBe(done);
+    expect(completeWorkOccurrence(base, 'nope', '2026-10-28', during)).toBe(base);
   });
 });

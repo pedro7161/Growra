@@ -3,16 +3,40 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
-import { AppSettings, Task, TaskPriority, TaskStatus } from "../types";
+import { AppSettings, Group, HolderId, Task, TaskPriority, TaskStatus, WorkItem, WorkOccurrence } from "../types";
+import { getOccurrencesBetween, toDateKey } from "../utils/workSchedule";
 import { getStartOfDay } from "../utils/taskSchedule";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import { getLocaleFromSettings } from "../utils/settings";
+import { readableTextColor } from "../utils/colorContrast";
 import { taskCategoryLabel, taskFrequencyLabel, taskStatusLabel } from "../utils/taskLabels";
 
 interface TaskCalendarScreenProps {
   settings: AppSettings;
   tasks: Task[];
+  workItems: WorkItem[];
+  groups: Group[];
+  /** The holder the calendar was opened from; it is always shown. */
+  holder: HolderId;
+  onToggleHolder: (holder: HolderId) => void;
+  /** Opens the holder an entry belongs to. */
+  onOpenHolder: (holder: HolderId) => void;
   onBack: () => void;
+}
+
+interface CalendarHolder {
+  id: HolderId;
+  label: string;
+  /** The marker colour: the theme's accent for built-ins, the group's own colour for groups. */
+  color: string;
+  tasks: Task[];
+  workItems: WorkItem[];
+}
+
+type OccurrencesByDay = Map<string, WorkOccurrence[]>;
+
+function hasItems(holder: CalendarHolder): boolean {
+  return holder.tasks.length + holder.workItems.length > 0;
 }
 
 interface DayCellData {
@@ -54,7 +78,15 @@ function addMonths(date: Date, amount: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + amount, 1);
 }
 
-function getDayActivity(tasks: Task[], dayStart: number) {
+interface DayActivity {
+  scheduledCount: number;
+  completedCount: number;
+  calendarColor: string;
+}
+
+const EMPTY_COLOR = "#d9e3e0";
+
+function getDayActivity(tasks: Task[], dayStart: number): DayActivity {
   const scheduledTasks = tasks.filter((task) => getStartOfDay(task.dueDate) === dayStart);
   const completedTasks = tasks.filter(
     (task) => task.completedAt && getStartOfDay(task.completedAt) === dayStart
@@ -64,11 +96,47 @@ function getDayActivity(tasks: Task[], dayStart: number) {
   return {
     scheduledCount: scheduledTasks.length,
     completedCount: completedTasks.length,
-    calendarColor: primaryTask ? primaryTask.calendarColor : "#d9e3e0",
+    calendarColor: primaryTask ? primaryTask.calendarColor : EMPTY_COLOR,
   };
 }
 
-function buildMonthGrid(tasks: Task[], monthStart: Date): DayCellData[] {
+function getWorkDayActivity(occurrences: WorkOccurrence[]): DayActivity {
+  const done = occurrences.filter((occurrence) => occurrence.completed);
+  const pending = occurrences.filter((occurrence) => !occurrence.completed);
+  const primary = pending[0] ?? done[0];
+  return {
+    scheduledCount: pending.length,
+    completedCount: done.length,
+    calendarColor: primary ? primary.calendarColor : EMPTY_COLOR,
+  };
+}
+
+/** Merges two kinds of activity on a day; the first one's colour wins when it has any. */
+function mergeActivity(own: DayActivity, other: DayActivity): DayActivity {
+  return {
+    scheduledCount: own.scheduledCount + other.scheduledCount,
+    completedCount: own.completedCount + other.completedCount,
+    calendarColor: own.scheduledCount + own.completedCount > 0 ? own.calendarColor : other.calendarColor,
+  };
+}
+
+function timeLabel(timestamp: number): string {
+  const date = new Date(timestamp);
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function holderDayActivity(holder: CalendarHolder, occurrences: OccurrencesByDay, dayStart: number): DayActivity {
+  return mergeActivity(
+    getDayActivity(holder.tasks, dayStart),
+    getWorkDayActivity(occurrences.get(toDateKey(dayStart)) ?? [])
+  );
+}
+
+function buildMonthGrid(
+  shown: CalendarHolder[],
+  occurrencesByHolder: Map<HolderId, OccurrencesByDay>,
+  monthStart: Date
+): DayCellData[] {
   const firstDayOfMonth = new Date(monthStart.getFullYear(), monthStart.getMonth(), 1);
   const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
   const mondayOffset = (firstDayOfMonth.getDay() + 6) % 7;
@@ -89,7 +157,11 @@ function buildMonthGrid(tasks: Task[], monthStart: Date): DayCellData[] {
   for (let day = 1; day <= daysInMonth; day += 1) {
     const currentDate = new Date(monthStart.getFullYear(), monthStart.getMonth(), day);
     const dayStart = getStartOfDay(currentDate.getTime());
-    const activity = getDayActivity(tasks, dayStart);
+    // The opened holder comes first, so its colour wins on a shared day.
+    const activity = shown.reduce<DayActivity>(
+      (merged, holder) => mergeActivity(merged, holderDayActivity(holder, occurrencesByHolder.get(holder.id) ?? new Map(), dayStart)),
+      { scheduledCount: 0, completedCount: 0, calendarColor: EMPTY_COLOR }
+    );
 
     cells.push({
       key: `${monthStart.getFullYear()}-${monthStart.getMonth()}-${day}`,
@@ -117,9 +189,40 @@ function buildMonthGrid(tasks: Task[], monthStart: Date): DayCellData[] {
   return cells;
 }
 
+function sortDayTasks(tasks: Task[], dayStart: number): Task[] {
+  const priorityOrder = {
+    [TaskPriority.HIGH]: 0,
+    [TaskPriority.MEDIUM]: 1,
+    [TaskPriority.LOW]: 2,
+  };
+
+  return tasks
+    .filter(
+      (task) =>
+        getStartOfDay(task.dueDate) === dayStart ||
+        (task.completedAt ? getStartOfDay(task.completedAt) === dayStart : false)
+    )
+    .sort((leftTask, rightTask) => {
+      if (leftTask.status !== rightTask.status) {
+        return leftTask.status === TaskStatus.PENDING ? -1 : 1;
+      }
+
+      if (priorityOrder[leftTask.priority] !== priorityOrder[rightTask.priority]) {
+        return priorityOrder[leftTask.priority] - priorityOrder[rightTask.priority];
+      }
+
+      return leftTask.createdAt - rightTask.createdAt;
+    });
+}
+
 export default function TaskCalendarScreen({
   settings,
   tasks,
+  workItems,
+  groups,
+  holder,
+  onToggleHolder,
+  onOpenHolder,
   onBack,
 }: TaskCalendarScreenProps) {
   const copy = getAppCopy(settings.language);
@@ -129,34 +232,59 @@ export default function TaskCalendarScreen({
   const [selectedDayStart, setSelectedDayStart] = useState(() => getStartOfDay(Date.now()));
 
   const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
-  const monthCells = useMemo(() => buildMonthGrid(tasks, activeMonth), [tasks, activeMonth]);
-  const selectedDayTasks = useMemo(
+  // The opened holder first, so it leads the chips, the day list and the colour of shared days.
+  const holders = useMemo(() => {
+    const all: CalendarHolder[] = [
+      { id: "personal", label: copy.tasksChoosePersonal, color: theme.accent, tasks, workItems: [] },
+      { id: "work", label: copy.tasksChooseWork, color: theme.warning, tasks: [], workItems },
+      ...groups.map((group) => ({
+        id: group.id,
+        label: group.name,
+        color: group.color,
+        tasks: group.tasks,
+        workItems: group.workItems,
+      })),
+    ];
+    return [...all.filter((candidate) => candidate.id === holder), ...all.filter((candidate) => candidate.id !== holder)];
+  }, [copy, theme, tasks, workItems, groups, holder]);
+  // Chips appear once some other holder has something to show.
+  const showChips = holders.some((candidate) => candidate.id !== holder && hasItems(candidate));
+  const shown = useMemo(
     () =>
-      [...tasks]
-        .filter(
-          (task) =>
-            getStartOfDay(task.dueDate) === selectedDayStart ||
-            (task.completedAt ? getStartOfDay(task.completedAt) === selectedDayStart : false)
-        )
-        .sort((leftTask, rightTask) => {
-          const priorityOrder = {
-            [TaskPriority.HIGH]: 0,
-            [TaskPriority.MEDIUM]: 1,
-            [TaskPriority.LOW]: 2,
-          };
-
-          if (leftTask.status !== rightTask.status) {
-            return leftTask.status === TaskStatus.PENDING ? -1 : 1;
-          }
-
-          if (priorityOrder[leftTask.priority] !== priorityOrder[rightTask.priority]) {
-            return priorityOrder[leftTask.priority] - priorityOrder[rightTask.priority];
-          }
-
-          return leftTask.createdAt - rightTask.createdAt;
-        }),
-    [tasks, selectedDayStart]
+      holders.filter(
+        (candidate) =>
+          candidate.id === holder || (settings.calendarShow.includes(candidate.id) && hasItems(candidate))
+      ),
+    [holders, holder, settings.calendarShow]
   );
+  const occurrencesByHolder = useMemo(() => {
+    const byHolder = new Map<HolderId, OccurrencesByDay>();
+    const nextMonth = addMonths(activeMonth, 1);
+    for (const candidate of shown) {
+      const byDay: OccurrencesByDay = new Map();
+      for (const occurrence of getOccurrencesBetween(candidate.workItems, toDateKey(activeMonth.getTime()), toDateKey(nextMonth.getTime()))) {
+        byDay.set(occurrence.dateKey, [...(byDay.get(occurrence.dateKey) ?? []), occurrence]);
+      }
+      byHolder.set(candidate.id, byDay);
+    }
+    return byHolder;
+  }, [shown, activeMonth]);
+  const monthCells = useMemo(
+    () => buildMonthGrid(shown, occurrencesByHolder, activeMonth),
+    [shown, occurrencesByHolder, activeMonth]
+  );
+  const dayEntries = useMemo(
+    () =>
+      shown.map((candidate) => ({
+        holder: candidate,
+        occurrences: occurrencesByHolder.get(candidate.id)?.get(toDateKey(selectedDayStart)) ?? [],
+        tasks: sortDayTasks(candidate.tasks, selectedDayStart),
+      })),
+    [shown, occurrencesByHolder, selectedDayStart]
+  );
+  const title = holder === "personal" ? copy.tasksCalendar : holder === "work" ? copy.workCalendarTitle : holders[0].label;
+  const showMarkers = shown.length > 1;
+  const dayIsEmpty = dayEntries.every((entry) => entry.occurrences.length === 0 && entry.tasks.length === 0);
   const hasActivity = monthCells.some(
     (cell) => cell.inMonth && (cell.scheduledCount > 0 || cell.completedCount > 0)
   );
@@ -168,11 +296,42 @@ export default function TaskCalendarScreen({
           <TouchableOpacity onPress={onBack}>
             <Text style={[styles.backButton, { color: theme.accent }]}>{copy.tasksCalendarBack}</Text>
           </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>{copy.tasksCalendar}</Text>
+          <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>{title}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
         <View style={[styles.monthCard, { backgroundColor: theme.surface }]}>
+          {showChips ? (
+            <View style={styles.chipsBlock}>
+              <Text style={[styles.chipsLabel, { color: theme.text }]}>{copy.calendarShowHolders}</Text>
+              <View style={styles.chipRow}>
+                {holders
+                  .filter((candidate) => candidate.id === holder || hasItems(candidate))
+                  .map((candidate) => {
+                    const on = shown.some((item) => item.id === candidate.id);
+                    const locked = candidate.id === holder;
+                    return (
+                      <TouchableOpacity
+                        key={candidate.id}
+                        disabled={locked}
+                        onPress={() => onToggleHolder(candidate.id)}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: on, disabled: locked }}
+                        accessibilityLabel={candidate.label}
+                        style={[
+                          styles.chip,
+                          { borderColor: candidate.color, backgroundColor: on ? candidate.color : theme.surfaceMuted },
+                        ]}
+                      >
+                        <Text style={[styles.chipText, { color: on ? readableTextColor(candidate.color) : theme.text }]} numberOfLines={1}>
+                          {candidate.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+              </View>
+            </View>
+          ) : null}
           <View style={styles.monthHeader}>
             <TouchableOpacity
               style={[styles.monthButton, { backgroundColor: theme.surfaceMuted }]}
@@ -295,40 +454,82 @@ export default function TaskCalendarScreen({
             }).format(new Date(selectedDayStart))}
           </Text>
 
-          {selectedDayTasks.length === 0 ? (
+          {dayIsEmpty ? (
             <Text style={[styles.noActivityText, { color: theme.mutedText }]}>
               {copy.tasksNoTasksOnDay}
             </Text>
-          ) : (
-            selectedDayTasks.map((task) => {
-              const predefinedTask = task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId) : null;
+          ) : null}
 
-              return (
-                <View
-                  key={`${task.id}-${selectedDayStart}`}
-                  style={[styles.dayTaskItem, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
-                >
-                  <View style={styles.dayTaskTopRow}>
-                    <View style={styles.dayTaskTitleRow}>
-                      <View style={[styles.dayTaskColorDot, { backgroundColor: task.calendarColor }]} />
-                      <Text style={[styles.dayTaskName, { color: theme.text }]}>{task.name}</Text>
+          {dayEntries.map((entry) => {
+            const marker = showMarkers ? (
+              <Text style={[styles.workMarker, { color: entry.holder.color, borderColor: entry.holder.color }]} numberOfLines={1}>
+                {entry.holder.label}
+              </Text>
+            ) : null;
+
+            return (
+              <React.Fragment key={entry.holder.id}>
+                {entry.occurrences.map((occurrence) => (
+                  <TouchableOpacity
+                    key={`${occurrence.itemId}-${occurrence.dateKey}`}
+                    onPress={() => onOpenHolder(entry.holder.id)}
+                    accessibilityLabel={`${occurrence.name} - ${entry.holder.label}`}
+                    style={[styles.dayTaskItem, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
+                  >
+                    <View style={styles.dayTaskTopRow}>
+                      <View style={styles.dayTaskTitleRow}>
+                        <View style={[styles.dayTaskColorDot, { backgroundColor: occurrence.calendarColor }]} />
+                        <Text style={[styles.dayTaskName, { color: theme.text }]}>{occurrence.name}</Text>
+                      </View>
+                      <Text style={[styles.dayTaskStatus, { color: occurrence.completed ? theme.success : theme.accent }]}>
+                        {occurrence.completed ? copy.workDone : timeLabel(occurrence.start)}
+                      </Text>
                     </View>
-                    <Text
-                      style={[
-                        styles.dayTaskStatus,
-                        { color: task.status === TaskStatus.COMPLETED ? theme.success : theme.accent },
-                      ]}
+                    <View style={styles.workMetaRow}>
+                      <Text style={[styles.dayTaskMeta, { color: theme.mutedText }]}>
+                        {timeLabel(occurrence.start)} - {timeLabel(occurrence.end)}
+                      </Text>
+                      {marker}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+
+                {entry.tasks.map((task) => {
+                  const predefinedTask = task.predefinedTaskId ? getPredefinedTask(task.predefinedTaskId) : null;
+
+                  return (
+                    <TouchableOpacity
+                      key={`${entry.holder.id}-${task.id}-${selectedDayStart}`}
+                      onPress={() => onOpenHolder(entry.holder.id)}
+                      accessibilityLabel={`${task.name} - ${entry.holder.label}`}
+                      style={[styles.dayTaskItem, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
                     >
-                      {taskStatusLabel(copy, task.status)}
-                    </Text>
-                  </View>
-                  <Text style={[styles.dayTaskMeta, { color: theme.mutedText }]}>
-                    {taskCategoryLabel(settings.language, predefinedTask ? predefinedTask.category : task.category)} • {taskFrequencyLabel(copy, task.frequency)}
-                  </Text>
-                </View>
-              );
-            })
-          )}
+                      <View style={styles.dayTaskTopRow}>
+                        <View style={styles.dayTaskTitleRow}>
+                          <View style={[styles.dayTaskColorDot, { backgroundColor: task.calendarColor }]} />
+                          <Text style={[styles.dayTaskName, { color: theme.text }]}>{task.name}</Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.dayTaskStatus,
+                            { color: task.status === TaskStatus.COMPLETED ? theme.success : theme.accent },
+                          ]}
+                        >
+                          {taskStatusLabel(copy, task.status)}
+                        </Text>
+                      </View>
+                      <View style={styles.workMetaRow}>
+                        <Text style={[styles.dayTaskMeta, styles.metaText, { color: theme.mutedText }]}>
+                          {taskCategoryLabel(settings.language, predefinedTask ? predefinedTask.category : task.category)} • {taskFrequencyLabel(copy, task.frequency)}
+                        </Text>
+                        {marker}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </React.Fragment>
+            );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -374,6 +575,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: "700",
+    flexShrink: 1,
+    textAlign: "center",
   },
   headerSpacer: {
     width: 40,
@@ -383,6 +586,49 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 18,
     elevation: 2,
+  },
+  chipsBlock: {
+    marginBottom: 12,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
+  chip: {
+    borderWidth: 1.5,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    maxWidth: "100%",
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  metaText: {
+    flex: 1,
+    marginRight: 8,
+  },
+  chipsLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  workMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  workMarker: {
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    maxWidth: "45%",
   },
   monthHeader: {
     flexDirection: "row",

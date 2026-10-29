@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, AppState, BackHandler, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
+import { Alert, AlertButton, AppState, BackHandler, Platform, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
+import PraiseBubble from "./components/PraiseBubble";
+import { pickPraiseLine } from "./utils/companionText";
 import SettingsModal from "./components/SettingsModal";
 import GrowraPlusModal from "./components/GrowraPlusModal";
 import WhatsNewModal from "./components/WhatsNewModal";
@@ -23,7 +25,7 @@ import { getActiveCompanion } from "./utils/companions";
 import { syncRooms } from "./utils/rooms";
 import { buildRoomShareMessage, shareRoomPicture } from "./utils/roomShare";
 import { resolveTheme, withResolvedTheme } from "./utils/plus";
-import { buildCompletionsCsv, buildTasksCsv } from "./utils/historyCsv";
+import { buildCompletionsCsv, buildGroupsCsv, buildTasksCsv, buildWorkCsv, getGroupsExportRange, getWorkExportRange } from "./utils/historyCsv";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import CompanionRevealModal from "./components/CompanionRevealModal";
@@ -44,12 +46,16 @@ import CompanionsScreen from "./screens/CompanionsScreen";
 import JourneyScreen from "./screens/JourneyScreen";
 import TaskCalendarScreen from "./screens/TaskCalendarScreen";
 import TasksScreen from "./screens/TasksScreen";
+import WorkScreen from "./screens/WorkScreen";
+import TasksChooser from "./components/TasksChooser";
+import { buildWorkPreview } from "./utils/workPreview";
 import { gameStateService } from "./services/gameStateService";
 import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/reviewService";
 import { ensureNotificationPermission, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
 import { getReturnRecap, ReturnRecap, shouldShowBackupNudge } from "./utils/returnRecap";
 import {
   AppLanguage,
+  AppSettings,
   AppAppearance,
   AppThemeId,
   CustomTaskTemplate,
@@ -58,6 +64,9 @@ import {
   TaskType,
   TimerAlertMode,
   Room,
+  WorkEditScope,
+  WorkItem,
+  HolderId,
 } from "./types";
 import { upsertCustomTaskTemplate } from "./utils/customTaskTemplates";
 import {
@@ -66,8 +75,13 @@ import {
   applyTaskDeleted,
   applyTaskUpdated,
   completeTask,
+  completeWorkOccurrence,
   equipPet,
+  upsertWorkItems,
 } from "./utils/gameplay";
+import { deleteOccurrence } from "./utils/workSchedule";
+import { editWorkItems, saveWorkItem, WorkItemFields } from "./utils/workForm";
+import { generateId } from "./utils/idUtils";
 import {
   buyDecoration,
   getRoadPosition,
@@ -78,7 +92,30 @@ import { ambienceFor } from "./utils/ambience";
 import { playGrowraCue, setGrowraAmbience } from "./utils/growraAudio";
 import { createInitialGameState, createSaveData } from "./utils/initialState";
 
-import { syncRecurringTasks } from "./utils/taskSchedule";
+import { getTodayTasks, syncRecurringTasks } from "./utils/taskSchedule";
+import {
+  MAX_GROUP_NAME_LENGTH,
+  completeGroupOccurrence,
+  completeGroupTask,
+  createGroup,
+  deleteGroup,
+  getHolderTasks,
+  getHolderWorkItems,
+  isBuiltIn,
+  setHolderTasks,
+  setHolderWorkItems,
+  updateGroup,
+} from "./utils/groups";
+import { GroupShare, importGroupCode } from "./utils/groupCode";
+import {
+  addTaskWithCopies,
+  addWorkItemWithCopies,
+  applyLinkedOccurrenceDelete,
+  linkTargets,
+  unlink,
+} from "./utils/groupLinks";
+import { applyLinkedWorkEdit, deleteTaskCopies, editTaskCopies, linkedCopies, taskEditChange } from "./utils/linkedEdits";
+import type { GroupFields } from "./components/GroupFormModal";
 import {
   finishTaskTimer,
   pauseTaskTimer,
@@ -94,7 +131,7 @@ import {
 const plusService = createPlusService(expoIapClient);
 const adsService = createAdsService(googleAdsClient, REWARDED_AD_UNIT_ID);
 
-type Screen = "dashboard" | "tasks" | "task-calendar" | "journey" | "companions";
+type Screen = "dashboard" | "tasks" | "task-calendar" | "work-calendar" | "journey" | "companions";
 
 interface TaskTutorialUiState {
   modalVisible: boolean;
@@ -142,6 +179,9 @@ export default function App() {
   // Latest state for event handlers. Reading `gameState` from the render closure lets two
   // quick taps both act on the same old state (e.g. completing one task twice).
   const gameStateRef = useRef<GameState | null>(null);
+  const [praise, setPraise] = useState<string | null>(null);
+  const lastPraiseRef = useRef<string | null>(null);
+  const praiseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaveWarningRef = useRef(0);
   const [returnRecap, setReturnRecap] = useState<ReturnRecap | null>(null);
   const [backupNudgeVisible, setBackupNudgeVisible] = useState(false);
@@ -158,7 +198,7 @@ export default function App() {
     selectedPredefinedTaskId: "",
   });
   const tutorialStep = gameState
-    ? getTutorialStep(gameState, activeScreen, taskTutorialUiState.modalVisible)
+    ? getTutorialStep(gameState, activeScreen === "work-calendar" ? "task-calendar" : activeScreen, taskTutorialUiState.modalVisible)
     : "done";
   const [plusVisible, setPlusVisible] = useState(false);
   const [exploreBusy, setExploreBusy] = useState(false);
@@ -166,6 +206,22 @@ export default function App() {
   const [roomEditorId, setRoomEditorId] = useState<string | null>(null);
   const [appActive, setAppActive] = useState(true);
   const [adConsentAvailable, setAdConsentAvailable] = useState(false);
+  // The Work screen's and dashboard Work section's clock: it moves the running shift and its encouragement along while shown.
+  const [workNow, setWorkNow] = useState(() => Date.now());
+  const openSection = gameState?.settings.tasksSection;
+  const workScreenOpen =
+    (activeScreen === "tasks" &&
+      (openSection === "work" ||
+        gameState?.groups.some((group) => group.id === openSection && group.kind === "schedule") === true)) ||
+    (activeScreen === "dashboard" &&
+      ((gameState?.workItems.length ?? 0) > 0 ||
+        gameState?.groups.some((group) => group.kind === "schedule" && group.workItems.length > 0) === true));
+  useEffect(() => {
+    if (!workScreenOpen || !appActive) return;
+    setWorkNow(Date.now());
+    const interval = setInterval(() => setWorkNow(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, [workScreenOpen, appActive]);
 
   // Android Back: close the room editor, then return to the dashboard, then (optionally) ask
   // before leaving. Open modals handle Back themselves (onRequestClose) and never reach this.
@@ -224,7 +280,7 @@ export default function App() {
   // The ambience follows the screen (home / journey / room editor) and pauses while the app is inactive.
   useEffect(() => {
     const musicEnabled = appActive && (gameState?.settings.musicEnabled ?? false);
-    void setGrowraAmbience(ambienceFor(activeScreen, roomEditorId !== null, musicEnabled));
+    void setGrowraAmbience(ambienceFor(activeScreen === "work-calendar" ? "task-calendar" : activeScreen, roomEditorId !== null, musicEnabled));
   }, [appActive, activeScreen, roomEditorId, gameState?.settings.musicEnabled]);
 
   useEffect(() => () => void setGrowraAmbience(null), []);
@@ -376,14 +432,28 @@ export default function App() {
   const handleAddTask = async (
     task: Task,
     customTemplate?: CustomTaskTemplate,
+    holder: HolderId = "personal",
+    alsoAddTo: string[] = [],
   ) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    const updated = applyTaskCreated(
+    if (!isBuiltIn(holder)) {
+      // A group's task is invisible to the game: no usage, days or companion joins, only the list (and the template).
+      const withTask = addTaskWithCopies(gameState, holder, task, alsoAddTo, generateId);
+      await persistGameState(
+        customTemplate
+          ? { ...withTask, customTaskTemplates: upsertCustomTaskTemplate(gameState.customTaskTemplates, customTemplate) }
+          : withTask,
+      );
+      void playGrowraCue("task-added", gameState.settings.sfxEnabled);
+      return;
+    }
+
+    // The copies in groups are only data; the game reacts to the Personal task alone.
+    const withTasks = addTaskWithCopies(
       {
         ...gameState,
-        tasks: [...gameState.tasks, task],
         customTaskTemplates: customTemplate
           ? upsertCustomTaskTemplate(
               gameState.customTaskTemplates,
@@ -392,19 +462,52 @@ export default function App() {
           : gameState.customTaskTemplates,
         lastPlayedAt: Date.now(),
       },
+      "personal",
       task,
+      alsoAddTo,
+      generateId,
     );
+    const updated = applyTaskCreated(withTasks, withTasks.tasks.find((candidate) => candidate.id === task.id) ?? task);
     const companionCue = newCompanionAudioCue(gameState, updated);
     await persistGameState(updated);
     void playGrowraCue(companionCue ?? "task-added", gameState.settings.sfxEnabled);
   };
 
-  const handleCompleteTask = async (taskId: string) => {
+  /** The active companion's short line after a tick, for ~2.5 s; a new tick replaces it. No companion, no bubble. */
+  const showPraise = (state: GameState, kind: "task" | "shift") => {
+    const companion = getActiveCompanion(state);
+    if (!companion) return;
+    const line = pickPraiseLine(getAppCopy(state.settings.language), kind, companion.name, lastPraiseRef.current);
+    lastPraiseRef.current = line;
+    setPraise(line);
+    if (praiseTimerRef.current) clearTimeout(praiseTimerRef.current);
+    praiseTimerRef.current = setTimeout(() => setPraise(null), 2500);
+  };
+
+  useEffect(() => () => {
+    if (praiseTimerRef.current) clearTimeout(praiseTimerRef.current);
+  }, []);
+
+  const handleCompleteTask = async (taskId: string, holder: HolderId = "personal") => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
+    if (!isBuiltIn(holder)) {
+      // Ticking in a group pays nothing and shows no praise: only the task changes.
+      const ticked = completeGroupTask(gameState, holder, taskId, Date.now());
+      if (ticked === gameState) return;
+      await persistGameState(ticked);
+      void playGrowraCue("task-complete", gameState.settings.sfxEnabled);
+      return;
+    }
+
     const updated = completeTask(gameState, taskId);
     if (updated === gameState) return;
+    await persistCompletion(gameState, updated);
+  };
+
+  /** Saves a completed task or shift and plays the moment's cue (the biggest milestone it reached wins). */
+  const persistCompletion = async (gameState: GameState, updated: GameState, kind: "task" | "shift" = "task") => {
     const companionCue = newCompanionAudioCue(gameState, updated);
     const tilesBefore = getRoadPosition(gameState.days).tiles;
     const tilesAfter = getRoadPosition(updated.days).tiles;
@@ -425,16 +528,32 @@ export default function App() {
               : "task-complete"
     );
     void playGrowraCue(cue, gameState.settings.sfxEnabled);
+    showPraise(updated, kind);
     // A camp is a natural, happy moment: offer Play's review popup there (once per install),
     // after the camp cue has had a moment to play.
     if (reachedCamp(tilesBefore, tilesAfter)) setTimeout(() => void maybeAskForReview(), 1500);
   };
 
-  const handleUpdateTask = async (updatedTask: Task) => {
+  /** `others`: holders whose linked copy takes the same edit (only the fields the player changed). */
+  const handleUpdateTask = async (updatedTask: Task, holder: HolderId = "personal", others: HolderId[] = []) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
+    const previousTask = getHolderTasks(gameState, holder).find((task) => task.id === updatedTask.id);
+    const withCopies = (state: GameState) =>
+      previousTask?.linkId && others.length > 0
+        ? editTaskCopies(state, previousTask.linkId, others, taskEditChange(previousTask, updatedTask))
+        : state;
 
-    const previousTask = gameState.tasks.find((task) => task.id === updatedTask.id);
+    if (!isBuiltIn(holder)) {
+      const tasks = getHolderTasks(gameState, holder);
+      if (!previousTask) return;
+      const edited = withCopies(setHolderTasks(gameState, holder, tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))));
+      const cue = newCompanionAudioCue(gameState, edited);
+      await persistGameState(edited);
+      void playGrowraCue(cue ?? "task-saved", gameState.settings.sfxEnabled);
+      return;
+    }
+
     const updatedState = {
       ...gameState,
       tasks: gameState.tasks.map((task) =>
@@ -442,9 +561,9 @@ export default function App() {
       ),
       lastPlayedAt: Date.now(),
     };
-    const nextState = previousTask
-      ? applyTaskUpdated(updatedState, previousTask, updatedTask)
-      : updatedState;
+    const nextState = withCopies(
+      previousTask ? applyTaskUpdated(updatedState, previousTask, updatedTask) : updatedState,
+    );
     const companionCue = newCompanionAudioCue(gameState, nextState);
     await persistGameState(nextState);
     if (previousTask) {
@@ -452,19 +571,30 @@ export default function App() {
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
+  /** `others`: holders whose linked copy is deleted too. */
+  const handleDeleteTask = async (taskId: string, holder: HolderId = "personal", others: HolderId[] = []) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
+    const deletedTask = getHolderTasks(gameState, holder).find((task) => task.id === taskId);
+    const withCopies = (state: GameState) =>
+      deletedTask?.linkId && others.length > 0 ? deleteTaskCopies(state, deletedTask.linkId, others) : state;
 
-    const deletedTask = gameState.tasks.find((task) => task.id === taskId);
+    if (!isBuiltIn(holder)) {
+      const tasks = getHolderTasks(gameState, holder);
+      if (!deletedTask) return;
+      const remaining = withCopies(setHolderTasks(gameState, holder, tasks.filter((task) => task.id !== taskId)));
+      const cue = newCompanionAudioCue(gameState, remaining);
+      await persistGameState(remaining);
+      void playGrowraCue(cue ?? "task-removed", gameState.settings.sfxEnabled);
+      return;
+    }
+
     const remainingState = {
       ...gameState,
       tasks: gameState.tasks.filter((task) => task.id !== taskId),
       lastPlayedAt: Date.now(),
     };
-    const nextState = deletedTask
-      ? applyTaskDeleted(remainingState, deletedTask)
-      : remainingState;
+    const nextState = withCopies(deletedTask ? applyTaskDeleted(remainingState, deletedTask) : remainingState);
     const companionCue = newCompanionAudioCue(gameState, nextState);
     await persistGameState(nextState);
     if (deletedTask) {
@@ -475,9 +605,16 @@ export default function App() {
   const applyTimerUpdate = async (
     taskId: string,
     updater: (task: Task) => Task,
+    holder: HolderId = "personal",
   ) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
+
+    if (!isBuiltIn(holder)) {
+      const tasks = getHolderTasks(gameState, holder);
+      await persistGameState(setHolderTasks(gameState, holder, tasks.map((task) => (task.id === taskId ? updater(task) : task))));
+      return;
+    }
 
     await persistGameState({
       ...gameState,
@@ -488,28 +625,28 @@ export default function App() {
     });
   };
 
-  const handleStartTimer = async (taskId: string) => {
+  const handleStartTimer = async (taskId: string, holder: HolderId = "personal") => {
     // The first timer start is the moment to ask; a refusal only means no background alert.
     await ensureNotificationPermission();
-    await applyTimerUpdate(taskId, startTaskTimer);
+    await applyTimerUpdate(taskId, startTaskTimer, holder);
     void playGrowraCue("timer-start", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
 
-  const handlePauseTimer = async (taskId: string) => {
-    await applyTimerUpdate(taskId, pauseTaskTimer);
+  const handlePauseTimer = async (taskId: string, holder: HolderId = "personal") => {
+    await applyTimerUpdate(taskId, pauseTaskTimer, holder);
     void playGrowraCue("timer-pause", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
 
-  const handleResetTimer = async (taskId: string) => {
-    await applyTimerUpdate(taskId, resetTaskTimer);
+  const handleResetTimer = async (taskId: string, holder: HolderId = "personal") => {
+    await applyTimerUpdate(taskId, resetTaskTimer, holder);
     void playGrowraCue("timer-reset", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
 
-  const handleTimerReady = async (taskId: string) => {
+  const handleTimerReady = async (taskId: string, holder: HolderId = "personal") => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
 
-    await applyTimerUpdate(taskId, finishTaskTimer);
+    await applyTimerUpdate(taskId, finishTaskTimer, holder);
     await playTimerAlert(gameState.settings.timerAlert);
   };
 
@@ -595,7 +732,7 @@ export default function App() {
   // welcome gift and show the finish card.
   useEffect(() => {
     const current = gameStateRef.current;
-    if (!current || !tutorialVisible || !shouldFinishTutorial(current, activeScreen)) return;
+    if (!current || !tutorialVisible || !shouldFinishTutorial(current, activeScreen === "work-calendar" ? "task-calendar" : activeScreen)) return;
     setTutorialVisible(false);
     setTutorialCard("finish");
     void persistGameState(finishTutorial(current));
@@ -621,6 +758,192 @@ export default function App() {
     const gameState = gameStateRef.current;
     if (!gameState) return;
     await persistGameState({ ...gameState, settings: { ...gameState.settings, confirmExit } });
+  };
+
+  const handleTasksSectionChange = async (tasksSection: AppSettings["tasksSection"]) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection } });
+  };
+
+  /** Creates a group from the chooser; returns why nothing was made (cap or blank name). */
+  const handleCreateGroup = (fields: GroupFields): "cap" | "name" | null => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return null;
+    const created = createGroup(gameState, fields, generateId(), Date.now());
+    if ("error" in created) return created.error;
+    void persistGameState(created);
+    void playGrowraCue("task-added", gameState.settings.sfxEnabled);
+    return null;
+  };
+
+  const handleUpdateGroup = (id: string, fields: { name: string; color: string }): "name" | null => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return null;
+    const name = fields.name.trim();
+    if (name === "" || name.length > MAX_GROUP_NAME_LENGTH) return "name";
+    void persistGameState(updateGroup(gameState, id, { name, color: fields.color }));
+    void playGrowraCue("task-saved", gameState.settings.sfxEnabled);
+    return null;
+  };
+
+  const handleDeleteGroup = (id: string) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    void persistGameState(deleteGroup(gameState, id));
+    void playGrowraCue("task-removed", gameState.settings.sfxEnabled);
+  };
+
+  /** Adds a shared code as a group (or updates the one from the same source); never touches Personal or Work. */
+  const handleImportGroup = (share: GroupShare, mode: "new" | "update"): "cap" | null => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return null;
+    const sharedLabel = getAppCopy(gameState.settings.language).groupImportSharedLabel;
+    const imported = importGroupCode(gameState, share, Date.now(), generateId, mode, sharedLabel);
+    if ("error" in imported) return imported.error;
+    void persistGameState(imported);
+    void playGrowraCue("task-added", gameState.settings.sfxEnabled);
+    return null;
+  };
+
+  /** Writes a schedule holder's items: Work's own array (as before) or the group's. */
+  const persistWorkItems = async (holder: HolderId, items: WorkItem[]) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState(holder === "work" ? upsertWorkItems(gameState, items) : setHolderWorkItems(gameState, holder, items));
+  };
+
+  /** `alsoAddTo`: schedule groups that get a linked copy of a new item. */
+  const handleSaveWorkItem = async (item: WorkItem, holder: HolderId = "work", alsoAddTo: string[] = []) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const items = getHolderWorkItems(gameState, holder);
+    const exists = items.some((candidate) => candidate.id === item.id);
+    if (!exists && alsoAddTo.length > 0) {
+      const added = addWorkItemWithCopies(gameState, holder, item, alsoAddTo, generateId);
+      await persistGameState(holder === "work" ? { ...added, lastPlayedAt: Date.now() } : added);
+    } else {
+      await persistWorkItems(holder, saveWorkItem(items, item));
+    }
+    void playGrowraCue(exists ? "task-saved" : "task-added", gameState.settings.sfxEnabled);
+  };
+
+  /** An edit of a linked work item reaching its own holder and the copies in `others` (scope null: a one-off). */
+  const handleEditLinkedWork = async (
+    item: WorkItem,
+    dateKey: string,
+    fields: WorkItemFields,
+    scope: WorkEditScope | null,
+    holder: HolderId,
+    others: HolderId[],
+  ) => {
+    const gameState = gameStateRef.current;
+    if (!gameState || !item.linkId) return;
+    const holders = [holder, ...others];
+    const edited = applyLinkedWorkEdit(gameState, item.linkId, holders, item, dateKey, fields, scope, generateId);
+    if (edited === gameState) return;
+    await persistGameState(holders.includes("work") ? { ...edited, lastPlayedAt: Date.now() } : edited);
+    void playGrowraCue("task-saved", gameState.settings.sfxEnabled);
+  };
+
+  /** Makes one copy independent of the others. */
+  const handleUnlink = async (holder: HolderId, itemId: string) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const unlinked = unlink(gameState, holder, itemId);
+    if (unlinked === gameState) return;
+    await persistGameState(unlinked);
+    void playGrowraCue("task-saved", gameState.settings.sfxEnabled);
+  };
+
+  const handleEditWorkOccurrence = async (
+    itemId: string,
+    dateKey: string,
+    fields: WorkItemFields,
+    scope: WorkEditScope,
+    holder: HolderId = "work",
+  ) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const items = editWorkItems(getHolderWorkItems(gameState, holder), itemId, dateKey, fields, scope, generateId);
+    if (!items) return;
+    await persistWorkItems(holder, items);
+    void playGrowraCue("task-saved", gameState.settings.sfxEnabled);
+  };
+
+  /** `others`: holders whose linked copy loses the same date(s). */
+  const handleDeleteWorkOccurrence = async (
+    itemId: string,
+    dateKey: string,
+    scope: WorkEditScope,
+    holder: HolderId = "work",
+    others: HolderId[] = [],
+  ) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const linkId = getHolderWorkItems(gameState, holder).find((item) => item.id === itemId)?.linkId;
+    if (linkId && others.length > 0) {
+      const holders = [holder, ...others];
+      const deleted = applyLinkedOccurrenceDelete(gameState, linkId, holders, dateKey, scope);
+      await persistGameState(holders.includes("work") ? { ...deleted, lastPlayedAt: Date.now() } : deleted);
+      void playGrowraCue("task-removed", gameState.settings.sfxEnabled);
+      return;
+    }
+    await persistWorkItems(holder, deleteOccurrence(getHolderWorkItems(gameState, holder), itemId, dateKey, scope));
+    void playGrowraCue("task-removed", gameState.settings.sfxEnabled);
+  };
+
+  const handleCompleteWorkOccurrence = async (itemId: string, dateKey: string, holder: HolderId = "work") => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    if (!isBuiltIn(holder)) {
+      // A group's schedule item is just marked done: no pay and no praise.
+      const ticked = completeGroupOccurrence(gameState, holder, itemId, dateKey, Date.now());
+      if (ticked === gameState) return;
+      setWorkNow(Date.now());
+      await persistGameState(ticked);
+      void playGrowraCue("task-complete", gameState.settings.sfxEnabled);
+      return;
+    }
+    const updated = completeWorkOccurrence(gameState, itemId, dateKey);
+    if (updated === gameState) return;
+    setWorkNow(Date.now());
+    await persistCompletion(gameState, updated, "shift");
+  };
+
+  const openHolderScreen = async (holder: HolderId) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, tasksSection: holder } });
+    setActiveScreen("tasks");
+    playUiTap();
+  };
+
+  const handleToggleDashboardSection = async (section: HolderId) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const dashboardCollapsed = {
+      ...gameState.settings.dashboardCollapsed,
+      [section]: gameState.settings.dashboardCollapsed[section] !== true,
+    };
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, dashboardCollapsed } });
+    playUiTap();
+  };
+
+  const handleWorkViewChange = async (workView: GameState["settings"]["workView"]) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, workView } });
+    playUiTap();
+  };
+
+  const handleCalendarHolderToggle = async (holder: HolderId) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const shown = gameState.settings.calendarShow;
+    const calendarShow: HolderId[] = shown.includes(holder) ? shown.filter((id) => id !== holder) : [...shown, holder];
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, calendarShow } });
+    playUiTap();
   };
 
   const handleTaskToolsOpenChange = async (taskToolsOpen: boolean) => {
@@ -816,14 +1139,51 @@ export default function App() {
         Alert.alert(copy.settingsExportCsv, copy.csvExportError);
       }
     };
-    Alert.alert(copy.settingsExportCsv, copy.csvExportChoose, [
+    // Work export range: the earliest work item start to today, both included.
+    const workRange = getWorkExportRange(current.workItems, Date.now());
+    const groupsRange = getGroupsExportRange(current.groups, Date.now());
+    const buttons: AlertButton[] = [
       { text: copy.csvExportTasks, onPress: () => void share("growra-tasks.csv", buildTasksCsv(current.tasks)) },
       {
         text: copy.csvExportCompletions,
         onPress: () => void share("growra-completions.csv", buildCompletionsCsv(current.days)),
       },
-      { text: copy.addTaskCancel, style: "cancel" },
-    ]);
+    ];
+    // Android shows at most three buttons, so when Work and groups both exist they share one
+    // file (Work as the first "group"); other platforms get a button for each.
+    const mergeWork = Platform.OS === "android" && workRange !== null && groupsRange !== null;
+    if (mergeWork) {
+      const withWork: GameState = {
+        ...current,
+        groups: [
+          { id: "work", name: copy.tasksChooseWork, color: "", kind: "schedule", createdAt: 0, tasks: [], workItems: current.workItems },
+          ...current.groups,
+        ],
+      };
+      const range = getGroupsExportRange(withWork.groups, Date.now());
+      if (range) {
+        buttons.push({
+          text: copy.csvExportWorkAndGroups,
+          onPress: () => void share("growra-work-groups.csv", buildGroupsCsv(withWork, range.fromKey, range.toKey)),
+        });
+      }
+    } else {
+      if (workRange) {
+        buttons.push({
+          text: copy.csvExportWork,
+          onPress: () => void share("growra-work.csv", buildWorkCsv(current.workItems, workRange.fromKey, workRange.toKey)),
+        });
+      }
+      if (groupsRange) {
+        buttons.push({
+          text: copy.csvExportGroups,
+          onPress: () => void share("growra-groups.csv", buildGroupsCsv(current, groupsRange.fromKey, groupsRange.toKey)),
+        });
+      }
+    }
+    // Android shows at most three buttons: with a third file the dialog closes through Back or a tap outside.
+    if (buttons.length < 3 || Platform.OS !== "android") buttons.push({ text: copy.addTaskCancel, style: "cancel" });
+    Alert.alert(copy.settingsExportCsv, copy.csvExportChoose, buttons, { cancelable: true });
   };
 
   const handleExportData = async (): Promise<string> => {
@@ -897,6 +1257,15 @@ export default function App() {
               setReturnRecap(null);
               playUiTap();
             }}
+            onCompleteWorkOccurrence={(itemId, dateKey) => void handleCompleteWorkOccurrence(itemId, dateKey)}
+            onOpenWork={() => void openHolderScreen("work")}
+            onToggleSection={(section) => void handleToggleDashboardSection(section)}
+            onCompleteGroupTask={(groupId, taskId) => void handleCompleteTask(taskId, groupId)}
+            onCompleteGroupOccurrence={(groupId, itemId, dateKey) =>
+              void handleCompleteWorkOccurrence(itemId, dateKey, groupId)
+            }
+            onOpenGroup={(groupId) => void openHolderScreen(groupId)}
+            workNow={workNow}
             backupNudgeVisible={backupNudgeVisible}
             onShareBackup={() => {
               setBackupNudgeVisible(false);
@@ -911,14 +1280,81 @@ export default function App() {
             }}
           />
         );
-      case "tasks":
+      case "tasks": {
+        // The tutorial always works in Personal, whatever section is remembered.
+        const remembered = tutorialStep !== "done" ? "personal" : viewState.settings.tasksSection;
+        const group =
+          remembered === "choose" || isBuiltIn(remembered)
+            ? undefined
+            : gameState.groups.find((candidate) => candidate.id === remembered);
+        // A group that no longer exists falls back to the choice screen.
+        const section = remembered !== "choose" && !isBuiltIn(remembered) && !group ? "choose" : remembered;
+        if (section === "choose") {
+          const now = Date.now();
+          return (
+            <TasksChooser
+              settings={viewState.settings}
+              gameState={gameState}
+              now={now}
+              personalCount={getTodayTasks(gameState.tasks, now).length}
+              workPreview={buildWorkPreview(gameState.workItems, now, viewState.settings)}
+              onChoose={(choice) => {
+                playUiTap();
+                void handleTasksSectionChange(choice);
+              }}
+              onCreateGroup={handleCreateGroup}
+              onUpdateGroup={handleUpdateGroup}
+              onDeleteGroup={handleDeleteGroup}
+              onImportGroup={handleImportGroup}
+              onUiTap={playUiTap}
+            />
+          );
+        }
+        const holder: HolderId = group ? group.id : section;
+        const copy = getAppCopy(viewState.settings.language);
+        const copiesOf = (item: { linkId?: string }) =>
+          linkedCopies(gameState, holder, item, { personal: copy.tasksChoosePersonal, work: copy.tasksChooseWork });
+        if (section === "work" || group?.kind === "schedule") {
+          return (
+            <WorkScreen
+              gameState={viewState}
+              holder={holder}
+              title={group ? group.name : copy.workTitle}
+              accentColor={group ? group.color : appTheme.accent}
+              items={getHolderWorkItems(gameState, holder)}
+              settings={viewState.settings}
+              now={workNow}
+              onBackToChooser={() => void handleTasksSectionChange("choose")}
+              onSaveItem={(item, alsoAddTo) => void handleSaveWorkItem(item, holder, alsoAddTo)}
+              onEditOccurrence={(itemId, dateKey, fields, scope) => void handleEditWorkOccurrence(itemId, dateKey, fields, scope, holder)}
+              onEditLinked={(item, dateKey, fields, scope, others) =>
+                void handleEditLinkedWork(item, dateKey, fields, scope, holder, others)
+              }
+              onDeleteOccurrence={(itemId, dateKey, scope, others) =>
+                void handleDeleteWorkOccurrence(itemId, dateKey, scope, holder, others)
+              }
+              onUnlink={(itemId) => void handleUnlink(holder, itemId)}
+              linkTargets={linkTargets(gameState, "schedule", holder)}
+              linkedCopiesOf={copiesOf}
+              onCompleteOccurrence={(itemId, dateKey) => void handleCompleteWorkOccurrence(itemId, dateKey, holder)}
+              onSetView={(view) => void handleWorkViewChange(view)}
+              onOpenCalendar={() => handleNavigate("work-calendar")}
+            />
+          );
+        }
         return (
           <TasksScreen
+            holder={holder}
+            title={group ? group.name : copy.tasksTitle}
+            accentColor={group ? group.color : appTheme.accent}
+            onBackToChooser={
+              tutorialStep === "done" ? () => void handleTasksSectionChange("choose") : undefined
+            }
             settings={viewState.settings}
-            tasks={gameState.tasks}
+            tasks={getHolderTasks(gameState, holder)}
             customTaskTemplates={gameState.customTaskTemplates}
             tutorialTarget={
-              !tutorialVisible
+              group || !tutorialVisible
                 ? null
                 : tutorialStep === "tap-add-task"
                   ? "add-button"
@@ -929,27 +1365,47 @@ export default function App() {
                       : null
             }
             onTutorialStateChange={setTaskTutorialUiState}
-            onAddTask={handleAddTask}
-            onCompleteTask={handleCompleteTask}
-            onUpdateTask={handleUpdateTask}
-            onDeleteTask={handleDeleteTask}
+            onAddTask={(task, customTemplate, alsoAddTo) => void handleAddTask(task, customTemplate, holder, alsoAddTo)}
+            onCompleteTask={(taskId) => void handleCompleteTask(taskId, holder)}
+            onUpdateTask={(task, others) => void handleUpdateTask(task, holder, others)}
+            onDeleteTask={(taskId, others) => void handleDeleteTask(taskId, holder, others)}
+            onUnlink={(taskId) => void handleUnlink(holder, taskId)}
+            // The tutorial's first task stays a plain Personal task.
+            linkTargets={tutorialStep === "done" ? linkTargets(gameState, "list", holder) : []}
+            linkedCopiesOf={copiesOf}
             onOpenCalendar={() => handleNavigate("task-calendar")}
             onTaskToolsOpenChange={(open) => void handleTaskToolsOpenChange(open)}
             onUiTap={playUiTap}
-            onStartTimer={handleStartTimer}
-            onPauseTimer={handlePauseTimer}
-            onResetTimer={handleResetTimer}
-            onTimerReady={handleTimerReady}
+            onStartTimer={(taskId) => void handleStartTimer(taskId, holder)}
+            onPauseTimer={(taskId) => void handlePauseTimer(taskId, holder)}
+            onResetTimer={(taskId) => void handleResetTimer(taskId, holder)}
+            onTimerReady={(taskId) => void handleTimerReady(taskId, holder)}
           />
         );
+      }
       case "task-calendar":
+      case "work-calendar": {
+        // The calendar opens from a holder's own screen; Tasks remembers which one that was.
+        const remembered = gameState.settings.tasksSection;
+        const calendarHolder: HolderId =
+          remembered !== "choose" && (isBuiltIn(remembered) || gameState.groups.some((group) => group.id === remembered))
+            ? remembered
+            : activeScreen === "work-calendar"
+              ? "work"
+              : "personal";
         return (
           <TaskCalendarScreen
             settings={viewState.settings}
             tasks={gameState.tasks}
+            workItems={gameState.workItems}
+            groups={gameState.groups}
+            holder={calendarHolder}
+            onToggleHolder={(toggled) => void handleCalendarHolderToggle(toggled)}
+            onOpenHolder={(opened) => void openHolderScreen(opened)}
             onBack={() => handleNavigate("tasks")}
           />
         );
+      }
       case "journey":
         return (
           <JourneyScreen
@@ -995,9 +1451,12 @@ export default function App() {
         style={[styles.container, { backgroundColor: appTheme.background }]}
       >
         {renderScreen()}
+        {praise && gameState && getActiveCompanion(gameState) ? (
+          <PraiseBubble text={praise} pet={getActiveCompanion(gameState)!} settings={viewState.settings} />
+        ) : null}
         <BottomNavigation
           activeScreen={
-            activeScreen === "task-calendar" ? "tasks" : activeScreen
+            activeScreen === "task-calendar" || activeScreen === "work-calendar" ? "tasks" : activeScreen
           }
           onNavigate={handleNavigate}
           settings={viewState.settings}

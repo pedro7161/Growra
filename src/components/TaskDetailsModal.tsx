@@ -14,13 +14,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { taskCalendarColors, taskPriorityOptions } from "../constants/taskConfig";
-import { AppSettings, CustomTaskTemplate, Task, TaskFrequency, TaskPriority, TaskType } from "../types";
+import { AppSettings, CustomTaskTemplate, HolderId, Task, TaskFrequency, TaskPriority, TaskType } from "../types";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import { updateTaskTimerDuration } from "../utils/taskTimer";
+import DurationField from "./DurationField";
+import { formatTaskDuration } from "../utils/taskDuration";
 import TaskDatePicker from "./TaskDatePicker";
 import { taskCategoryLabel } from "../utils/taskLabels";
 import { categorySuggestions, matchExistingCategory } from "../utils/categorySuggestions";
 import { customTaskDraftProblem } from "../utils/taskDraft";
+import { LinkedCopy, taskEditChange } from "../utils/linkedEdits";
+import LinkedScopePrompt, { LinkedCopiesCard } from "./LinkedScopePrompt";
 
 interface TaskDetailsModalProps {
   visible: boolean;
@@ -28,8 +32,14 @@ interface TaskDetailsModalProps {
   task: Task | null;
   customTaskTemplates: CustomTaskTemplate[];
   onClose: () => void;
-  onSave: (task: Task) => void;
-  onDelete: (taskId: string) => void;
+  /** `others`: the other copies of a linked task the edit also reaches. */
+  onSave: (task: Task, others: HolderId[]) => void;
+  /** `others`: the other copies to delete with it. */
+  onDelete: (taskId: string, others: HolderId[]) => void;
+  /** The other copies of a linked task. */
+  linkedCopies?: LinkedCopy[];
+  /** Makes the task independent of its copies. */
+  onUnlink?: () => void;
 }
 
 export default function TaskDetailsModal({
@@ -40,8 +50,15 @@ export default function TaskDetailsModal({
   onClose,
   onSave,
   onDelete,
+  linkedCopies = [],
+  onUnlink,
 }: TaskDetailsModalProps) {
   const copy = getAppCopy(settings.language);
+  const durationUnits = {
+    seconds: copy.tasksDurationSecondsUnit,
+    minutes: copy.tasksDurationMinutesUnit,
+    hours: copy.tasksDurationHoursUnit,
+  };
   const theme = getAppTheme(settings.theme);
   // categorySuggestions drops blank categories, so a template saved without one can't
   // render an empty chip (#47). Unbounded on purpose: this modal has never capped its
@@ -52,10 +69,13 @@ export default function TaskDetailsModal({
   );
   const [draftTask, setDraftTask] = useState<Task | null>(task);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // A linked task asks which copies the save or delete reaches; it holds the task to save.
+  const [linkPrompt, setLinkPrompt] = useState<{ action: "edit"; task: Task } | { action: "delete" } | null>(null);
 
   useEffect(() => {
     setDraftTask(task);
     setConfirmingDelete(false);
+    setLinkPrompt(null);
   }, [task]);
 
   if (!draftTask) {
@@ -132,7 +152,13 @@ export default function TaskDetailsModal({
               }
               // One spelling per category (#60): "Work" typed while "work" exists saves as "work",
               // the same way the add form does.
-              onSave({ ...draftTask, category: matchExistingCategory(draftTask.category, customCategories) });
+              const edited = { ...draftTask, category: matchExistingCategory(draftTask.category, customCategories) };
+              // Only an actual change asks about the copies.
+              if (task && linkedCopies.length > 0 && Object.keys(taskEditChange(task, edited)).length > 0) {
+                setLinkPrompt({ action: "edit", task: edited });
+                return;
+              }
+              onSave(edited, []);
             }}
           >
             <Text style={[styles.headerAction, { color: theme.accent }]}>{copy.tasksSave}</Text>
@@ -275,6 +301,19 @@ export default function TaskDetailsModal({
             </View>
 
             <View style={styles.field}>
+              <Text style={[styles.label, { color: theme.text }]}>
+                {copy.tasksDuration}
+                {draftTask.durationMinutes ? ` ≈ ${formatTaskDuration(draftTask.durationMinutes, durationUnits)}` : ""}
+              </Text>
+              <DurationField
+                settings={settings}
+                copy={copy}
+                minutes={draftTask.durationMinutes}
+                onChange={(minutes) => setDraftTask({ ...draftTask, durationMinutes: minutes ?? undefined })}
+              />
+            </View>
+
+            <View style={styles.field}>
               <Text style={[styles.label, { color: theme.text }]}>{copy.tasksPriority}</Text>
               <View style={styles.row}>
                 {taskPriorityOptions.map((priority) => (
@@ -315,10 +354,13 @@ export default function TaskDetailsModal({
             </View>
           </View>
 
+          {onUnlink ? <LinkedCopiesCard settings={settings} copies={linkedCopies} onUnlink={onUnlink} /> : null}
+
           {!confirmingDelete ? (
             <TouchableOpacity
               style={[styles.deleteButton, { backgroundColor: theme.danger }]}
-              onPress={() => setConfirmingDelete(true)}
+              // The copies prompt is its own confirmation.
+              onPress={() => (linkedCopies.length > 0 ? setLinkPrompt({ action: "delete" }) : setConfirmingDelete(true))}
             >
               <Text style={styles.deleteButtonText}>{copy.tasksDelete}</Text>
             </TouchableOpacity>
@@ -333,7 +375,7 @@ export default function TaskDetailsModal({
               <TouchableOpacity
                 style={[styles.deleteButton, { backgroundColor: theme.danger }]}
                 onPress={() => {
-                  onDelete(draftTask.id);
+                  onDelete(draftTask.id, []);
                   setConfirmingDelete(false);
                 }}
               >
@@ -342,6 +384,19 @@ export default function TaskDetailsModal({
             </View>
           )}
         </ScrollView>
+        {linkPrompt ? (
+          <LinkedScopePrompt
+            settings={settings}
+            action={linkPrompt.action}
+            copies={linkedCopies}
+            onConfirm={(others) => {
+              setLinkPrompt(null);
+              if (linkPrompt.action === "edit") onSave(linkPrompt.task, others);
+              else onDelete(draftTask.id, others);
+            }}
+            onCancel={() => setLinkPrompt(null)}
+          />
+        ) : null}
       </SafeAreaView>
     </Modal>
   );

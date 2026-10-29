@@ -26,6 +26,7 @@ export interface TaskFormValues {
   dueDate: number;
   timerEnabled: boolean;
   timerDurationMinutes: number;
+  durationMinutes: number | null;
   saveAsTemplate: boolean;
 }
 
@@ -43,6 +44,7 @@ export function createQuickAddTaskFormValues(name: string, now = Date.now()): Ta
     dueDate: getStartOfDay(now),
     timerEnabled: false,
     timerDurationMinutes: 5,
+    durationMinutes: null,
     saveAsTemplate: false,
   };
 }
@@ -65,6 +67,7 @@ export function buildTaskFromFormValues(values: TaskFormValues): {
           values.timerEnabled,
           values.timerDurationMinutes,
           values.priority,
+          values.durationMinutes,
         )
       : createCustomTask(
           values.name,
@@ -76,6 +79,7 @@ export function buildTaskFromFormValues(values: TaskFormValues): {
           values.timerEnabled,
           values.timerDurationMinutes,
           values.priority,
+          values.durationMinutes,
         );
 
   const customTemplate =
@@ -103,7 +107,8 @@ export function createTask(
   priority: TaskPriority = TaskPriority.MEDIUM,
   calendarColor: string = DEFAULT_TASK_CALENDAR_COLOR,
   timerEnabled: boolean = false,
-  timerDurationMinutes: number = 0
+  timerDurationMinutes: number = 0,
+  durationMinutes: number | null = null
 ): Task {
   const now = Date.now();
   const durationMs = Math.max(0, Math.round(timerDurationMinutes * 60 * 1000));
@@ -124,6 +129,7 @@ export function createTask(
     dueDate,
     createdAt: now,
     timer: timerConfig,
+    ...(durationMinutes ? { durationMinutes } : {}),
   };
 }
 
@@ -136,7 +142,8 @@ export function createCustomTask(
   dueDate: number = getStartOfDay(Date.now()),
   timerEnabled: boolean = false,
   timerDurationMinutes: number = 0,
-  priority: TaskPriority = TaskPriority.MEDIUM
+  priority: TaskPriority = TaskPriority.MEDIUM,
+  durationMinutes: number | null = null
 ): Task {
   return createTask(
     name,
@@ -150,7 +157,8 @@ export function createCustomTask(
     priority,
     DEFAULT_TASK_CALENDAR_COLOR,
     timerEnabled,
-    timerDurationMinutes
+    timerDurationMinutes,
+    durationMinutes
   );
 }
 
@@ -160,7 +168,8 @@ export function createPredefinedTask(
   dueDate: number = getStartOfDay(Date.now()),
   timerEnabled: boolean = false,
   timerDurationMinutes: number = 0,
-  priority: TaskPriority = TaskPriority.MEDIUM
+  priority: TaskPriority = TaskPriority.MEDIUM,
+  durationMinutes: number | null = null
 ): Task {
   return createTask(
     template.name,
@@ -174,6 +183,7 @@ export function createPredefinedTask(
     priority,
     template.calendarColor,
     timerEnabled,
-    timerDurationMinutes
+    timerDurationMinutes,
+    durationMinutes
   );
 }

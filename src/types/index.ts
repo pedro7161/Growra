@@ -55,6 +55,13 @@ export interface AppSettings {
   musicEnabled: boolean;
   sfxEnabled: boolean;
   timerAlert: TimerAlertSettings;
+  /** Which Tasks section opens: the chooser, personal tasks, the work schedule or a group. */
+  tasksSection: "choose" | HolderId;
+  workView: "day" | "week";
+  /** Dashboard sections the player folded away, by holder ("personal", "work" or a group id). */
+  dashboardCollapsed: Record<string, boolean>;
+  /** Holders the calendar shows beside the one it was opened from. */
+  calendarShow: HolderId[];
 }
 
 export interface PredefinedTaskTemplate {
@@ -89,7 +96,11 @@ export interface Task {
   dueDate: number; // next active timestamp
   createdAt: number;
   completedAt?: number;
+  /** How long the task takes, in minutes; longer tasks pay more. */
+  durationMinutes?: number;
   timer: TaskTimer;
+  /** Shared by copies of this task in other holders (see utils/groupLinks); absent when it stands alone. */
+  linkId?: string;
 }
 
 export type TaskTimerState = "idle" | "running" | "paused" | "ready";
@@ -268,6 +279,72 @@ export interface ExploreState {
   count: number;
 }
 
+// Work schedule (docs/superpowers/specs/2026-10-28-work-schedule-design.md): a work item is a repeat rule
+// plus per-date exceptions; occurrences are generated for any day by utils/workSchedule.ts.
+export type WorkRepeat =
+  | { kind: "none" }
+  | { kind: "days"; interval: number } // every day = interval 1, every X days
+  | { kind: "weeks"; interval: number; weekdays: number[] } // 0=Sun..6=Sat
+  | { kind: "months"; interval: number }; // same day of month; months without that day are skipped
+
+export type WorkEnd = { kind: "never" } | { kind: "count"; count: number } | { kind: "until"; dateKey: string };
+
+export type WorkException =
+  | { kind: "skip" }
+  | { kind: "change"; name?: string; description?: string; startMinutes?: number; endMinutes?: number };
+
+export interface WorkItem {
+  id: string;
+  name: string;
+  description: string;
+  calendarColor: string;
+  startMinutes: number; // minutes from midnight
+  endMinutes: number; // end <= start means the end is on the next day
+  startDateKey: string; // "YYYY-MM-DD", local
+  repeat: WorkRepeat;
+  end: WorkEnd; // "count" counts skipped occurrences too
+  exceptions: Record<string, WorkException>; // by dateKey
+  completedDateKeys: string[];
+  createdAt: number;
+  /** Shared by copies of this item in other holders (see utils/groupLinks); absent when it stands alone. */
+  linkId?: string;
+}
+
+/** One generated date of a work item; it belongs to its start date even when it ends the next day. */
+export interface WorkOccurrence {
+  itemId: string;
+  dateKey: string;
+  start: number;
+  end: number;
+  name: string;
+  description: string;
+  calendarColor: string;
+  completed: boolean;
+}
+
+export type WorkEditScope = "one" | "following";
+
+/** A List group holds tasks; a Schedule group holds work items. */
+export type GroupKind = "list" | "schedule";
+
+/** Where items live: the built-in Personal or Work, or a group (by its id). */
+export type HolderId = "personal" | "work" | string;
+
+/** A player-made group of items; its items never earn rewards. */
+export interface Group {
+  id: string;
+  name: string;
+  color: string;
+  kind: GroupKind;
+  createdAt: number;
+  /** Stable id of the shared source, set on import. */
+  sourceId?: string;
+  /** Used when kind === "list". */
+  tasks: Task[];
+  /** Used when kind === "schedule". */
+  workItems: WorkItem[];
+}
+
 export interface GameState {
   playerId: string;
   level: number;
@@ -296,6 +373,8 @@ export interface GameState {
   backupNudgeShown: boolean;
   /** The app version whose What's New notes the player chose to stop seeing ("" = none yet). */
   whatsNewHiddenFor: string;
+  workItems: WorkItem[];
+  groups: Group[];
   createdAt: number;
   lastPlayedAt: number;
 }

@@ -3,6 +3,7 @@ import type { CompanionMood, CompanionStyle } from "../utils/companions";
 import type { TileFeature } from "../utils/journey";
 import type { Holiday, Season } from "../utils/seasons";
 import type { RoomCodeError } from "../utils/roomCode";
+import type { GroupCodeError } from "../utils/groupCode";
 
 interface CompanionStyleCopy {
   loves: string;
@@ -11,7 +12,7 @@ interface CompanionStyleCopy {
   joins: string;
 }
 
-interface AppCopy {
+export interface AppCopy {
   navDashboard: string;
   navTasks: string;
   navJourney: string;
@@ -38,6 +39,143 @@ interface AppCopy {
   dashboardNoTasksYet: string;
   dashboardSettings: string;
   tasksTitle: string;
+  tasksBackToChooser: string;
+  tasksChooserTitle: string;
+  tasksChoosePersonal: string;
+  tasksChooseWork: string;
+  tasksChoosePersonalCount: string;
+  tasksChooseWorkShift: string;
+  tasksChooseWorkNone: string;
+  tasksChooseWorkSetup: string;
+  workTitle: string;
+  tasksChooseWorkNoMore: string;
+  workEmptyTitle: string;
+  workEmptyBody: string;
+  workEmptyAdd: string;
+  workAdd: string;
+  workCalendar: string;
+  workViewDay: string;
+  workViewWeek: string;
+  workToday: string;
+  workPrevious: string;
+  workNext: string;
+  workNoShiftsDay: string;
+  groupScheduleEmptyTitle: string;
+  groupScheduleEmptyBody: string;
+  groupScheduleEmptyAdd: string;
+  groupScheduleNoItemsDay: string;
+  groupItemNewTitle: string;
+  groupItemEditTitle: string;
+  groupItemNamePlaceholder: string;
+  groupItemMarkDone: string;
+  groupDashboardOpen: string;
+  groupDashboardToggle: string;
+  groupAddCard: string;
+  groupAddTitle: string;
+  groupAddNew: string;
+  groupAddFromCode: string;
+  groupAddCapNote: string;
+  groupFormNewTitle: string;
+  groupFormEditTitle: string;
+  groupFormName: string;
+  groupFormNamePlaceholder: string;
+  groupFormNameMissing: string;
+  groupFormColor: string;
+  groupFormType: string;
+  groupKindSchedule: string;
+  groupKindScheduleHint: string;
+  groupKindList: string;
+  groupKindListHint: string;
+  groupFormTypeLocked: string;
+  groupFormCreate: string;
+  groupFormSave: string;
+  groupCapReached: string;
+  groupMenuLabel: string;
+  groupMenuShare: string;
+  groupMenuEdit: string;
+  groupMenuDelete: string;
+  groupDeleteTitle: string;
+  groupDeleteBody: string;
+  groupDeleteBodyOne: string;
+  groupDeleteBodyEmpty: string;
+  groupDeleteConfirm: string;
+  groupShareTitle: string;
+  groupShareTasks: string;
+  groupShareTasksOne: string;
+  groupShareItems: string;
+  groupShareItemsOne: string;
+  groupShareNote: string;
+  groupShareConfirm: string;
+  groupShareMessage: string;
+  groupImportTitle: string;
+  groupImportHint: string;
+  groupImportAdd: string;
+  groupImportUpdateTitle: string;
+  groupImportUpdateBody: string;
+  groupImportUpdate: string;
+  groupImportAddNew: string;
+  groupPreviewNow: string;
+  groupPreviewNext: string;
+  groupPreviewNone: string;
+  groupPreviewNoMore: string;
+  groupPreviewEmpty: string;
+  groupImportErrors: Record<GroupCodeError | "cap", string>;
+  groupImportSharedLabel: string;
+  groupShareNothing: string;
+  linkAlsoAddTo: string;
+  linkSelectAll: string;
+  linkUnselectAll: string;
+  linkAlsoAddToHint: string;
+  linkEditTitle: string;
+  linkDeleteTitle: string;
+  linkApplyTo: string;
+  linkThisOne: string;
+  linkUntickedNote: string;
+  linkApply: string;
+  linkDelete: string;
+  linkAlsoIn: string;
+  linkUnlink: string;
+  linkUnlinkHint: string;
+  workDone: string;
+  workMarkDone: string;
+  workNow: string;
+  workFormNewTitle: string;
+  workFormEditTitle: string;
+  workFormSave: string;
+  workFormName: string;
+  workFormNamePlaceholder: string;
+  workFormNameMissing: string;
+  workFormDescriptionPlaceholder: string;
+  workFormStartTime: string;
+  workFormEndTime: string;
+  workFormTimeInvalid: string;
+  workFormOvernight: string;
+  workFormStartsOn: string;
+  workFormRepeat: string;
+  workRepeatNone: string;
+  workRepeatDaily: string;
+  workRepeatEveryDays: string;
+  workRepeatWeekly: string;
+  workRepeatEveryWeeks: string;
+  workRepeatMonthly: string;
+  workFormEvery: string;
+  workFormDays: string;
+  workFormWeeks: string;
+  workFormOnDays: string;
+  workFormEndsRule: string;
+  workEndsNever: string;
+  workEndsCount: string;
+  workEndsUntil: string;
+  workFormTimes: string;
+  workFormNumberInvalid: string;
+  workFormUntilInvalid: string;
+  workScopeEditTitle: string;
+  workScopeEditBody: string;
+  workScopeDeleteTitle: string;
+  workScopeDeleteBody: string;
+  workScopeOne: string;
+  workScopeFollowing: string;
+  workScopeRuleHint: string;
   tasksActiveToday: string;
   tasksAdd: string;
   tasksFilterAll: string;
@@ -58,6 +196,11 @@ interface AppCopy {
   tasksDelete: string;
   tasksPriority: string;
   tasksPriorityLow: string;
+  tasksDuration: string;
+  tasksDurationNone: string;
+  tasksDurationSecondsUnit: string;
+  tasksDurationMinutesUnit: string;
+  tasksDurationHoursUnit: string;
   tasksPriorityMedium: string;
   tasksPriorityHigh: string;
   tasksCalendarColor: string;
@@ -222,6 +365,14 @@ interface AppCopy {
   companionSeasonMood: Record<Season, Record<CompanionMood, string>>;
   /** Greetings on the day itself (shown instead of the mood line, unless the companion is asleep). */
   companionHolidayGreeting: Record<Holiday, string>;
+  /** Companion encouragement while a work shift runs, by stage; each line holds the {name} placeholder. */
+  shiftLinesStart: string[];
+  shiftLinesMiddle: string[];
+  shiftLinesLastHour: string[];
+  /** What the companion says when a task is ticked off; {name} is optional. */
+  praiseLines: string[];
+  /** Same, when a work shift is completed. */
+  praiseShiftLines: string[];
   companionStyles: Record<CompanionStyle, CompanionStyleCopy>;
   /** Companion descriptions by companion id; a missing entry falls back to the English original in utils/gameplay.ts. */
   companionBios: Partial<Record<string, string>>;
@@ -392,6 +543,11 @@ interface AppCopy {
   csvExportChoose: string;
   csvExportTasks: string;
   csvExportCompletions: string;
+  csvExportWork: string;
+  csvExportGroups: string;
+  csvExportWorkAndGroups: string;
+  calendarShowHolders: string;
+  workCalendarTitle: string;
   csvExportError: string;
   timerLabel: string;
   taskStatusPending: string;
@@ -435,6 +591,148 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     dashboardNoTasksYet: "No tasks yet",
     dashboardSettings: "Settings",
     tasksTitle: "Tasks",
+    tasksBackToChooser: "‹ Tasks",
+    tasksChooserTitle: "Tasks",
+    tasksChoosePersonal: "Personal",
+    tasksChooseWork: "Work",
+    tasksChoosePersonalCount: "active today",
+    tasksChooseWorkShift: "Shift",
+    tasksChooseWorkNone: "No shifts today",
+    tasksChooseWorkSetup: "Set up your work schedule",
+    workTitle: "Work",
+    tasksChooseWorkNoMore: "No more shifts today",
+    workEmptyTitle: "Your work schedule",
+    workEmptyBody: "Add your shifts and meetings, one-off or repeating. Tick a shift off once you've worked it, and your companion cheers you on while it runs.",
+    workEmptyAdd: "Add your first shift",
+    workAdd: "+ Add",
+    workCalendar: "Calendar",
+    workViewDay: "Day",
+    workViewWeek: "Week",
+    workToday: "Today",
+    workPrevious: "Previous",
+    workNext: "Next",
+    workNoShiftsDay: "No shifts this day",
+    groupScheduleEmptyTitle: "Nothing scheduled yet",
+    groupScheduleEmptyBody: "Add times to this group, one-off or repeating. Tick one off once it's done.",
+    groupScheduleEmptyAdd: "Add the first one",
+    groupScheduleNoItemsDay: "Nothing this day",
+    groupItemNewTitle: "New item",
+    groupItemEditTitle: "Edit item",
+    groupItemNamePlaceholder: "e.g. Swimming, Piano lesson",
+    groupItemMarkDone: "Mark as done",
+    groupDashboardOpen: "Open group",
+    groupDashboardToggle: "Show or hide this group",
+    groupAddCard: "+ Add group",
+    groupAddTitle: "Add a group",
+    groupAddNew: "New group",
+    groupAddFromCode: "From a code",
+    groupAddCapNote: "{max} groups max",
+    groupFormNewTitle: "New group",
+    groupFormEditTitle: "Edit group",
+    groupFormName: "Name",
+    groupFormNamePlaceholder: "e.g. Leo, Groceries",
+    groupFormNameMissing: "Give the group a name.",
+    groupFormColor: "Colour",
+    groupFormType: "Type",
+    groupKindSchedule: "Schedule",
+    groupKindScheduleHint: "Times on days, like classes or someone's week.",
+    groupKindList: "List",
+    groupKindListHint: "Things to tick off, like Personal.",
+    groupFormTypeLocked: "The type can't be changed once the group exists.",
+    groupFormCreate: "Create",
+    groupFormSave: "Save",
+    groupCapReached: "You already have {max} groups.",
+    groupMenuLabel: "More for {name}",
+    groupMenuShare: "Share group",
+    groupMenuEdit: "Rename or change colour",
+    groupMenuDelete: "Delete group",
+    groupDeleteTitle: "Delete group?",
+    groupDeleteBody: "Delete {name} and its {count} items?",
+    groupDeleteBodyOne: "Delete {name} and its 1 item?",
+    groupDeleteBodyEmpty: "Delete {name}? It has no items.",
+    groupDeleteConfirm: "Delete",
+    groupShareTitle: "Share {name}",
+    groupShareTasks: "{count} tasks from {name} will be shared.",
+    groupShareTasksOne: "1 task from {name} will be shared.",
+    groupShareItems: "{count} items from {name} will be shared.",
+    groupShareItemsOne: "1 item from {name} will be shared.",
+    groupShareNote: "Only the items go in the code: names, times and repeats. Nothing ticked, no coins or streak.",
+    groupShareConfirm: "Share",
+    groupShareMessage: "My {name} group in Growra. Paste this code in Growra (Tasks, + Add group, From a code): {code}",
+    groupImportTitle: "Add group from code",
+    groupImportHint: "Paste a group code someone shared with you.",
+    groupImportAdd: "Add",
+    groupImportUpdateTitle: "Update {name}?",
+    groupImportUpdateBody: "You already have a group from this code. Update replaces its items; Add as new keeps both.",
+    groupImportUpdate: "Update",
+    groupImportAddNew: "Add as new",
+    groupPreviewNow: "Now",
+    groupPreviewNext: "Next",
+    groupPreviewNone: "Nothing today",
+    groupPreviewNoMore: "Nothing more today",
+    groupPreviewEmpty: "Nothing scheduled yet",
+    groupImportErrors: {
+      format: "This code doesn't look complete. Ask for it again.",
+      checksum: "This code doesn't look complete. Ask for it again.",
+      newer: "This code is from a newer Growra. Update the app to use it.",
+      cap: "You already have {max} groups. Delete one to add this.",
+    },
+    groupImportSharedLabel: "(shared)",
+    groupShareNothing: "Nothing to share yet.",
+    linkAlsoAddTo: "Also add to…",
+    linkSelectAll: "Select all",
+    linkUnselectAll: "Unselect all",
+    linkAlsoAddToHint: "A copy goes in each group you tick. Later changes can reach them all.",
+    linkEditTitle: "Change the copies too?",
+    linkDeleteTitle: "Delete the copies too?",
+    linkApplyTo: "Apply to:",
+    linkThisOne: "This one",
+    linkUntickedNote: "Unticked copies stay as they are.",
+    linkApply: "Apply",
+    linkDelete: "Delete",
+    linkAlsoIn: "Also in: {names}",
+    linkUnlink: "Unlink",
+    linkUnlinkHint: "Unlink to stop changes here reaching the other copies.",
+    workDone: "Done",
+    workMarkDone: "Mark as worked",
+    workNow: "Now",
+    workFormNewTitle: "New shift",
+    workFormEditTitle: "Edit shift",
+    workFormSave: "Save",
+    workFormName: "Name",
+    workFormNamePlaceholder: "e.g. Morning shift, Ward 3",
+    workFormNameMissing: "Give the shift a name.",
+    workFormDescriptionPlaceholder: "Notes (optional)",
+    workFormStartTime: "Starts at",
+    workFormEndTime: "Ends at",
+    workFormTimeInvalid: "Write the time as HH:MM, e.g. 07:00.",
+    workFormOvernight: "Ends the next day",
+    workFormStartsOn: "First day: {date}",
+    workFormRepeat: "Repeat",
+    workRepeatNone: "Doesn't repeat",
+    workRepeatDaily: "Every day",
+    workRepeatEveryDays: "Every X days",
+    workRepeatWeekly: "Weekly",
+    workRepeatEveryWeeks: "Every X weeks",
+    workRepeatMonthly: "Monthly",
+    workFormEvery: "Every",
+    workFormDays: "days",
+    workFormWeeks: "weeks",
+    workFormOnDays: "On these days",
+    workFormEndsRule: "Stops repeating",
+    workEndsNever: "Never",
+    workEndsCount: "After N times",
+    workEndsUntil: "On a date",
+    workFormTimes: "times",
+    workFormNumberInvalid: "Use a whole number, 1 or more.",
+    workFormUntilInvalid: "The end date is before the first day.",
+    workScopeEditTitle: "This shift repeats",
+    workScopeEditBody: "Change only this one, or this and all the following ones?",
+    workScopeDeleteTitle: "Delete a repeating shift",
+    workScopeDeleteBody: "Delete only this one, or this and all the following ones?",
+    workScopeOne: "Only this one",
+    workScopeFollowing: "This and all following",
+    workScopeRuleHint: "Colour and repeat changes apply to this and all following.",
     tasksActiveToday: "active today",
     tasksAdd: "+ Add",
     tasksFilterAll: "All",
@@ -455,6 +753,11 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksDelete: "Delete",
     tasksPriority: "Priority",
     tasksPriorityLow: "Low",
+    tasksDuration: "How long?",
+    tasksDurationNone: "None",
+    tasksDurationSecondsUnit: "s",
+    tasksDurationMinutesUnit: "min",
+    tasksDurationHoursUnit: "h",
     tasksPriorityMedium: "Medium",
     tasksPriorityHigh: "High",
     tasksCalendarColor: "Calendar Color",
@@ -639,6 +942,38 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       newYear: "{name} says: Happy New Year! ✨",
     },
     companionBios: {},
+    praiseLines: [
+      "Nice work!",
+      "You did it!",
+      "{name} is proud of you!",
+      "Another one done!",
+      "Well done, that counts!",
+      "{name} is cheering for you!",
+      "One less thing to carry!",
+      "Look at you go!",
+    ],
+    praiseShiftLines: [
+      "Shift done, rest well!",
+      "{name} is proud of you. Time to unwind!",
+      "Shift complete, you earned a break!",
+      "Great shift! {name} is glad you made it.",
+    ],
+    shiftLinesStart: [
+      "{name} is by your side. Have a good start!",
+      "Shift on! {name} is cheering you on.",
+      "{name} says: one step at a time, you've got this.",
+    ],
+    shiftLinesMiddle: [
+      "Halfway there, {name} is cheering!",
+      "{name} is proud of how steady you are.",
+      "Keep going, {name} is right here with you.",
+      "A little water and a stretch? {name} says you earned it.",
+    ],
+    shiftLinesLastHour: [
+      "Last hour, you've got this.",
+      "{name} can see the finish line. Almost there!",
+      "Final stretch! {name} is cheering for you.",
+    ],
     companionStyles: {
       "getting-started": { loves: "getting started", perk: "+2 coins on your first task each day", joins: "Joins after {target} active days" },
       flow: { loves: "going with the flow", perk: "+1 Bond when you move a task to later", joins: "Joins when you move a task to a later day" },
@@ -756,6 +1091,11 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     csvExportChoose: "Which file do you want to share?",
     csvExportTasks: "Tasks",
     csvExportCompletions: "Completions",
+    csvExportWork: "Work",
+    csvExportGroups: "Groups",
+    csvExportWorkAndGroups: "Work & groups",
+    calendarShowHolders: "Show in this calendar",
+    workCalendarTitle: "Work calendar",
     csvExportError: "The file couldn't be created or shared. Please try again.",
     exploreButton: "Send {name} exploring",
     exploreAdHint: "Watch a short ad · {left} left today",
@@ -960,6 +1300,148 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     dashboardNoTasksYet: "Ainda sem tarefas",
     dashboardSettings: "Definições",
     tasksTitle: "Tarefas",
+    tasksBackToChooser: "‹ Tarefas",
+    tasksChooserTitle: "Tarefas",
+    tasksChoosePersonal: "Pessoal",
+    tasksChooseWork: "Trabalho",
+    tasksChoosePersonalCount: "ativas hoje",
+    tasksChooseWorkShift: "Turno",
+    tasksChooseWorkNone: "Sem turnos hoje",
+    tasksChooseWorkSetup: "Define o teu horário de trabalho",
+    workTitle: "Trabalho",
+    tasksChooseWorkNoMore: "Sem mais turnos hoje",
+    workEmptyTitle: "O teu horário de trabalho",
+    workEmptyBody: "Adiciona os teus turnos e reuniões, únicos ou repetidos. Marca um turno quando o fizeres, e o teu companheiro dá-te força enquanto decorre.",
+    workEmptyAdd: "Adicionar o primeiro turno",
+    workAdd: "+ Adicionar",
+    workCalendar: "Calendário",
+    workViewDay: "Dia",
+    workViewWeek: "Semana",
+    workToday: "Hoje",
+    workPrevious: "Anterior",
+    workNext: "Seguinte",
+    workNoShiftsDay: "Sem turnos neste dia",
+    groupScheduleEmptyTitle: "Ainda nada marcado",
+    groupScheduleEmptyBody: "Adiciona horários a este grupo, únicos ou repetidos. Marca cada um quando estiver feito.",
+    groupScheduleEmptyAdd: "Adicionar o primeiro",
+    groupScheduleNoItemsDay: "Nada neste dia",
+    groupItemNewTitle: "Novo item",
+    groupItemEditTitle: "Editar item",
+    groupItemNamePlaceholder: "ex.: Natação, Aula de piano",
+    groupItemMarkDone: "Marcar como feito",
+    groupDashboardOpen: "Abrir grupo",
+    groupDashboardToggle: "Mostrar ou esconder este grupo",
+    groupAddCard: "+ Adicionar grupo",
+    groupAddTitle: "Adicionar um grupo",
+    groupAddNew: "Novo grupo",
+    groupAddFromCode: "A partir de um código",
+    groupAddCapNote: "Máximo de {max} grupos",
+    groupFormNewTitle: "Novo grupo",
+    groupFormEditTitle: "Editar grupo",
+    groupFormName: "Nome",
+    groupFormNamePlaceholder: "ex.: Leo, Compras",
+    groupFormNameMissing: "Dá um nome ao grupo.",
+    groupFormColor: "Cor",
+    groupFormType: "Tipo",
+    groupKindSchedule: "Horário",
+    groupKindScheduleHint: "Horas em dias, como aulas ou a semana de alguém.",
+    groupKindList: "Lista",
+    groupKindListHint: "Coisas para marcar como feitas, como em Pessoal.",
+    groupFormTypeLocked: "O tipo não pode ser mudado depois de o grupo existir.",
+    groupFormCreate: "Criar",
+    groupFormSave: "Guardar",
+    groupCapReached: "Já tens {max} grupos.",
+    groupMenuLabel: "Mais para {name}",
+    groupMenuShare: "Partilhar grupo",
+    groupMenuEdit: "Mudar nome ou cor",
+    groupMenuDelete: "Apagar grupo",
+    groupDeleteTitle: "Apagar grupo?",
+    groupDeleteBody: "Apagar {name} e os seus {count} itens?",
+    groupDeleteBodyOne: "Apagar {name} e o seu item?",
+    groupDeleteBodyEmpty: "Apagar {name}? Não tem itens.",
+    groupDeleteConfirm: "Apagar",
+    groupShareTitle: "Partilhar {name}",
+    groupShareTasks: "Vão ser partilhadas {count} tarefas de {name}.",
+    groupShareTasksOne: "Vai ser partilhada 1 tarefa de {name}.",
+    groupShareItems: "Vão ser partilhados {count} itens de {name}.",
+    groupShareItemsOne: "Vai ser partilhado 1 item de {name}.",
+    groupShareNote: "Só os itens vão no código: nomes, horas e repetições. Nada do que marcaste, nem moedas ou sequência.",
+    groupShareConfirm: "Partilhar",
+    groupShareMessage: "O meu grupo {name} no Growra. Cola este código no Growra (Tarefas, + Adicionar grupo, A partir de um código): {code}",
+    groupImportTitle: "Adicionar grupo a partir de código",
+    groupImportHint: "Cola um código de grupo que alguém partilhou contigo.",
+    groupImportAdd: "Adicionar",
+    groupImportUpdateTitle: "Atualizar {name}?",
+    groupImportUpdateBody: "Já tens um grupo deste código. Atualizar substitui os itens; Adicionar como novo mantém os dois.",
+    groupImportUpdate: "Atualizar",
+    groupImportAddNew: "Adicionar como novo",
+    groupPreviewNow: "Agora",
+    groupPreviewNext: "A seguir",
+    groupPreviewNone: "Nada hoje",
+    groupPreviewNoMore: "Nada mais hoje",
+    groupPreviewEmpty: "Ainda nada marcado",
+    groupImportErrors: {
+      format: "Este código não parece completo. Pede-o outra vez.",
+      checksum: "Este código não parece completo. Pede-o outra vez.",
+      newer: "Este código é de um Growra mais recente. Atualiza a app para o usar.",
+      cap: "Já tens {max} grupos. Apaga um para adicionar este.",
+    },
+    groupImportSharedLabel: "(partilhado)",
+    groupShareNothing: "Ainda não há nada para partilhar.",
+    linkAlsoAddTo: "Adicionar também a…",
+    linkSelectAll: "Selecionar todos",
+    linkUnselectAll: "Desmarcar todos",
+    linkAlsoAddToHint: "Vai uma cópia para cada grupo que marcares. Mudanças futuras podem chegar a todas.",
+    linkEditTitle: "Alterar também as cópias?",
+    linkDeleteTitle: "Apagar também as cópias?",
+    linkApplyTo: "Aplicar a:",
+    linkThisOne: "Este",
+    linkUntickedNote: "As cópias por marcar ficam como estão.",
+    linkApply: "Aplicar",
+    linkDelete: "Apagar",
+    linkAlsoIn: "Também em: {names}",
+    linkUnlink: "Desligar",
+    linkUnlinkHint: "Desliga para as mudanças aqui deixarem de chegar às outras cópias.",
+    workDone: "Feito",
+    workMarkDone: "Marcar como feito",
+    workNow: "Agora",
+    workFormNewTitle: "Novo turno",
+    workFormEditTitle: "Editar turno",
+    workFormSave: "Guardar",
+    workFormName: "Nome",
+    workFormNamePlaceholder: "ex.: Turno da manhã, Piso 3",
+    workFormNameMissing: "Dá um nome ao turno.",
+    workFormDescriptionPlaceholder: "Notas (opcional)",
+    workFormStartTime: "Começa às",
+    workFormEndTime: "Acaba às",
+    workFormTimeInvalid: "Escreve a hora como HH:MM, ex.: 07:00.",
+    workFormOvernight: "Acaba no dia seguinte",
+    workFormStartsOn: "Primeiro dia: {date}",
+    workFormRepeat: "Repetir",
+    workRepeatNone: "Não repete",
+    workRepeatDaily: "Todos os dias",
+    workRepeatEveryDays: "De X em X dias",
+    workRepeatWeekly: "Todas as semanas",
+    workRepeatEveryWeeks: "De X em X semanas",
+    workRepeatMonthly: "Todos os meses",
+    workFormEvery: "A cada",
+    workFormDays: "dias",
+    workFormWeeks: "semanas",
+    workFormOnDays: "Nestes dias",
+    workFormEndsRule: "Deixa de repetir",
+    workEndsNever: "Nunca",
+    workEndsCount: "Após N vezes",
+    workEndsUntil: "Numa data",
+    workFormTimes: "vezes",
+    workFormNumberInvalid: "Usa um número inteiro, 1 ou mais.",
+    workFormUntilInvalid: "A data final é antes do primeiro dia.",
+    workScopeEditTitle: "Este turno repete-se",
+    workScopeEditBody: "Alterar só este, ou este e todos os seguintes?",
+    workScopeDeleteTitle: "Eliminar um turno que se repete",
+    workScopeDeleteBody: "Eliminar só este, ou este e todos os seguintes?",
+    workScopeOne: "Só este",
+    workScopeFollowing: "Este e todos os seguintes",
+    workScopeRuleHint: "Mudanças de cor e de repetição aplicam-se a este e a todos os seguintes.",
     tasksActiveToday: "ativas hoje",
     tasksAdd: "+ Adicionar",
     tasksFilterAll: "Todas",
@@ -980,6 +1462,11 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     tasksDelete: "Eliminar",
     tasksPriority: "Prioridade",
     tasksPriorityLow: "Baixa",
+    tasksDuration: "Quanto tempo?",
+    tasksDurationNone: "Sem",
+    tasksDurationSecondsUnit: "s",
+    tasksDurationMinutesUnit: "min",
+    tasksDurationHoursUnit: "h",
     tasksPriorityMedium: "Média",
     tasksPriorityHigh: "Alta",
     tasksCalendarColor: "Cor no calendário",
@@ -1180,6 +1667,38 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
       gloam: "Um fantasma-abóbora com um manto roxo, que brilha mais nas noites mais escuras de outono.",
       holly: "Uma pequena corça de inverno com hastes de azevinho e um cachecol vermelho, que toca um sininho dourado.",
     },
+    praiseLines: [
+      "Bom trabalho!",
+      "Conseguiste!",
+      "{name} tem orgulho em ti!",
+      "Mais uma feita!",
+      "Muito bem, isso conta!",
+      "{name} está a torcer por ti!",
+      "Menos uma coisa na lista!",
+      "Olha para ti a avançar!",
+    ],
+    praiseShiftLines: [
+      "Turno feito, descansa bem!",
+      "{name} tem orgulho em ti. Hora de relaxar!",
+      "Turno concluído, mereces uma pausa!",
+      "Grande turno! {name} está feliz por teres chegado ao fim.",
+    ],
+    shiftLinesStart: [
+      "{name} está ao teu lado. Bom começo!",
+      "Turno a começar! {name} está a torcer por ti.",
+      "{name} diz: um passo de cada vez, tu consegues.",
+    ],
+    shiftLinesMiddle: [
+      "Já vais a meio, {name} está a torcer por ti!",
+      "{name} tem orgulho na tua calma.",
+      "Continua, {name} está aqui contigo.",
+      "Um copo de água e um alongamento? {name} diz que mereces.",
+    ],
+    shiftLinesLastHour: [
+      "Última hora, tu consegues.",
+      "{name} já vê a meta. Quase lá!",
+      "Reta final! {name} está a torcer por ti.",
+    ],
     companionStyles: {
       "getting-started": { loves: "começar", perk: "+2 moedas na primeira tarefa de cada dia", joins: "Junta-se após {target} dias ativos" },
       flow: { loves: "ir com a corrente", perk: "+1 de Laço quando adias uma tarefa", joins: "Junta-se quando adias uma tarefa para outro dia" },
@@ -1297,6 +1816,11 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     csvExportChoose: "Que ficheiro queres partilhar?",
     csvExportTasks: "Tarefas",
     csvExportCompletions: "Conclusões",
+    csvExportWork: "Trabalho",
+    csvExportGroups: "Grupos",
+    csvExportWorkAndGroups: "Trabalho e grupos",
+    calendarShowHolders: "Mostrar neste calendário",
+    workCalendarTitle: "Calendário de trabalho",
     csvExportError: "Não foi possível criar ou partilhar o ficheiro. Tenta outra vez.",
     exploreButton: "Enviar {name} a explorar",
     exploreAdHint: "Vê um anúncio curto · faltam {left} hoje",

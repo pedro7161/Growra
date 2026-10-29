@@ -99,7 +99,7 @@ describe('decorations', () => {
     const poor = { ...createInitialGameState(), coins: 10 };
     expect(buyDecoration(poor, 'flower-pot')).toBe(poor);
     const bought = buyDecoration({ ...poor, coins: 100 }, 'flower-pot');
-    expect(bought.coins).toBe(60);
+    expect(bought.coins).toBe(40);
     expect(bought.decorations).toEqual([expect.objectContaining({ typeId: 'flower-pot', camp: -1 })]);
   });
 

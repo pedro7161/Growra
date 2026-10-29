@@ -18,3 +18,6 @@ export const taskPriorityOptions: TaskPriority[] = [
   TaskPriority.MEDIUM,
   TaskPriority.HIGH,
 ];
+
+/** Task lengths offered by the form chips, in minutes. */
+export const taskDurationOptions: number[] = [15, 30, 45, 60, 120, 240, 480];
