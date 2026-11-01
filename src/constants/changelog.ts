@@ -1,4 +1,14 @@
 import { AppLanguage } from "../types";
+import es from "./locales/es";
+import fr from "./locales/fr";
+import de from "./locales/de";
+import it from "./locales/it";
+import ru from "./locales/ru";
+import tr from "./locales/tr";
+import id from "./locales/id";
+import ja from "./locales/ja";
+import ko from "./locales/ko";
+import zh from "./locales/zh";
 
 export interface ChangelogEntry {
   /** The app version this entry belongs to (entries from 1.9.0 on); the What's New popup looks it up. */
@@ -10,8 +20,16 @@ export interface ChangelogEntry {
   fixes?: string[];
 }
 
-const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
+const changelogByLanguage: Record<"en" | "pt", ChangelogEntry[]> = {
   en: [
+    {
+      version: "1.11.0",
+      dateLabel: "Version 1.11.0 · November 2026",
+      items: [
+        "Growra now speaks 12 languages: Spanish, French, German, Italian, Russian, Turkish, Indonesian, Japanese, Korean and Chinese join English and Portuguese.",
+        "On first launch Growra uses your phone's language. You can change it any time in Settings.",
+      ],
+    },
     {
       version: "1.10.0",
       dateLabel: "Version 1.10.0 · November 2026",
@@ -188,6 +206,14 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   ],
   pt: [
     {
+      version: "1.11.0",
+      dateLabel: "Versão 1.11.0 · novembro de 2026",
+      items: [
+        "O Growra agora fala 12 línguas: espanhol, francês, alemão, italiano, russo, turco, indonésio, japonês, coreano e chinês juntam-se ao inglês e ao português.",
+        "Na primeira abertura, o Growra usa a língua do teu telemóvel. Podes mudá-la quando quiseres nas Definições.",
+      ],
+    },
+    {
       version: "1.10.0",
       dateLabel: "Versão 1.10.0 · novembro de 2026",
       items: [
@@ -363,11 +389,30 @@ const changelogByLanguage: Record<AppLanguage, ChangelogEntry[]> = {
   ],
 };
 
+/**
+ * Languages added in 1.11.0 translate only the newest entries (newest first); older ones show in
+ * English below them.
+ */
+const translatedChangelogs: Partial<Record<AppLanguage, ChangelogEntry[]>> = {
+  es: es.changelog,
+  fr: fr.changelog,
+  de: de.changelog,
+  it: it.changelog,
+  ru: ru.changelog,
+  tr: tr.changelog,
+  id: id.changelog,
+  ja: ja.changelog,
+  ko: ko.changelog,
+  zh: zh.changelog,
+};
+
 export function getChangelog(language: AppLanguage): ChangelogEntry[] {
-  return changelogByLanguage[language];
+  if (language === "en" || language === "pt") return changelogByLanguage[language];
+  const translated = translatedChangelogs[language] ?? [];
+  return [...translated, ...changelogByLanguage.en.slice(translated.length)];
 }
 
 /** The notes for one app version, if it has any. */
 export function getReleaseNotes(language: AppLanguage, version: string): ChangelogEntry | undefined {
-  return changelogByLanguage[language].find((entry) => entry.version === version);
+  return getChangelog(language).find((entry) => entry.version === version);
 }

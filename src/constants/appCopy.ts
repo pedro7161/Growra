@@ -1,9 +1,19 @@
-import { AppLanguage } from "../types";
+import { AppLanguage, AppThemeId } from "../types";
 import type { CompanionMood, CompanionStyle } from "../utils/companions";
 import type { TileFeature } from "../utils/journey";
 import type { Holiday, Season } from "../utils/seasons";
 import type { RoomCodeError } from "../utils/roomCode";
 import type { GroupCodeError } from "../utils/groupCode";
+import es from "./locales/es";
+import fr from "./locales/fr";
+import de from "./locales/de";
+import it from "./locales/it";
+import ru from "./locales/ru";
+import tr from "./locales/tr";
+import id from "./locales/id";
+import ja from "./locales/ja";
+import ko from "./locales/ko";
+import zh from "./locales/zh";
 
 interface CompanionStyleCopy {
   loves: string;
@@ -271,8 +281,6 @@ export interface AppCopy {
   settingsTotalPets: string;
   settingsEvolvedPets: string;
   settingsEquippedPet: string;
-  settingsLanguageEnglish: string;
-  settingsLanguagePortuguese: string;
   settingsTimerAlert: string;
   settingsTimerAlertVibration: string;
   settingsTimerAlertSound: string;
@@ -560,9 +568,17 @@ export interface AppCopy {
   timerStatePaused: string;
   timerStateReady: string;
   timerStateIdle: string;
+  /** Built-in task categories by their English id; missing ones show as typed. */
+  categoryNames: Record<string, string>;
+  /** Ready-made tasks by id; missing ones keep their English text. */
+  predefinedTasks: Record<string, { name: string; description: string }>;
+  /** Journey regions by id; missing ones keep their English name. */
+  regionNames: Record<string, string>;
+  /** Settings theme names; missing ones keep their English name. */
+  themeNames: Partial<Record<AppThemeId, string>>;
 }
 
-const copyByLanguage: Record<AppLanguage, AppCopy> = {
+const copyByLanguage: Record<"en" | "pt", AppCopy> = {
   en: {
     navDashboard: "Dashboard",
     navTasks: "Tasks",
@@ -826,8 +842,6 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsTotalPets: "Companions met",
     settingsEvolvedPets: "Evolved companions",
     settingsEquippedPet: "Active companion",
-    settingsLanguageEnglish: "English",
-    settingsLanguagePortuguese: "Portuguese",
     settingsTimerAlert: "Timer Alert",
     settingsTimerAlertVibration: "Vibration",
     settingsTimerAlertSound: "Song File",
@@ -1272,6 +1286,10 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     timerStatePaused: "Paused",
     timerStateReady: "Ready",
     timerStateIdle: "Idle",
+    categoryNames: {},
+    predefinedTasks: {},
+    regionNames: {},
+    themeNames: {},
   },
   pt: {
     navDashboard: "Painel",
@@ -1535,8 +1553,6 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     settingsTotalPets: "Companheiros conhecidos",
     settingsEvolvedPets: "Companheiros evoluídos",
     settingsEquippedPet: "Companheiro ativo",
-    settingsLanguageEnglish: "Inglês",
-    settingsLanguagePortuguese: "Português",
     settingsTimerAlert: "Alerta do temporizador",
     settingsTimerAlertVibration: "Vibração",
     settingsTimerAlertSound: "Ficheiro de música",
@@ -1997,9 +2013,70 @@ const copyByLanguage: Record<AppLanguage, AppCopy> = {
     timerStatePaused: "Pausado",
     timerStateReady: "Pronto",
     timerStateIdle: "Inativo",
+    categoryNames: {
+      finance: "finanças",
+      fitness: "exercício",
+      focus: "foco",
+      health: "saúde",
+      home: "casa",
+      mindset: "mente",
+      social: "social",
+      study: "estudo",
+    },
+    predefinedTasks: {
+      "drink-water": { name: "Beber água", description: "Cumpre a tua meta diária de água." },
+      "morning-walk": { name: "Caminhada matinal", description: "Sai para uma caminhada curta para começar o dia." },
+      "stretch-session": { name: "Alongamentos", description: "Faz uma sessão rápida de alongamentos." },
+      "deep-focus": { name: "Bloco de foco", description: "Completa um bloco de foco sem distrações." },
+      "email-zero": { name: "Limpar o email", description: "Esvazia a caixa de entrada ou trata os itens mais importantes." },
+      "study-session": { name: "Sessão de estudo", description: "Completa um bloco de estudo focado." },
+      "read-pages": { name: "Ler 20 páginas", description: "Lê pelo menos vinte páginas de um livro ou material de estudo." },
+      "tidy-room": { name: "Arrumar o quarto", description: "Arruma o teu quarto ou a tua secretária." },
+      "laundry": { name: "Tratar da roupa", description: "Lava e arruma a tua roupa." },
+      "budget-check": { name: "Rever o orçamento", description: "Revê as tuas despesas e atualiza o teu orçamento." },
+      "save-money": { name: "Poupar dinheiro", description: "Transfere uma pequena quantia para as poupanças." },
+      "weekly-review": { name: "Revisão semanal", description: "Revê a tua semana e planeia a próxima." },
+      "journal": { name: "Diário", description: "Escreve uma pequena reflexão sobre o teu dia." },
+      "gym-session": { name: "Ginásio", description: "Completa o treino que planeaste." },
+      "mobility": { name: "Mobilidade", description: "Faz uma rotina curta de mobilidade e recuperação." },
+      "family-checkin": { name: "Falar com a família", description: "Liga ou manda mensagem a alguém da família." },
+      "friend-reachout": { name: "Falar com um amigo", description: "Manda uma mensagem ou combina algo com um amigo." },
+    },
+    regionNames: {
+      "sunlit-coast": "Costa Soalheira",
+      "mossway-grove": "Bosque do Musgo",
+      "amber-dunes": "Dunas de Âmbar",
+      "cloudbreak-ridge": "Serra das Nuvens",
+      "moonpool-marsh": "Pântano da Lua",
+      "glasswind-expanse": "Planície do Vento de Vidro",
+      "cinder-hollow": "Vale das Cinzas",
+      "skyheart-summit": "Cume do Coração do Céu",
+    },
+    themeNames: {
+      mint: "Menta",
+      sunset: "Pôr do sol",
+      ocean: "Oceano",
+      dusk: "Crepúsculo",
+      blossom: "Flor",
+      forest: "Floresta",
+    },
   },
 };
 
+const translatedCopy: Record<Exclude<AppLanguage, "en" | "pt">, AppCopy> = {
+  es: es.copy,
+  fr: fr.copy,
+  de: de.copy,
+  it: it.copy,
+  ru: ru.copy,
+  tr: tr.copy,
+  id: id.copy,
+  ja: ja.copy,
+  ko: ko.copy,
+  zh: zh.copy,
+};
+
 export function getAppCopy(language: AppLanguage): AppCopy {
-  return copyByLanguage[language];
+  if (language === "en" || language === "pt") return copyByLanguage[language];
+  return translatedCopy[language] ?? copyByLanguage.en;
 }

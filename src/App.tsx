@@ -40,6 +40,7 @@ import {
   skipTutorial,
 } from "./utils/tutorial";
 import { getAppCopy } from "./constants/appCopy";
+import { isAppLanguage } from "./constants/languages";
 import { getAppTheme, resolveDarkAppearance, setDarkAppearance } from "./constants/appTheme";
 import DashboardScreen from "./screens/DashboardScreen";
 import CompanionsScreen from "./screens/CompanionsScreen";
@@ -1209,7 +1210,7 @@ export default function App() {
   };
 
   if (newerSaveLanguage !== null) {
-    const copy = getAppCopy(newerSaveLanguage === "pt" ? "pt" : "en");
+    const copy = getAppCopy(isAppLanguage(newerSaveLanguage) ? newerSaveLanguage : "en");
     const theme = getAppTheme("mint");
     return (
       <View style={[styles.container, styles.newerSave, { backgroundColor: theme.background }]}>

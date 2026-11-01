@@ -34,6 +34,7 @@ import {
 import { buildDaysFromTasks } from "../utils/journey";
 import { getNextAvailableDate, getStartOfDay } from "../utils/taskSchedule";
 import { defaultSettings, defaultTimerAlertSettings } from "../utils/settings";
+import { isAppLanguage } from "../constants/languages";
 import { SAVE_VERSION } from "../utils/initialState";
 import { createTaskTimer } from "../utils/taskTimer";
 import { BOND_GROWTH_THRESHOLDS, createEmptyUsage } from "../utils/companions";
@@ -479,6 +480,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
         : false,
     settings: {
       ...storedSettings,
+      language: isAppLanguage(storedSettings.language) ? storedSettings.language : "en",
       // Saves from before dark mode have no appearance: follow the phone.
       appearance:
         storedSettings.appearance === "light" || storedSettings.appearance === "dark"
