@@ -4,6 +4,22 @@ import { Task } from "../types";
 export const timerNotificationId = (taskId: string) => `timer-${taskId}`;
 export const DAILY_REMINDER_ID = "daily-reminder";
 
+/**
+ * Android notification channel ids. A channel's sound, vibration and importance cannot change after
+ * it is created, so changing any of them means bumping the version suffix and listing the old id
+ * in LEGACY_CHANNEL_IDS so it gets removed.
+ */
+export const TIMER_CHANNEL_ID = "timers-v1";
+export const REMINDER_CHANNEL_ID = "reminders-v1";
+export const LEGACY_CHANNEL_IDS: readonly string[] = ["timers", "reminders"];
+
+/** The task a tapped timer notification belongs to, or null for anything else (reminder, malformed data). */
+export function taskIdFromNotificationData(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const { kind, taskId } = data as { kind?: unknown; taskId?: unknown };
+  return kind === "timer" && typeof taskId === "string" && taskId.length > 0 ? taskId : null;
+}
+
 export interface ScheduledTimerNotification {
   id: string;
   /** When it fires (ms since epoch). */
