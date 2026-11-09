@@ -36,3 +36,7 @@ EAS builds (`eas.json`): `eas build -p android --profile production` produces an
 - `src/utils/taskSchedule.ts` — due dates and recurring-task resets
 - `src/services/gameStateService.ts` — save/load, migrations, backup codes
 - `src/screens/`, `src/components/` — UI
+
+## Multi-agent development
+
+See [docs/agent-orchestration.md](docs/agent-orchestration.md) for cost-aware Haiku/Sonnet/Opus delegation, test and Android screenshot verification, Caveman/RTK fallbacks and safe repository integration.
