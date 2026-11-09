@@ -41,6 +41,7 @@ import {
 } from "../utils/rooms";
 import { decodeRoomCode, encodeRoomCode, roomLayout } from "../utils/roomCode";
 import { roomQrValue } from "../utils/roomQr";
+import { shareMessageFor } from "../utils/roomShare";
 import type { RoomLayout } from "../utils/roomCode";
 import { getPetTemplates } from "../utils/gameplay";
 
@@ -51,7 +52,7 @@ interface RoomEditorScreenProps {
   onChange: (update: (current: GameState) => GameState) => void;
   onClose: () => void;
   onOpenPlus: () => void;
-  onShare: (roomCanvas: View, room: Room) => Promise<void>;
+  onShare: (roomCanvas: View, room: Room, message?: string) => Promise<void>;
   onUiTap: () => void;
   /** Played instead of the UI tap when a style or furniture purchase succeeds. */
   onCoinPurchase: () => void;
@@ -125,7 +126,9 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
     setSelectedItemId(null);
     await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
     try {
-      await onShare(canvasRef.current, room);
+      const footerShown = state.roomShareFooter || !state.plus.owned;
+      const message = shareMessageFor(footerShown, encodeRoomCode(roomLayout(state, room)), copy);
+      await onShare(canvasRef.current, room, message);
     } finally {
       setSharing(false);
     }

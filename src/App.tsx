@@ -1089,13 +1089,13 @@ export default function App() {
     }
   };
 
-  const handleShareRoom = async (view: View, room: Room) => {
+  const handleShareRoom = async (view: View, room: Room, message?: string) => {
     const current = gameStateRef.current;
     if (!current) return;
     const copy = getAppCopy(current.settings.language);
     const owner = current.pets.find((pet) => pet.id === room.ownerPetId);
     try {
-      await shareRoomPicture(view, buildRoomShareMessage(copy, owner?.name ?? null));
+      await shareRoomPicture(view, message ?? buildRoomShareMessage(copy, owner?.name ?? null));
       void playGrowraCue("room-picture-shared", current.settings.sfxEnabled);
     } catch {
       Alert.alert("🏠", copy.roomShareError);
