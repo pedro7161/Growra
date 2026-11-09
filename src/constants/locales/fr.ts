@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "C'est l'heure",
   notifyTimerBody: "Le minuteur de « {task} » est terminé.",
   notifyTimerChannel: "Minuteurs des tâches",
+  timerAlertDenied: "Les notifications de Growra sont désactivées : un minuteur ne te préviendra pas quand l'appli est fermée. Tu peux les activer dans les réglages du téléphone.",
   reminderTitle: "Growra",
   reminderBody: "Tes tâches t'attendent quand tu veux.",
   reminderChannel: "Rappel quotidien",

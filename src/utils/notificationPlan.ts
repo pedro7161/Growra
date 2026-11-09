@@ -1,4 +1,4 @@
-import { Task } from "../types";
+import { GameState, HolderId, Task } from "../types";
 
 /** Identifier of a task timer's "time's up" notification. */
 export const timerNotificationId = (taskId: string) => `timer-${taskId}`;
@@ -68,4 +68,25 @@ export function planTimerNotifications(
     .filter(([id]) => !kept.has(id))
     .map(([id, want]) => ({ id, ...want }));
   return { cancel, schedule };
+}
+
+/**
+ * The list a tapped timer notification should open (#38): the holder of its task, or null when the
+ * notification isn't a timer's, the task is gone, or it has no timer any more.
+ */
+export function holderForNotificationTap(state: GameState, data: unknown): HolderId | null {
+  const taskId = taskIdFromNotificationData(data);
+  if (!taskId) return null;
+  const hasTimer = (task: Task) => task.id === taskId && task.timer.enabled;
+  if (state.tasks.some(hasTimer)) return "personal";
+  return state.groups.find((group) => group.tasks.some(hasTimer))?.id ?? null;
+}
+
+/**
+ * Whether to tell the player, once per install, that timer alerts can't reach them because
+ * notifications are off (#38). Returns the state with the notice marked as shown when it should show.
+ */
+export function timerDeniedNotice(state: GameState, granted: boolean): { show: boolean; next: GameState } {
+  if (granted || state.timerDeniedNoticeShown) return { show: false, next: state };
+  return { show: true, next: { ...state, timerDeniedNoticeShown: true } };
 }

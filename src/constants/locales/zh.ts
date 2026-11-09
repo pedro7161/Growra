@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "时间到",
   notifyTimerBody: "“{task}”的计时已结束。",
   notifyTimerChannel: "任务计时器",
+  timerAlertDenied: "Growra 的通知已关闭，因此应用关闭时计时器不会提醒你。你可以在手机设置中开启。",
   reminderTitle: "Growra",
   reminderBody: "你的任务随时等着你。",
   reminderChannel: "每日提醒",

@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "Se acabó el tiempo",
   notifyTimerBody: "El temporizador de “{task}” ha terminado.",
   notifyTimerChannel: "Temporizadores de tareas",
+  timerAlertDenied: "Las notificaciones de Growra están desactivadas, así que un temporizador no te avisará con la app cerrada. Puedes activarlas en los ajustes del teléfono.",
   reminderTitle: "Growra",
   reminderBody: "Tus tareas te esperan cuando quieras.",
   reminderChannel: "Recordatorio diario",

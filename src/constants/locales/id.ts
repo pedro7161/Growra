@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "Waktu habis",
   notifyTimerBody: "Pengatur waktu untuk “{task}” sudah selesai.",
   notifyTimerChannel: "Pengatur waktu tugas",
+  timerAlertDenied: "Notifikasi Growra dimatikan, jadi timer tidak akan memberi tahu saat aplikasi ditutup. Kamu bisa menyalakannya di pengaturan ponsel.",
   reminderTitle: "Growra",
   reminderBody: "Tugasmu menunggu kapan pun kamu siap.",
   reminderChannel: "Pengingat harian",

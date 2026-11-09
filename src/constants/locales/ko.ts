@@ -566,6 +566,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "시간이 다 됐어요",
   notifyTimerBody: "“{task}” 타이머가 끝났어요.",
   notifyTimerChannel: "할 일 타이머",
+  timerAlertDenied: "Growra 알림이 꺼져 있어서 앱을 닫으면 타이머가 알려 주지 못해요. 기기 설정에서 켤 수 있어요.",
   reminderTitle: "Growra",
   reminderBody: "할 일이 기다리고 있어요. 준비되면 언제든지.",
   reminderChannel: "매일 알림",

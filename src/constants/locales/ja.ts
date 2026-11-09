@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "時間です",
   notifyTimerBody: "「{task}」のタイマーが終わりました。",
   notifyTimerChannel: "タスクのタイマー",
+  timerAlertDenied: "Growraの通知がオフのため、アプリを閉じているとタイマーでお知らせできません。端末の設定でオンにできます。",
   reminderTitle: "Growra",
   reminderBody: "タスクがあなたを待っています。いつでもどうぞ。",
   reminderChannel: "毎日のリマインダー",

@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "Zeit ist um",
   notifyTimerBody: "Der Timer für „{task}“ ist abgelaufen.",
   notifyTimerChannel: "Aufgaben-Timer",
+  timerAlertDenied: "Benachrichtigungen für Growra sind aus, deshalb meldet sich ein Timer bei geschlossener App nicht. Du kannst sie in den Handy-Einstellungen einschalten.",
   reminderTitle: "Growra",
   reminderBody: "Deine Aufgaben warten, wann immer du bereit bist.",
   reminderChannel: "Tägliche Erinnerung",

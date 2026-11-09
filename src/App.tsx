@@ -52,7 +52,8 @@ import TasksChooser from "./components/TasksChooser";
 import { buildWorkPreview } from "./utils/workPreview";
 import { gameStateService } from "./services/gameStateService";
 import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/reviewService";
-import { ensureNotificationPermission, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
+import { timerDeniedNotice } from "./utils/notificationPlan";
+import { ensureNotificationPermission, listenForNotificationTaps, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
 import { getReturnRecap, ReturnRecap, shouldShowBackupNudge } from "./utils/returnRecap";
 import {
   AppLanguage,
@@ -277,6 +278,13 @@ export default function App() {
   useEffect(() => {
     loadGame();
   }, []);
+
+  // A tap on a timer notification opens that task's list (#38); once loaded, so a cold start can find the task.
+  useEffect(() => {
+    if (loading) return;
+    return listenForNotificationTaps(() => gameStateRef.current, (holder) => void openHolderScreen(holder));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- openHolderScreen only reads refs and setters
+  }, [loading]);
 
   // The ambience follows the screen (home / journey / room editor) and pauses while the app is inactive.
   useEffect(() => {
@@ -628,7 +636,16 @@ export default function App() {
 
   const handleStartTimer = async (taskId: string, holder: HolderId = "personal") => {
     // The first timer start is the moment to ask; a refusal only means no background alert.
-    await ensureNotificationPermission();
+    const granted = await ensureNotificationPermission();
+    const current = gameStateRef.current;
+    if (current) {
+      const notice = timerDeniedNotice(current, granted);
+      if (notice.show) {
+        const copy = getAppCopy(current.settings.language);
+        Alert.alert(copy.notifyTimerChannel, copy.timerAlertDenied);
+        await persistGameState(notice.next);
+      }
+    }
     await applyTimerUpdate(taskId, startTaskTimer, holder);
     void playGrowraCue("timer-start", gameStateRef.current?.settings.sfxEnabled ?? false);
   };

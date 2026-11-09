@@ -566,6 +566,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "Время вышло",
   notifyTimerBody: "Таймер задачи «{task}» завершён.",
   notifyTimerChannel: "Таймеры задач",
+  timerAlertDenied: "Уведомления Growra выключены, поэтому таймер не подаст сигнал при закрытом приложении. Их можно включить в настройках телефона.",
   reminderTitle: "Growra",
   reminderBody: "Ваши задачи ждут, когда будете готовы.",
   reminderChannel: "Ежедневное напоминание",

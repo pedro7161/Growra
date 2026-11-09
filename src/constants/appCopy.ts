@@ -500,6 +500,7 @@ export interface AppCopy {
   notifyTimerTitle: string;
   notifyTimerBody: string;
   notifyTimerChannel: string;
+  timerAlertDenied: string;
   reminderTitle: string;
   reminderBody: string;
   reminderChannel: string;
@@ -1134,6 +1135,7 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     notifyTimerTitle: "Time's up",
     notifyTimerBody: "The timer for “{task}” has finished.",
     notifyTimerChannel: "Task timers",
+    timerAlertDenied: "Notifications are off for Growra, so a timer won't alert you while the app is closed. You can turn them on in your phone's settings.",
     reminderTitle: "Growra",
     reminderBody: "Your tasks are waiting whenever you're ready.",
     reminderChannel: "Daily reminder",
@@ -1867,6 +1869,7 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     notifyTimerTitle: "Tempo esgotado",
     notifyTimerBody: "O temporizador de “{task}” terminou.",
     notifyTimerChannel: "Temporizadores das tarefas",
+    timerAlertDenied: "As notificações do Growra estão desligadas, por isso o temporizador não te avisa com a app fechada. Podes ligá-las nas definições do telemóvel.",
     reminderTitle: "Growra",
     reminderBody: "As tuas tarefas estão à tua espera quando quiseres.",
     reminderChannel: "Lembrete diário",

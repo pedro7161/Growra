@@ -566,6 +566,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "Süre doldu",
   notifyTimerBody: "“{task}” zamanlayıcısı bitti.",
   notifyTimerChannel: "Görev zamanlayıcıları",
+  timerAlertDenied: "Growra bildirimleri kapalı, bu yüzden uygulama kapalıyken zamanlayıcı seni uyarmaz. Telefon ayarlarından açabilirsin.",
   reminderTitle: "Growra",
   reminderBody: "Görevlerin, hazır olduğunda seni bekliyor.",
   reminderChannel: "Günlük hatırlatıcı",
