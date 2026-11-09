@@ -609,6 +609,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "이 방의 물건은 가방으로 돌아가요.",
   roomCopyReplace: "바꾸기",
   roomCopyCancel: "취소",
+  roomScanPicture: "사진 스캔",
+  roomScanCamera: "카메라로 스캔",
+  roomScanHint: "Growra 방 QR 코드에 카메라를 향해 주세요.",
+  roomScanDenied: "카메라 접근이 꺼져 있습니다. 코드를 붙여 넣거나 사진을 스캔할 수 있습니다.",
+  roomScanNoQr: "이 사진에서 QR 코드를 찾지 못했습니다. 방 코드를 붙여 넣으세요.",
+  roomScanUnreadable: "이 사진을 읽을 수 없습니다. 방 코드를 붙여 넣으세요.",
   roomCodeErrors: {
     format: "방 코드가 아니에요.",
     checksum: "방 코드가 잘렸거나 바뀌었어요. 다시 받아 주세요.",

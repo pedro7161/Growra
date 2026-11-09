@@ -15,6 +15,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import RoomCanvas from "../components/room/RoomCanvas";
 import RoomTray from "../components/room/RoomTray";
+import RoomScanner from "../components/room/RoomScanner";
+import RoomQrBadge from "../components/room/RoomQrBadge";
+import { pickAndScanRoomPicture } from "../services/roomScanNative";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { GameState, Room } from "../types";
@@ -37,6 +40,7 @@ import {
   setRoomStyle,
 } from "../utils/rooms";
 import { decodeRoomCode, encodeRoomCode, roomLayout } from "../utils/roomCode";
+import { roomQrValue } from "../utils/roomQr";
 import type { RoomLayout } from "../utils/roomCode";
 import { getPetTemplates } from "../utils/gameplay";
 
@@ -65,6 +69,7 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
   const [sharing, setSharing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [pastedCode, setPastedCode] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
 
   const room = getVisibleRooms(state).find((candidate) => candidate.id === roomId);
 
@@ -170,13 +175,33 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
       return;
     }
     setPastedCode(null);
+    confirmCopy(decoded.layout);
+  };
+
+  // Pasted, scanned and picture-scanned codes all end here, after the same decodeRoomCode validation.
+  const confirmCopy = (layout: RoomLayout) => {
     Alert.alert(copy.roomCopyConfirmTitle, copy.roomCopyConfirmBody, [
       { text: copy.roomCopyCancel, style: "cancel" },
-      { text: copy.roomCopyReplace, onPress: () => applyCopy(decoded.layout) },
+      { text: copy.roomCopyReplace, onPress: () => applyCopy(layout) },
     ]);
   };
 
+  const scanPicture = async () => {
+    const result = await pickAndScanRoomPicture();
+    if (!result) return;
+    if ("layout" in result) {
+      setPastedCode(null);
+      confirmCopy(result.layout);
+      return;
+    }
+    Alert.alert(
+      copy.roomCopy,
+      result.error === "noQr" ? copy.roomScanNoQr : result.error === "unreadable" ? copy.roomScanUnreadable : copy.roomCodeErrors[result.error],
+    );
+  };
+
   const showFooter = sharing && (state.roomShareFooter || !state.plus.owned);
+  const roomQr = showFooter ? roomQrValue(roomLayout(state, room)) : null;
   const canvasWidth = Math.min(windowWidth - 32, 420);
   const selectedId = selectedItemId;
   const selectedItem = room.items.find((item) => item.id === selectedId);
@@ -259,6 +284,7 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
               showFooter ? (
                 <View style={styles.footer}>
                   <Text style={styles.footerText}>🌱 {copy.roomShareFooter}</Text>
+                  {roomQr ? <RoomQrBadge value={roomQr} size={Math.round(canvasWidth * 0.26)} /> : null}
                 </View>
               ) : undefined
             }
@@ -336,6 +362,14 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
                 style={[styles.renameInput, styles.codeInput, { color: theme.text, borderColor: theme.border }]}
               />
               <View style={styles.menuActions}>
+                <TouchableOpacity onPress={() => void scanPicture()} accessibilityRole="button">
+                  <Text style={[styles.barButton, { color: theme.accent }]}>{copy.roomScanPicture}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setScanning(true)} accessibilityRole="button">
+                  <Text style={[styles.barButton, { color: theme.accent }]}>{copy.roomScanCamera}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.menuActions}>
                 <TouchableOpacity onPress={() => setPastedCode(null)}>
                   <Text style={[styles.barButton, { color: theme.mutedText }]}>{copy.roomCopyCancel}</Text>
                 </TouchableOpacity>
@@ -346,6 +380,18 @@ export default function RoomEditorScreen({ state, roomId, onChange, onClose, onO
             </View>
           </View>
         </Modal>
+
+        <RoomScanner
+          visible={scanning}
+          copy={copy}
+          onClose={() => setScanning(false)}
+          onLayout={(layout) => {
+            setScanning(false);
+            setPastedCode(null);
+            confirmCopy(layout);
+          }}
+          onInvalid={(message) => Alert.alert(copy.roomCopy, message)}
+        />
 
         <Modal visible={renaming !== null} transparent animationType="fade" onRequestClose={closeRename}>
           <View style={styles.renameBackdrop}>
@@ -391,7 +437,7 @@ const styles = StyleSheet.create({
   tool: { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   toolText: { fontSize: 13, fontWeight: "600" },
   footerToggle: { flexDirection: "row", alignItems: "center", gap: 6 },
-  footer: { position: "absolute", left: 0, right: 0, bottom: 0, paddingVertical: 6, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center" },
+  footer: { position: "absolute", left: 0, right: 0, bottom: 0, paddingVertical: 6, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", gap: 6 },
   footerText: { color: "#fff", fontWeight: "700", fontSize: 12 },
   renameBackdrop: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "rgba(0,0,0,0.45)" },
   renameCard: { borderRadius: 16, padding: 18, gap: 12 },

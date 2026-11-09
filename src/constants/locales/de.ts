@@ -608,6 +608,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "Die Gegenstände in diesem Zimmer kommen zurück in deine Tasche.",
   roomCopyReplace: "Ersetzen",
   roomCopyCancel: "Abbrechen",
+  roomScanPicture: "Bild scannen",
+  roomScanCamera: "Mit Kamera scannen",
+  roomScanHint: "Richte die Kamera auf einen Growra-Zimmer-QR-Code.",
+  roomScanDenied: "Kamerazugriff ist aus. Du kannst weiterhin einen Code einfügen oder ein Bild scannen.",
+  roomScanNoQr: "Kein QR-Code im Bild gefunden. Füge stattdessen den Zimmercode ein.",
+  roomScanUnreadable: "Das Bild konnte nicht gelesen werden. Füge stattdessen den Zimmercode ein.",
   roomCodeErrors: {
     format: "Das ist kein Zimmercode.",
     checksum: "Dieser Zimmercode ist unvollständig oder wurde verändert. Lass ihn dir noch einmal schicken.",

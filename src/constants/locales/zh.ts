@@ -608,6 +608,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "这个房间里的物品会回到你的背包。",
   roomCopyReplace: "替换",
   roomCopyCancel: "取消",
+  roomScanPicture: "扫描图片",
+  roomScanCamera: "用相机扫描",
+  roomScanHint: "请将相机对准 Growra 房间二维码。",
+  roomScanDenied: "相机权限已关闭。你仍可粘贴代码或扫描图片。",
+  roomScanNoQr: "图片中未找到二维码。请改为粘贴房间代码。",
+  roomScanUnreadable: "无法读取该图片。请改为粘贴房间代码。",
   roomCodeErrors: {
     format: "这不是房间代码。",
     checksum: "这个房间代码不完整或已被修改。请让对方重新发送。",

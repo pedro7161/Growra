@@ -608,6 +608,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "Barang-barang di kamar ini kembali ke tasmu.",
   roomCopyReplace: "Ganti",
   roomCopyCancel: "Batal",
+  roomScanPicture: "Pindai gambar",
+  roomScanCamera: "Pindai dengan kamera",
+  roomScanHint: "Arahkan kamera ke kode QR kamar Growra.",
+  roomScanDenied: "Akses kamera mati. Kamu tetap bisa menempel kode atau memindai gambar.",
+  roomScanNoQr: "Tidak ada kode QR di gambar itu. Tempel kode kamar saja.",
+  roomScanUnreadable: "Gambar itu tidak bisa dibaca. Tempel kode kamar saja.",
   roomCodeErrors: {
     format: "Itu bukan kode kamar.",
     checksum: "Kode kamar ini tidak lengkap atau sudah diubah. Minta lagi.",

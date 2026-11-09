@@ -608,6 +608,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "この部屋のものはかばんに戻ります。",
   roomCopyReplace: "置き換える",
   roomCopyCancel: "キャンセル",
+  roomScanPicture: "画像をスキャン",
+  roomScanCamera: "カメラでスキャン",
+  roomScanHint: "GrowraのQRコードにカメラを向けてください。",
+  roomScanDenied: "カメラへのアクセスがオフです。コードの貼り付けや画像のスキャンは使えます。",
+  roomScanNoQr: "この画像にQRコードが見つかりません。部屋のコードを貼り付けてください。",
+  roomScanUnreadable: "この画像を読み取れませんでした。部屋のコードを貼り付けてください。",
   roomCodeErrors: {
     format: "部屋のコードではありません。",
     checksum: "この部屋のコードは途中で切れているか、書き換えられています。もう一度送ってもらってください。",

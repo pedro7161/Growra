@@ -465,6 +465,12 @@ export interface AppCopy {
   roomCopyConfirmBody: string;
   roomCopyReplace: string;
   roomCopyCancel: string;
+  roomScanPicture: string;
+  roomScanCamera: string;
+  roomScanHint: string;
+  roomScanDenied: string;
+  roomScanNoQr: string;
+  roomScanUnreadable: string;
   roomCodeErrors: Record<RoomCodeError, string>;
   roomCopyDoneTitle: string;
   roomCopyAllThere: string;
@@ -1171,6 +1177,12 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     roomCopyConfirmBody: "The items in this room go back to your bag.",
     roomCopyReplace: "Replace",
     roomCopyCancel: "Cancel",
+    roomScanPicture: "Scan a picture",
+    roomScanCamera: "Scan with camera",
+    roomScanHint: "Point the camera at a Growra room QR code.",
+    roomScanDenied: "Camera access is off. You can still paste a code or scan from a picture.",
+    roomScanNoQr: "No QR code found in that picture. Paste the room code instead.",
+    roomScanUnreadable: "Couldn't read that picture. Paste the room code instead.",
     roomCodeErrors: {
       format: "That isn't a room code.",
       checksum: "This room code is incomplete or was changed. Ask for it again.",
@@ -1898,6 +1910,12 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     roomCopyConfirmBody: "Os itens deste quarto voltam para o teu saco.",
     roomCopyReplace: "Substituir",
     roomCopyCancel: "Cancelar",
+    roomScanPicture: "Ler uma imagem",
+    roomScanCamera: "Ler com a câmara",
+    roomScanHint: "Aponta a câmara a um código QR de quarto do Growra.",
+    roomScanDenied: "O acesso à câmara está desligado. Podes colar um código ou ler uma imagem.",
+    roomScanNoQr: "Não há código QR nessa imagem. Cola o código do quarto.",
+    roomScanUnreadable: "Não foi possível ler essa imagem. Cola o código do quarto.",
     roomCodeErrors: {
       format: "Isto não é um código de quarto.",
       checksum: "Este código de quarto está incompleto ou foi alterado. Pede-o outra vez.",

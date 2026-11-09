@@ -609,6 +609,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "Предметы из этой комнаты вернутся в сумку.",
   roomCopyReplace: "Заменить",
   roomCopyCancel: "Отмена",
+  roomScanPicture: "Сканировать картинку",
+  roomScanCamera: "Сканировать камерой",
+  roomScanHint: "Наведите камеру на QR-код комнаты Growra.",
+  roomScanDenied: "Доступ к камере выключен. Можно вставить код или сканировать картинку.",
+  roomScanNoQr: "На картинке нет QR-кода. Вставьте код комнаты.",
+  roomScanUnreadable: "Не удалось прочитать картинку. Вставьте код комнаты.",
   roomCodeErrors: {
     format: "Это не код комнаты.",
     checksum: "Этот код комнаты неполный или изменён. Попросите его ещё раз.",

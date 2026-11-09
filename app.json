@@ -63,6 +63,14 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Growra uses the camera only when you scan a room QR code.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#1f7a73"

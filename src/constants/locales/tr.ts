@@ -609,6 +609,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "Bu odadaki eşyalar çantana geri döner.",
   roomCopyReplace: "Değiştir",
   roomCopyCancel: "İptal",
+  roomScanPicture: "Resmi tara",
+  roomScanCamera: "Kamerayla tara",
+  roomScanHint: "Kamerayı bir Growra oda QR koduna doğrult.",
+  roomScanDenied: "Kamera erişimi kapalı. Yine de kod yapıştırabilir veya resmi tarayabilirsin.",
+  roomScanNoQr: "Bu resimde QR kodu bulunamadı. Oda kodunu yapıştır.",
+  roomScanUnreadable: "Bu resim okunamadı. Oda kodunu yapıştır.",
   roomCodeErrors: {
     format: "Bu bir oda kodu değil.",
     checksum: "Bu oda kodu eksik ya da değiştirilmiş. Tekrar iste.",

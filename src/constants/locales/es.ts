@@ -608,6 +608,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "Los objetos de este cuarto vuelven a tu bolsa.",
   roomCopyReplace: "Sustituir",
   roomCopyCancel: "Cancelar",
+  roomScanPicture: "Escanear una imagen",
+  roomScanCamera: "Escanear con la cámara",
+  roomScanHint: "Apunta la cámara a un código QR de cuarto de Growra.",
+  roomScanDenied: "El acceso a la cámara está desactivado. Aún puedes pegar un código o escanear una imagen.",
+  roomScanNoQr: "No hay ningún código QR en esa imagen. Pega el código del cuarto.",
+  roomScanUnreadable: "No se pudo leer esa imagen. Pega el código del cuarto.",
   roomCodeErrors: {
     format: "Eso no es un código de cuarto.",
     checksum: "Este código de cuarto está incompleto o se modificó. Vuelve a pedirlo.",
