@@ -3,12 +3,15 @@ import { AppState, Platform } from "react-native";
 import { Task } from "../types";
 import {
   DAILY_REMINDER_ID,
+  LEGACY_CHANNEL_IDS,
+  REMINDER_CHANNEL_ID,
+  TIMER_CHANNEL_ID,
   planTimerNotifications,
   ScheduledTimerNotification,
 } from "../utils/notificationPlan";
 
-const TIMER_CHANNEL = "timers";
-const REMINDER_CHANNEL = "reminders";
+const TIMER_CHANNEL = TIMER_CHANNEL_ID;
+const REMINDER_CHANNEL = REMINDER_CHANNEL_ID;
 const supported = Platform.OS === "android" || Platform.OS === "ios";
 
 export interface TimerNotificationText {
@@ -39,6 +42,13 @@ async function configure(timerChannel: string, reminderChannel: string): Promise
     },
   });
   if (Platform.OS === "android") {
+    for (const legacy of LEGACY_CHANNEL_IDS) {
+      try {
+        await Notifications.deleteNotificationChannelAsync(legacy);
+      } catch {
+        // Nothing to remove, or the channel is already gone.
+      }
+    }
     await Notifications.setNotificationChannelAsync(TIMER_CHANNEL, {
       name: timerChannel,
       importance: Notifications.AndroidImportance.HIGH,
