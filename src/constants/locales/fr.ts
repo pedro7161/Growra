@@ -781,6 +781,20 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.12.0",
+    dateLabel: "Version 1.12.0 · novembre 2026",
+    items: [
+      "Partage une pièce avec un code QR sur le pied de l'image.",
+      "Scanne le code QR d'une pièce avec l'appareil photo ou depuis une image.",
+      "Quand le pied de l'image est désactivé, le texte du code de la pièce est partagé avec l'image.",
+      "Toucher une alerte du minuteur ouvre cette tâche.",
+      "Un message unique explique quand les alertes du minuteur sont bloquées par l'autorisation de notification.",
+    ],
+    fixes: [
+      "Les alertes du minuteur utilisent des canaux de notification mis à jour, donc les réglages de son et de vibration s'appliquent correctement sur Android.",
+    ],
+  },
+  {
     version: "1.11.0",
     dateLabel: "Version 1.11.0 · novembre 2026",
     items: [

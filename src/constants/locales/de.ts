@@ -781,6 +781,20 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.12.0",
+    dateLabel: "Version 1.12.0 · November 2026",
+    items: [
+      "Teile einen Raum als QR-Code in der Fußzeile des Bildes.",
+      "Scanne den QR-Code eines Raums mit der Kamera oder aus einem Bild.",
+      "Ist die Fußzeile ausgeschaltet, wird der Raumcode als Text mit dem Bild geteilt.",
+      "Ein Tipp auf eine Timer-Benachrichtigung öffnet die zugehörige Aufgabe.",
+      "Ein einmaliger Hinweis erklärt, wenn Timer-Benachrichtigungen durch die Benachrichtigungsberechtigung blockiert sind.",
+    ],
+    fixes: [
+      "Timer-Benachrichtigungen nutzen aktualisierte Benachrichtigungskanäle, sodass die Einstellungen für Ton und Vibration unter Android richtig greifen.",
+    ],
+  },
+  {
     version: "1.11.0",
     dateLabel: "Version 1.11.0 · November 2026",
     items: [

@@ -781,6 +781,20 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.12.0",
+    dateLabel: "Versión 1.12.0 · Noviembre 2026",
+    items: [
+      "Comparte una sala con un código QR en el pie de la imagen.",
+      "Escanea el código QR de una sala con la cámara o desde una imagen.",
+      "Si el pie está desactivado, el texto del código de la sala se comparte junto con la imagen.",
+      "Al tocar una alerta del temporizador se abre esa tarea.",
+      "Un aviso único explica cuándo el permiso de notificaciones bloquea las alertas del temporizador.",
+    ],
+    fixes: [
+      "Las alertas del temporizador usan canales de notificación actualizados, así que los ajustes de sonido y vibración se aplican correctamente en Android.",
+    ],
+  },
+  {
     version: "1.11.0",
     dateLabel: "Versión 1.11.0 · Noviembre 2026",
     items: [

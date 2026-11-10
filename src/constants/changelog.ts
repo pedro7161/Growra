@@ -23,6 +23,20 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<"en" | "pt", ChangelogEntry[]> = {
   en: [
     {
+      version: "1.12.0",
+      dateLabel: "Version 1.12.0 · November 2026",
+      items: [
+        "Share a room as a QR code on the picture footer.",
+        "Scan a room QR code with the camera or from a picture.",
+        "When the footer is off, the room code text is shared with the picture.",
+        "Tapping a timer alert opens that task.",
+        "A one-time notice explains when timer alerts are blocked by the notification permission.",
+      ],
+      fixes: [
+        "Timer alerts now use updated notification channels, so the sound and vibration settings apply correctly on Android.",
+      ],
+    },
+    {
       version: "1.11.0",
       dateLabel: "Version 1.11.0 · November 2026",
       items: [
@@ -205,6 +219,20 @@ const changelogByLanguage: Record<"en" | "pt", ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      version: "1.12.0",
+      dateLabel: "Versão 1.12.0 · novembro de 2026",
+      items: [
+        "Partilha uma sala com um código QR no rodapé da imagem.",
+        "Lê o código QR de uma sala com a câmara ou a partir de uma imagem.",
+        "Quando o rodapé está desativado, o texto do código da sala é partilhado junto com a imagem.",
+        "Tocar num alerta do temporizador abre essa tarefa.",
+        "Um aviso único explica quando os alertas do temporizador estão bloqueados pela permissão de notificações.",
+      ],
+      fixes: [
+        "Os alertas do temporizador usam agora canais de notificação atualizados, por isso as definições de som e vibração aplicam-se corretamente no Android.",
+      ],
+    },
     {
       version: "1.11.0",
       dateLabel: "Versão 1.11.0 · novembro de 2026",

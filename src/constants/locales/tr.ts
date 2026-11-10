@@ -782,6 +782,20 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.12.0",
+    dateLabel: "Sürüm 1.12.0 · Kasım 2026",
+    items: [
+      "Bir odayı resmin alt bilgisindeki QR koduyla paylaş.",
+      "Bir odanın QR kodunu kamerayla veya bir resimden tara.",
+      "Alt bilgi kapalıyken oda kodu metni resimle birlikte paylaşılır.",
+      "Bir zamanlayıcı bildirimine dokunmak ilgili görevi açar.",
+      "Zamanlayıcı bildirimleri bildirim izni nedeniyle engellendiğinde, tek seferlik bir uyarı bunu açıklar.",
+    ],
+    fixes: [
+      "Zamanlayıcı bildirimleri güncellenmiş bildirim kanallarını kullanıyor; böylece ses ve titreşim ayarları Android'de doğru çalışıyor.",
+    ],
+  },
+  {
     version: "1.11.0",
     dateLabel: "Sürüm 1.11.0 · Kasım 2026",
     items: [
