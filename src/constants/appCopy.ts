@@ -389,6 +389,17 @@ export interface AppCopy {
   welcomeBack: string;
   returnRecapLine: string;
   returnRecapFocus: string;
+  weeklySummaryOpen: string;
+  weeklySummaryTitle: string;
+  weeklySummaryTasks: string;
+  weeklySummaryActiveDays: string;
+  weeklySummaryRecurring: string;
+  weeklySummaryFocus: string;
+  weeklySummaryEmpty: string;
+  weeklySummaryPartial: string;
+  weeklySummaryNotTracked: string;
+  weeklySummaryDayLabel: string;
+  weeklySummaryClose: string;
   welcomeBackDismiss: string;
   backupNudgeTitle: string;
   backupNudgeBody: string;
@@ -1017,6 +1028,17 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     welcomeBack: "Good to see you again.",
     returnRecapLine: "Your last {days} active days: {done} tasks done.",
     returnRecapFocus: "Your last {days} active days: {done} tasks done, {focus} focus sessions.",
+    weeklySummaryOpen: "See how this week went",
+    weeklySummaryTitle: "Your last 7 days",
+    weeklySummaryTasks: "Tasks done",
+    weeklySummaryActiveDays: "Days with a task done: {active} of {total}",
+    weeklySummaryRecurring: "Repeating tasks done",
+    weeklySummaryFocus: "Focus sessions finished",
+    weeklySummaryEmpty: "A quiet week, and that is perfectly fine. Whenever you finish something, it will show up here.",
+    weeklySummaryPartial: "Growra has only kept this record for {days} of these days, so earlier days are left out.",
+    weeklySummaryNotTracked: "not recorded",
+    weeklySummaryDayLabel: "{day}: {done} tasks done",
+    weeklySummaryClose: "Close",
     welcomeBackDismiss: "OK",
     backupNudgeTitle: "Keep a copy of your progress",
     backupNudgeBody: "Your tasks and progress live only on this phone. Share a backup code to somewhere safe, like a note or an email to yourself, so you can bring everything back on a new phone.",
@@ -1751,6 +1773,17 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     welcomeBack: "É bom ver-te outra vez.",
     returnRecapLine: "Os teus últimos {days} dias ativos: {done} tarefas feitas.",
     returnRecapFocus: "Os teus últimos {days} dias ativos: {done} tarefas feitas, {focus} sessões de foco.",
+    weeklySummaryOpen: "Ver como correu esta semana",
+    weeklySummaryTitle: "Os teus últimos 7 dias",
+    weeklySummaryTasks: "Tarefas feitas",
+    weeklySummaryActiveDays: "Dias com uma tarefa feita: {active} de {total}",
+    weeklySummaryRecurring: "Tarefas repetidas feitas",
+    weeklySummaryFocus: "Sessões de foco concluídas",
+    weeklySummaryEmpty: "Uma semana tranquila, e está tudo bem. Quando terminares algo, aparece aqui.",
+    weeklySummaryPartial: "O Growra só guarda este registo em {days} destes dias, por isso os dias anteriores ficam de fora.",
+    weeklySummaryNotTracked: "sem registo",
+    weeklySummaryDayLabel: "{day}: {done} tarefas feitas",
+    weeklySummaryClose: "Fechar",
     welcomeBackDismiss: "OK",
     backupNudgeTitle: "Guarda uma cópia do teu progresso",
     backupNudgeBody: "As tuas tarefas e o teu progresso só existem neste telemóvel. Partilha um código de backup para um sítio seguro, como uma nota ou um email para ti, para recuperares tudo num telemóvel novo.",
