@@ -57,6 +57,11 @@ interface DashboardScreenProps {
   /** Shown once after 2+ days away (#53); null otherwise. */
   returnRecap: ReturnRecap | null;
   onDismissReturnRecap: () => void;
+  /** The optional daily welcome card (#75): dismissing only hides it for this visit. */
+  dailyWelcomeVisible: boolean;
+  dailyWelcomeCoins: number;
+  onClaimDailyWelcome: () => void;
+  onDismissDailyWelcome: () => void;
   /** The one-time backup card (#54). */
   backupNudgeVisible: boolean;
   onShareBackup: () => void;
@@ -86,6 +91,10 @@ export default function DashboardScreen({
   onTimerReady,
   returnRecap,
   onDismissReturnRecap,
+  dailyWelcomeVisible,
+  dailyWelcomeCoins,
+  onClaimDailyWelcome,
+  onDismissDailyWelcome,
   backupNudgeVisible,
   onShareBackup,
   onDismissBackupNudge,
@@ -206,6 +215,27 @@ export default function DashboardScreen({
             <View style={styles.noticeActions}>
               <TouchableOpacity onPress={onDismissReturnRecap} hitSlop={8} accessibilityRole="button">
                 <Text style={[styles.noticeLink, { color: theme.accent }]}>{copy.welcomeBackDismiss}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {dailyWelcomeVisible && (
+          <View style={[styles.noticeCard, { backgroundColor: theme.surface, borderColor: theme.accentSoft }]}>
+            <Text style={[styles.noticeTitle, { color: theme.text }]}>{copy.dailyWelcomeTitle}</Text>
+            <Text style={[styles.noticeBody, { color: theme.mutedText }]}>
+              {copy.dailyWelcomeBody.replace("{coins}", formatCount(dailyWelcomeCoins, locale))}
+            </Text>
+            <View style={styles.noticeActions}>
+              <TouchableOpacity onPress={onDismissDailyWelcome} hitSlop={8} accessibilityRole="button">
+                <Text style={[styles.noticeLink, { color: theme.mutedText }]}>{copy.dailyWelcomeDismiss}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.noticeButton, { backgroundColor: theme.accent }]}
+                onPress={onClaimDailyWelcome}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.noticeButtonText, { color: theme.accentText }]}>{copy.dailyWelcomeClaim}</Text>
               </TouchableOpacity>
             </View>
           </View>

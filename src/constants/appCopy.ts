@@ -401,6 +401,12 @@ export interface AppCopy {
   weeklySummaryDayLabel: string;
   weeklySummaryClose: string;
   welcomeBackDismiss: string;
+  dailyWelcomeTitle: string;
+  dailyWelcomeBody: string;
+  dailyWelcomeClaim: string;
+  dailyWelcomeDismiss: string;
+  settingsDailyWelcome: string;
+  settingsDailyWelcomeHelp: string;
   backupNudgeTitle: string;
   backupNudgeBody: string;
   backupNudgeShare: string;
@@ -1040,6 +1046,12 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     weeklySummaryDayLabel: "{day}: {done} tasks done",
     weeklySummaryClose: "Close",
     welcomeBackDismiss: "OK",
+    dailyWelcomeTitle: "A small hello",
+    dailyWelcomeBody: "A little gift for opening Growra today: {coins} coins. Take it whenever you like, or skip it. Nothing is lost either way.",
+    dailyWelcomeClaim: "Claim",
+    dailyWelcomeDismiss: "Not now",
+    settingsDailyWelcome: "Daily welcome",
+    settingsDailyWelcomeHelp: "Show a small once-a-day welcome gift of a few coins when you open the app. Skipping a day costs nothing. Turn off to hide it.",
     backupNudgeTitle: "Keep a copy of your progress",
     backupNudgeBody: "Your tasks and progress live only on this phone. Share a backup code to somewhere safe, like a note or an email to yourself, so you can bring everything back on a new phone.",
     backupNudgeShare: "Share backup code",
@@ -1785,6 +1797,12 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     weeklySummaryDayLabel: "{day}: {done} tarefas feitas",
     weeklySummaryClose: "Fechar",
     welcomeBackDismiss: "OK",
+    dailyWelcomeTitle: "Um pequeno olá",
+    dailyWelcomeBody: "Um miminho por abrires o Growra hoje: {coins} moedas. Recebe quando quiseres, ou deixa. Não se perde nada.",
+    dailyWelcomeClaim: "Receber",
+    dailyWelcomeDismiss: "Agora não",
+    settingsDailyWelcome: "Boas-vindas diárias",
+    settingsDailyWelcomeHelp: "Mostra um pequeno presente de boas-vindas por dia, com algumas moedas, ao abrires a app. Saltar um dia não custa nada. Desliga para o esconder.",
     backupNudgeTitle: "Guarda uma cópia do teu progresso",
     backupNudgeBody: "As tuas tarefas e o teu progresso só existem neste telemóvel. Partilha um código de backup para um sítio seguro, como uma nota ou um email para ti, para recuperares tudo num telemóvel novo.",
     backupNudgeShare: "Partilhar código de backup",

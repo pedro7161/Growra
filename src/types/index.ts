@@ -48,6 +48,8 @@ export interface AppSettings {
   appearance: AppAppearance;
   /** Ask "Leave Growra?" when Back is pressed on the dashboard. */
   confirmExit: boolean;
+  /** Offer the small once-a-day welcome reward (#75). */
+  dailyWelcome: boolean;
   /** Search and quick add rows on the Tasks screen are shown (the player can fold them away). */
   taskToolsOpen: boolean;
   /** One optional reminder a day (#39); off unless the player turns it on. */
@@ -373,6 +375,8 @@ export interface GameState {
   backupNudgeShown: boolean;
   /** The one-time "timer alerts are off" notice has been shown (#38); it never comes back. */
   timerDeniedNoticeShown: boolean;
+  /** Local day (YYYY-MM-DD) of the last daily welcome claim (#75); "" = never. */
+  welcomeClaimedDay: string;
   /** The app version whose What's New notes the player chose to stop seeing ("" = none yet). */
   whatsNewHiddenFor: string;
   workItems: WorkItem[];

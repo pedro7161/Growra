@@ -40,6 +40,7 @@ export function createInitialGameState(): GameState {
     roomShareFooter: true,
     backupNudgeShown: false,
     timerDeniedNoticeShown: false,
+    welcomeClaimedDay: "",
     whatsNewHiddenFor: "",
     workItems: [],
     groups: [],
@@ -52,7 +53,7 @@ export function createInitialGameState(): GameState {
  * The save format this build writes. Bump it whenever a build changes the save shape, so an older
  * build refuses that save instead of quietly dropping what it doesn't understand (#50).
  */
-export const SAVE_VERSION = 22; // 19: whatsNewHiddenFor (#64); 20: ghost room items (#41); 21: work schedule; 22: groups
+export const SAVE_VERSION = 23; // 19: whatsNewHiddenFor (#64); 20: ghost room items (#41); 21: work schedule; 22: groups; 23: welcomeClaimedDay + dailyWelcome (#75)
 
 export function createSaveData(gameState: GameState): SaveData {
   return {

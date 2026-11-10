@@ -55,6 +55,7 @@ import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/rev
 import { timerDeniedNotice } from "./utils/notificationPlan";
 import { ensureNotificationPermission, listenForNotificationTaps, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
 import { getReturnRecap, ReturnRecap, shouldShowBackupNudge } from "./utils/returnRecap";
+import { canClaimDailyWelcome, claimDailyWelcome, DAILY_WELCOME_COINS } from "./utils/dailyWelcome";
 import {
   AppLanguage,
   AppSettings,
@@ -187,6 +188,8 @@ export default function App() {
   const lastSaveWarningRef = useRef(0);
   const [returnRecap, setReturnRecap] = useState<ReturnRecap | null>(null);
   const [backupNudgeVisible, setBackupNudgeVisible] = useState(false);
+  /** "Not now" on the daily welcome (#75) hides it until the next launch; nothing is saved. */
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [whatsNew, setWhatsNew] = useState<ChangelogEntry | null>(null);
   const [loading, setLoading] = useState(true);
   /** Set when the save was written by a newer Growra: nothing is loaded or overwritten (#50). */
@@ -772,6 +775,22 @@ export default function App() {
     syncNotifications(next, true);
   };
 
+  const handleClaimDailyWelcome = async () => {
+    const current = gameStateRef.current;
+    if (!current) return;
+    // Pays through the ref's latest state, so a double tap finds the day already claimed.
+    const claim = claimDailyWelcome(current, Date.now());
+    if (claim.coins === 0) return;
+    gameStateRef.current = claim.state;
+    await persistGameState(claim.state);
+  };
+
+  const handleDailyWelcomeChange = async (dailyWelcome: boolean) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, dailyWelcome } });
+  };
+
   const handleConfirmExitChange = async (confirmExit: boolean) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
@@ -1284,6 +1303,16 @@ export default function App() {
             }
             onOpenGroup={(groupId) => void openHolderScreen(groupId)}
             workNow={workNow}
+            dailyWelcomeVisible={!welcomeDismissed && canClaimDailyWelcome(gameState, Date.now())}
+            dailyWelcomeCoins={DAILY_WELCOME_COINS}
+            onClaimDailyWelcome={() => {
+              playUiTap();
+              void handleClaimDailyWelcome();
+            }}
+            onDismissDailyWelcome={() => {
+              setWelcomeDismissed(true);
+              playUiTap();
+            }}
             backupNudgeVisible={backupNudgeVisible}
             onShareBackup={() => {
               setBackupNudgeVisible(false);
@@ -1504,6 +1533,7 @@ export default function App() {
           onThemeChange={handleThemeChange}
           onAppearanceChange={handleAppearanceChange}
           onConfirmExitChange={handleConfirmExitChange}
+          onDailyWelcomeChange={(enabled) => void handleDailyWelcomeChange(enabled)}
           onDailyReminderChange={(reminder) => void handleDailyReminderChange(reminder)}
           onReplayTutorial={() => {
             setSettingsVisible(false);
