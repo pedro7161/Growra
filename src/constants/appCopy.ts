@@ -400,6 +400,13 @@ export interface AppCopy {
   whatsNewClose: string;
   whatsNewHide: string;
   tutorialChooseCompanionHint: string;
+  tutorialBack: string;
+  tutorialPreviewBadge: string;
+  tutorialGuideLabel: string;
+  tutorialPetInvite: string;
+  tutorialPetClose: string;
+  tutorialReplayCompleteTask: string;
+  tutorialReplayOpenRealm: string;
   companionFoundTitle: string;
   companionFoundSubtitle: string;
   journeyTitle: string;
@@ -1021,6 +1028,13 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     whatsNewClose: "Got it",
     whatsNewHide: "Don't show again until the next update",
     tutorialChooseCompanionHint: "Choose your first companion. The others join as you use Growra.",
+    tutorialBack: "Back",
+    tutorialPreviewBadge: "Coming up",
+    tutorialGuideLabel: "{name}, your guide",
+    tutorialPetInvite: "I'm {name}. Pick a companion below, any of us would love to join you!",
+    tutorialPetClose: "Now I'm yours, I'm {name}! Open Journey: every day you finish a task adds a tile to our road.",
+    tutorialReplayCompleteTask: "Tap the box next to a task to complete it. You earn coins and Bond, and your companion cheers you on.",
+    tutorialReplayOpenRealm: "Open Pets any time to meet your companions.",
     companionFoundTitle: "{name} found something!",
     companionFoundSubtitle: "A {item} from your focus session. It's in your bag on the Journey.",
     journeyTitle: "Journey",
@@ -1748,6 +1762,13 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     whatsNewClose: "Percebi",
     whatsNewHide: "Não mostrar outra vez até à próxima atualização",
     tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro. Os outros juntam-se a ti quando usas o Growra.",
+    tutorialBack: "Voltar",
+    tutorialPreviewBadge: "A seguir",
+    tutorialGuideLabel: "{name}, o teu guia",
+    tutorialPetInvite: "Sou o {name}. Escolhe um companheiro abaixo, qualquer um de nós adorava juntar-se a ti!",
+    tutorialPetClose: "Agora sou teu, sou o {name}! Abre a Jornada: cada dia em que concluis uma tarefa junta um bloco ao nosso caminho.",
+    tutorialReplayCompleteTask: "Toca na caixa ao lado de uma tarefa para a concluir. Ganhas moedas e Vínculo, e o teu companheiro anima-te.",
+    tutorialReplayOpenRealm: "Abre Companheiros quando quiseres para conhecer os teus companheiros.",
     companionFoundTitle: "{name} encontrou uma coisa!",
     companionFoundSubtitle: "Um(a) {item} da tua sessão de foco. Está na tua mochila na Jornada.",
     journeyTitle: "Jornada",
