@@ -6,19 +6,28 @@ import { AppSettings, DayRecord } from "../types";
 import { formatCount } from "../utils/formatCount";
 import { getLocaleFromSettings } from "../utils/settings";
 import { getWeeklySummary } from "../utils/weeklySummary";
+import {
+  getWeeklyGoalProgress,
+  stepWeeklyGoal,
+  WEEKLY_GOAL_DEFAULT,
+  WEEKLY_GOAL_MAX,
+  WEEKLY_GOAL_MIN,
+} from "../utils/weeklyGoal";
 
 interface WeeklySummaryModalProps {
   visible: boolean;
   days: DayRecord[];
   createdAt: number;
   settings: AppSettings;
+  /** Saves the optional weekly goal (#80); 0 turns it off. */
+  onWeeklyGoalChange: (goal: number) => void;
   onClose: () => void;
 }
 
 const BAR_MAX_HEIGHT = 64;
 
 /** A look back at the last 7 days, opened only on request (#76). Descriptive, never a goal. */
-export default function WeeklySummaryModal({ visible, days, createdAt, settings, onClose }: WeeklySummaryModalProps) {
+export default function WeeklySummaryModal({ visible, days, createdAt, settings, onWeeklyGoalChange, onClose }: WeeklySummaryModalProps) {
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const locale = getLocaleFromSettings(settings);
@@ -27,6 +36,8 @@ export default function WeeklySummaryModal({ visible, days, createdAt, settings,
   const summary = getWeeklySummary(days, createdAt, Date.now());
   const peak = Math.max(1, ...summary.days.map((day) => day.done));
   const weekday = (date: number) => new Date(date).toLocaleDateString(locale, { weekday: "short" });
+  const goal = settings.weeklyGoal;
+  const progress = getWeeklyGoalProgress(days, goal, Date.now());
   const stats = [
     { label: copy.weeklySummaryTasks, value: summary.totalDone },
     ...(summary.recurringDone > 0 ? [{ label: copy.weeklySummaryRecurring, value: summary.recurringDone }] : []),
@@ -41,6 +52,52 @@ export default function WeeklySummaryModal({ visible, days, createdAt, settings,
             {copy.weeklySummaryTitle}
           </Text>
           <ScrollView contentContainerStyle={styles.content}>
+            {goal > 0 ? (
+              <View style={[styles.goalBox, { backgroundColor: theme.accentSoft }]}>
+                <Text style={[styles.goalTitle, { color: theme.text }]}>{copy.weeklyGoalTitle}</Text>
+                <Text style={[styles.body, { color: theme.text }]}>
+                  {copy.weeklyGoalProgress
+                    .replace("{done}", formatCount(progress.done, locale))
+                    .replace("{goal}", formatCount(goal, locale))}
+                </Text>
+                {progress.met && <Text style={[styles.body, { color: theme.accent }]}>{copy.weeklyGoalMet}</Text>}
+                <View style={styles.goalRow}>
+                  <TouchableOpacity
+                    style={[styles.stepper, { backgroundColor: theme.background, opacity: goal <= WEEKLY_GOAL_MIN ? 0.4 : 1 }]}
+                    onPress={() => onWeeklyGoalChange(stepWeeklyGoal(goal, -1))}
+                    disabled={goal <= WEEKLY_GOAL_MIN}
+                    accessibilityRole="button"
+                    accessibilityLabel={copy.weeklyGoalLess}
+                  >
+                    <Text style={[styles.stepperText, { color: theme.text }]}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.goalValue, { color: theme.text }]}>
+                    {copy.weeklyGoalValue.replace("{goal}", formatCount(goal, locale))}
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.stepper, { backgroundColor: theme.background, opacity: goal >= WEEKLY_GOAL_MAX ? 0.4 : 1 }]}
+                    onPress={() => onWeeklyGoalChange(stepWeeklyGoal(goal, 1))}
+                    disabled={goal >= WEEKLY_GOAL_MAX}
+                    accessibilityRole="button"
+                    accessibilityLabel={copy.weeklyGoalMore}
+                  >
+                    <Text style={[styles.stepperText, { color: theme.text }]}>+</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={[styles.note, { color: theme.mutedText }]}>{copy.weeklyGoalHint}</Text>
+                <TouchableOpacity onPress={() => onWeeklyGoalChange(0)} hitSlop={8} accessibilityRole="button">
+                  <Text style={[styles.note, { color: theme.accent }]}>{copy.weeklyGoalOff}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={() => onWeeklyGoalChange(WEEKLY_GOAL_DEFAULT)}
+                hitSlop={8}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.body, { color: theme.accent }]}>{copy.weeklyGoalSetup}</Text>
+              </TouchableOpacity>
+            )}
             {summary.empty ? (
               <Text style={[styles.body, { color: theme.mutedText }]}>{copy.weeklySummaryEmpty}</Text>
             ) : (
@@ -114,6 +171,12 @@ const styles = StyleSheet.create({
   content: { gap: 14 },
   body: { fontSize: 15, lineHeight: 21 },
   note: { fontSize: 13, lineHeight: 19 },
+  goalBox: { borderRadius: 14, padding: 14, gap: 8 },
+  goalTitle: { fontSize: 16, fontWeight: "700" },
+  goalRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  goalValue: { flex: 1, fontSize: 15, textAlign: "center" },
+  stepper: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  stepperText: { fontSize: 22, fontWeight: "700" },
   statRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 },
   statLabel: { flex: 1, fontSize: 16 },
   statValue: { fontSize: 22, fontWeight: "700" },

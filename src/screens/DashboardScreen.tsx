@@ -66,6 +66,8 @@ interface DashboardScreenProps {
   /** The one-time backup card (#54). */
   backupNudgeVisible: boolean;
   onShareBackup: () => void;
+  /** Saves the optional weekly goal (#80); 0 turns it off. */
+  onWeeklyGoalChange: (goal: number) => void;
   onDismissBackupNudge: () => void;
   /** Work section: confirm a shift, open the Work screen, and remember which sections are collapsed. */
   onCompleteWorkOccurrence: (itemId: string, dateKey: string) => void;
@@ -99,6 +101,7 @@ export default function DashboardScreen({
   onDismissDailyWelcome,
   backupNudgeVisible,
   onShareBackup,
+  onWeeklyGoalChange,
   onDismissBackupNudge,
   onCompleteWorkOccurrence,
   onOpenWork,
@@ -276,6 +279,7 @@ export default function DashboardScreen({
           days={gameState.days}
           createdAt={gameState.createdAt}
           settings={gameState.settings}
+          onWeeklyGoalChange={onWeeklyGoalChange}
           onClose={() => setWeeklyVisible(false)}
         />
 

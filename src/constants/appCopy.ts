@@ -413,6 +413,15 @@ export interface AppCopy {
   weeklySummaryNotTracked: string;
   weeklySummaryDayLabel: string;
   weeklySummaryClose: string;
+  weeklyGoalTitle: string;
+  weeklyGoalSetup: string;
+  weeklyGoalValue: string;
+  weeklyGoalProgress: string;
+  weeklyGoalMet: string;
+  weeklyGoalHint: string;
+  weeklyGoalMore: string;
+  weeklyGoalLess: string;
+  weeklyGoalOff: string;
   calendarPrevMonth: string;
   calendarNextMonth: string;
   calendarHistoryTitle: string;
@@ -1110,6 +1119,15 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     weeklySummaryNotTracked: "not recorded",
     weeklySummaryDayLabel: "{day}: {done} tasks done",
     weeklySummaryClose: "Close",
+    weeklyGoalTitle: "Weekly goal",
+    weeklyGoalSetup: "Set a weekly goal (optional)",
+    weeklyGoalValue: "{goal} tasks a week",
+    weeklyGoalProgress: "{done} of {goal} tasks this week",
+    weeklyGoalMet: "You reached this week's goal. Nice.",
+    weeklyGoalHint: "Counts tasks you finish from Monday to Sunday. It is only for you, and nothing is lost if you do not reach it.",
+    weeklyGoalMore: "Raise goal",
+    weeklyGoalLess: "Lower goal",
+    weeklyGoalOff: "Turn goal off",
     calendarPrevMonth: "Previous month",
     calendarNextMonth: "Next month",
     calendarHistoryTitle: "Finished on this day",
@@ -1913,6 +1931,15 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     weeklySummaryNotTracked: "sem registo",
     weeklySummaryDayLabel: "{day}: {done} tarefas feitas",
     weeklySummaryClose: "Fechar",
+    weeklyGoalTitle: "Meta semanal",
+    weeklyGoalSetup: "Definir uma meta semanal (opcional)",
+    weeklyGoalValue: "{goal} tarefas por semana",
+    weeklyGoalProgress: "{done} de {goal} tarefas esta semana",
+    weeklyGoalMet: "Chegaste à meta desta semana. Boa.",
+    weeklyGoalHint: "Conta as tarefas que terminas de segunda a domingo. É só para ti e não perdes nada se não a alcançares.",
+    weeklyGoalMore: "Aumentar meta",
+    weeklyGoalLess: "Diminuir meta",
+    weeklyGoalOff: "Desativar meta",
     calendarPrevMonth: "Mês anterior",
     calendarNextMonth: "Mês seguinte",
     calendarHistoryTitle: "Concluído neste dia",
