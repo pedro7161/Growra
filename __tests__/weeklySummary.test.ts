@@ -91,4 +91,20 @@ describe('weekly summary (#76)', () => {
     expect(summary.empty).toBe(true);
     expect(summary.trackedDays).toBe(1);
   });
+
+  it('gives the same summary after a backup code export and import', () => {
+    const { gameStateService } = require('../src/services/gameStateService');
+    const { createInitialGameState, createSaveData } = require('../src/utils/initialState');
+    const now = local(6, 10);
+    const state = {
+      ...createInitialGameState(),
+      createdAt: created,
+      days: [rec(local(6, 9), 3, { recurringDone: 1, timersFinished: 2 }), rec(local(6, 7), 2)],
+    };
+    const restored = gameStateService.importSaveCode(gameStateService.exportSaveCode(createSaveData(state))).gameState;
+    expect(getWeeklySummary(restored.days, restored.createdAt, now)).toEqual(
+      getWeeklySummary(state.days, state.createdAt, now),
+    );
+    expect(getWeeklySummary(restored.days, restored.createdAt, now).totalDone).toBe(5);
+  });
 });
