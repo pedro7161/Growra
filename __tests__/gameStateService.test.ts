@@ -342,7 +342,7 @@ describe('groups save (v22)', () => {
     expect(result.status).toBe('loaded');
     if (result.status !== 'loaded') return;
     const loaded = result.saveData.gameState;
-    expect(result.saveData.version).toBe(25);
+    expect(result.saveData.version).toBe(26);
     expect(loaded.groups).toEqual([]);
     expect(loaded.settings.dashboardCollapsed).toEqual({ personal: true, work: false });
     expect(loaded.settings.calendarShow).toEqual(['personal', 'work']);

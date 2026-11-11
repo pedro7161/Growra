@@ -3,6 +3,7 @@ import { defaultSettings } from "./settings";
 import { deviceLanguage } from "../constants/languages";
 import { generateId } from "./idUtils";
 import { createEmptyUsage } from "./companions";
+import { getStartOfDay } from "./taskSchedule";
 
 export function createInitialStreak(): Streak {
   return {
@@ -31,6 +32,7 @@ export function createInitialGameState(): GameState {
     companionEvents: [],
     notices: [],
     days: [],
+    holderHistorySince: getStartOfDay(Date.now()),
     decorations: [],
     streak: createInitialStreak(),
     plus: { owned: false, lastCheckedAt: 0 },
@@ -53,7 +55,7 @@ export function createInitialGameState(): GameState {
  * The save format this build writes. Bump it whenever a build changes the save shape, so an older
  * build refuses that save instead of quietly dropping what it doesn't understand (#50).
  */
-export const SAVE_VERSION = 25; // 19: whatsNewHiddenFor (#64); 20: ghost room items (#41); 21: work schedule; 22: groups; 23: welcomeClaimedDay + dailyWelcome (#75); 24: companionReactions (#78); 25: weeklyGoal (#80)
+export const SAVE_VERSION = 26; // 19: whatsNewHiddenFor (#64); 20: ghost room items (#41); 21: work schedule; 22: groups; 23: welcomeClaimedDay + dailyWelcome (#75); 24: companionReactions (#78); 25: weeklyGoal (#80); 26: holderHistorySince + per-holder day records (#79)
 
 export function createSaveData(gameState: GameState): SaveData {
   return {

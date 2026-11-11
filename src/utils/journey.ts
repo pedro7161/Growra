@@ -1,4 +1,4 @@
-import { AppLanguage, DayRecord, Decoration, GameState, Task } from "../types";
+import { AppLanguage, DayRecord, Decoration, GameState, HolderId, Task } from "../types";
 import { getAppCopy } from "../constants/appCopy";
 import { getCalendarDayDifference, getStartOfDay } from "./taskSchedule";
 import { generateId } from "./idUtils";
@@ -162,24 +162,52 @@ function updateDay(days: DayRecord[], now: number, update: (day: DayRecord) => D
   return [...days, update(createDayRecord(date))].sort((left, right) => left.date - right.date);
 }
 
+/** Adds one finished item to `holder`'s own tally on the record (#79); it never touches the combined totals. */
+function withHolderCompletion(day: DayRecord, holder: HolderId, name: string, now: number): DayRecord {
+  const own = day.byHolder?.[holder] ?? { done: 0, completions: [] };
+  return {
+    ...day,
+    byHolder: {
+      ...day.byHolder,
+      [holder]: {
+        done: own.done + 1,
+        completions:
+          own.completions.length < MAX_LOGGED_COMPLETIONS ? [...own.completions, { name, at: now }] : own.completions,
+      },
+    },
+  };
+}
+
+/**
+ * Notes a completion that pays nothing (a group's task or shift): only that holder's own tally changes, so the
+ * Journey road and every reward stat stay as they were.
+ */
+export function recordHolderOnlyCompletion(days: DayRecord[], holder: HolderId, name: string, now: number): DayRecord[] {
+  return updateDay(days, now, (day) => withHolderCompletion(day, holder, name, now));
+}
+
 export function recordDayCompletion(
   days: DayRecord[],
   task: { name: string },
   facts: CompletionFacts,
   now: number,
+  holder?: HolderId,
 ): DayRecord[] {
-  return updateDay(days, now, (day) => ({
-    ...day,
-    done: day.done + 1,
-    recurringDone: day.recurringDone + (facts.recurring ? 1 : 0),
-    customDone: day.customDone + (facts.custom ? 1 : 0),
-    highPriorityDone: day.highPriorityDone + (facts.highPriority ? 1 : 0),
-    timersFinished: day.timersFinished + (facts.timer ? 1 : 0),
-    completions:
-      day.completions.length < MAX_LOGGED_COMPLETIONS
-        ? [...day.completions, { name: task.name, at: now }]
-        : day.completions,
-  }));
+  return updateDay(days, now, (rawDay) => {
+    const day = holder ? withHolderCompletion(rawDay, holder, task.name, now) : rawDay;
+    return {
+      ...day,
+      done: day.done + 1,
+      recurringDone: day.recurringDone + (facts.recurring ? 1 : 0),
+      customDone: day.customDone + (facts.custom ? 1 : 0),
+      highPriorityDone: day.highPriorityDone + (facts.highPriority ? 1 : 0),
+      timersFinished: day.timersFinished + (facts.timer ? 1 : 0),
+      completions:
+        day.completions.length < MAX_LOGGED_COMPLETIONS
+          ? [...day.completions, { name: task.name, at: now }]
+          : day.completions,
+    };
+  });
 }
 
 /** A task created or moved to a later day marks today's tile with a signpost. */

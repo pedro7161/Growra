@@ -430,6 +430,10 @@ export interface AppCopy {
   calendarHistoryNotTracked: string;
   calendarHistoryFuture: string;
   calendarHistoryTruncated: string;
+  calendarHistoryOwner: string;
+  calendarHistoryAll: string;
+  calendarHistoryCombined: string;
+  calendarHistoryCombinedNone: string;
   calendarDayDone: string;
   calendarDayNotTracked: string;
   welcomeBackDismiss: string;
@@ -1136,6 +1140,10 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     calendarHistoryNotTracked: "Growra was not keeping this record yet, so there is nothing to show for this day.",
     calendarHistoryFuture: "This day has not happened yet.",
     calendarHistoryTruncated: "Only some of the finished tasks were saved by name; the count above is complete.",
+    calendarHistoryOwner: "{holder} only",
+    calendarHistoryAll: "All holders together: {done} done",
+    calendarHistoryCombined: "This day was saved before each list kept its own record, so what {holder} finished is not known. All holders together: {done} done.",
+    calendarHistoryCombinedNone: "This day was saved before each list kept its own record, so what {holder} finished is not known. Nothing was recorded for any holder.",
     calendarDayDone: "{day}: {done} tasks done",
     calendarDayNotTracked: "{day}: not recorded",
     welcomeBackDismiss: "OK",
@@ -1948,6 +1956,10 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     calendarHistoryNotTracked: "O Growra ainda não guardava este registo, por isso não há nada para mostrar neste dia.",
     calendarHistoryFuture: "Este dia ainda não aconteceu.",
     calendarHistoryTruncated: "Só algumas tarefas concluídas foram guardadas pelo nome; a contagem acima está completa.",
+    calendarHistoryOwner: "Só {holder}",
+    calendarHistoryAll: "Todas as listas juntas: {done} feitas",
+    calendarHistoryCombined: "Este dia foi guardado antes de cada lista ter o seu próprio registo, por isso não se sabe o que {holder} concluiu. Todas as listas juntas: {done} feitas.",
+    calendarHistoryCombinedNone: "Este dia foi guardado antes de cada lista ter o seu próprio registo, por isso não se sabe o que {holder} concluiu. Não ficou nada registado em nenhuma lista.",
     calendarDayDone: "{day}: {done} tarefas feitas",
     calendarDayNotTracked: "{day}: sem registo",
     welcomeBackDismiss: "OK",
