@@ -1,14 +1,18 @@
 import * as Notifications from "expo-notifications";
 import { AppState, Platform } from "react-native";
-import { Task } from "../types";
+import { GameState, HolderId, Task } from "../types";
 import {
   DAILY_REMINDER_ID,
+  holderForNotificationTap,
+  LEGACY_CHANNEL_IDS,
+  REMINDER_CHANNEL_ID,
+  TIMER_CHANNEL_ID,
   planTimerNotifications,
   ScheduledTimerNotification,
 } from "../utils/notificationPlan";
 
-const TIMER_CHANNEL = "timers";
-const REMINDER_CHANNEL = "reminders";
+const TIMER_CHANNEL = TIMER_CHANNEL_ID;
+const REMINDER_CHANNEL = REMINDER_CHANNEL_ID;
 const supported = Platform.OS === "android" || Platform.OS === "ios";
 
 export interface TimerNotificationText {
@@ -39,6 +43,13 @@ async function configure(timerChannel: string, reminderChannel: string): Promise
     },
   });
   if (Platform.OS === "android") {
+    for (const legacy of LEGACY_CHANNEL_IDS) {
+      try {
+        await Notifications.deleteNotificationChannelAsync(legacy);
+      } catch {
+        // Nothing to remove, or the channel is already gone.
+      }
+    }
     await Notifications.setNotificationChannelAsync(TIMER_CHANNEL, {
       name: timerChannel,
       importance: Notifications.AndroidImportance.HIGH,
@@ -125,4 +136,37 @@ export async function syncDailyReminder(
   } catch (error) {
     console.error("Daily reminder failed:", error);
   }
+}
+
+const handledResponses = new Set<string>();
+
+/**
+ * Opens the task behind a tapped timer notification (#38). Each response is handled once, so the
+ * cold-start lookup and the live listener can both report the same tap.
+ */
+export function handleNotificationResponse(
+  response: Notifications.NotificationResponse | null | undefined,
+  getState: () => GameState | null,
+  open: (holder: HolderId) => void,
+): void {
+  if (!response) return;
+  const key = `${response.notification.request.identifier}:${response.notification.date}`;
+  if (handledResponses.has(key)) return;
+  const state = getState();
+  if (!state) return;
+  handledResponses.add(key);
+  const holder = holderForNotificationTap(state, response.notification.request.content.data);
+  if (holder) open(holder);
+}
+
+/** Listens for notification taps, and picks up the tap that launched a killed app. Returns the unsubscribe. */
+export function listenForNotificationTaps(getState: () => GameState | null, open: (holder: HolderId) => void): () => void {
+  if (!supported) return () => {};
+  const subscription = Notifications.addNotificationResponseReceivedListener((response) =>
+    handleNotificationResponse(response, getState, open),
+  );
+  Notifications.getLastNotificationResponseAsync()
+    .then((response) => handleNotificationResponse(response, getState, open))
+    .catch(() => {});
+  return () => subscription.remove();
 }

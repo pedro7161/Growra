@@ -11,6 +11,11 @@ export function buildRoomShareMessage(copy: Copy, ownerName: string | null): str
   return ownerName ? copy.roomShareMessage.replace("{name}", ownerName) : copy.roomShareMessagePlus;
 }
 
+/** The footer QR carries the room code; with the footer off the code has to travel as text instead. */
+export function shareMessageFor(footerShown: boolean, code: string, copy: Copy): string | undefined {
+  return footerShown ? undefined : copy.roomCodeShareMessage.replace("{code}", code);
+}
+
 /**
  * Captures the room canvas (4:5) at 1080x1350 and opens the share sheet. expo-sharing can't attach text
  * to an image on Android, so the message is used as the share dialog's title.

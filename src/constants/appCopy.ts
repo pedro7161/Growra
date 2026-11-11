@@ -465,6 +465,12 @@ export interface AppCopy {
   roomCopyConfirmBody: string;
   roomCopyReplace: string;
   roomCopyCancel: string;
+  roomScanPicture: string;
+  roomScanCamera: string;
+  roomScanHint: string;
+  roomScanDenied: string;
+  roomScanNoQr: string;
+  roomScanUnreadable: string;
   roomCodeErrors: Record<RoomCodeError, string>;
   roomCopyDoneTitle: string;
   roomCopyAllThere: string;
@@ -494,6 +500,7 @@ export interface AppCopy {
   notifyTimerTitle: string;
   notifyTimerBody: string;
   notifyTimerChannel: string;
+  timerAlertDenied: string;
   reminderTitle: string;
   reminderBody: string;
   reminderChannel: string;
@@ -1128,6 +1135,7 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     notifyTimerTitle: "Time's up",
     notifyTimerBody: "The timer for “{task}” has finished.",
     notifyTimerChannel: "Task timers",
+    timerAlertDenied: "Notifications are off for Growra, so a timer won't alert you while the app is closed. You can turn them on in your phone's settings.",
     reminderTitle: "Growra",
     reminderBody: "Your tasks are waiting whenever you're ready.",
     reminderChannel: "Daily reminder",
@@ -1171,6 +1179,12 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     roomCopyConfirmBody: "The items in this room go back to your bag.",
     roomCopyReplace: "Replace",
     roomCopyCancel: "Cancel",
+    roomScanPicture: "Scan a picture",
+    roomScanCamera: "Scan with camera",
+    roomScanHint: "Point the camera at a Growra room QR code.",
+    roomScanDenied: "Camera access is off. You can still paste a code or scan from a picture.",
+    roomScanNoQr: "No QR code found in that picture. Paste the room code instead.",
+    roomScanUnreadable: "Couldn't read that picture. Paste the room code instead.",
     roomCodeErrors: {
       format: "That isn't a room code.",
       checksum: "This room code is incomplete or was changed. Ask for it again.",
@@ -1855,6 +1869,7 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     notifyTimerTitle: "Tempo esgotado",
     notifyTimerBody: "O temporizador de “{task}” terminou.",
     notifyTimerChannel: "Temporizadores das tarefas",
+    timerAlertDenied: "As notificações do Growra estão desligadas, por isso o temporizador não te avisa com a app fechada. Podes ligá-las nas definições do telemóvel.",
     reminderTitle: "Growra",
     reminderBody: "As tuas tarefas estão à tua espera quando quiseres.",
     reminderChannel: "Lembrete diário",
@@ -1898,6 +1913,12 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     roomCopyConfirmBody: "Os itens deste quarto voltam para o teu saco.",
     roomCopyReplace: "Substituir",
     roomCopyCancel: "Cancelar",
+    roomScanPicture: "Ler uma imagem",
+    roomScanCamera: "Ler com a câmara",
+    roomScanHint: "Aponta a câmara a um código QR de quarto do Growra.",
+    roomScanDenied: "O acesso à câmara está desligado. Podes colar um código ou ler uma imagem.",
+    roomScanNoQr: "Não há código QR nessa imagem. Cola o código do quarto.",
+    roomScanUnreadable: "Não foi possível ler essa imagem. Cola o código do quarto.",
     roomCodeErrors: {
       format: "Isto não é um código de quarto.",
       checksum: "Este código de quarto está incompleto ou foi alterado. Pede-o outra vez.",

@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "Zeit ist um",
   notifyTimerBody: "Der Timer für „{task}“ ist abgelaufen.",
   notifyTimerChannel: "Aufgaben-Timer",
+  timerAlertDenied: "Benachrichtigungen für Growra sind aus, deshalb meldet sich ein Timer bei geschlossener App nicht. Du kannst sie in den Handy-Einstellungen einschalten.",
   reminderTitle: "Growra",
   reminderBody: "Deine Aufgaben warten, wann immer du bereit bist.",
   reminderChannel: "Tägliche Erinnerung",
@@ -608,6 +609,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "Die Gegenstände in diesem Zimmer kommen zurück in deine Tasche.",
   roomCopyReplace: "Ersetzen",
   roomCopyCancel: "Abbrechen",
+  roomScanPicture: "Bild scannen",
+  roomScanCamera: "Mit Kamera scannen",
+  roomScanHint: "Richte die Kamera auf einen Growra-Zimmer-QR-Code.",
+  roomScanDenied: "Kamerazugriff ist aus. Du kannst weiterhin einen Code einfügen oder ein Bild scannen.",
+  roomScanNoQr: "Kein QR-Code im Bild gefunden. Füge stattdessen den Zimmercode ein.",
+  roomScanUnreadable: "Das Bild konnte nicht gelesen werden. Füge stattdessen den Zimmercode ein.",
   roomCodeErrors: {
     format: "Das ist kein Zimmercode.",
     checksum: "Dieser Zimmercode ist unvollständig oder wurde verändert. Lass ihn dir noch einmal schicken.",
@@ -773,6 +780,20 @@ const copy: AppCopy = {
 };
 
 const changelog: ChangelogEntry[] = [
+  {
+    version: "1.12.0",
+    dateLabel: "Version 1.12.0 · November 2026",
+    items: [
+      "Teile einen Raum als QR-Code in der Fußzeile des Bildes.",
+      "Scanne den QR-Code eines Raums mit der Kamera oder aus einem Bild.",
+      "Ist die Fußzeile ausgeschaltet, wird der Raumcode als Text mit dem Bild geteilt.",
+      "Ein Tipp auf eine Timer-Benachrichtigung öffnet die zugehörige Aufgabe.",
+      "Ein einmaliger Hinweis erklärt, wenn Timer-Benachrichtigungen durch die Benachrichtigungsberechtigung blockiert sind.",
+    ],
+    fixes: [
+      "Timer-Benachrichtigungen nutzen aktualisierte Benachrichtigungskanäle, sodass die Einstellungen für Ton und Vibration unter Android richtig greifen.",
+    ],
+  },
   {
     version: "1.11.0",
     dateLabel: "Version 1.11.0 · November 2026",

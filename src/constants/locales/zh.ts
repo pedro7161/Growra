@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "时间到",
   notifyTimerBody: "“{task}”的计时已结束。",
   notifyTimerChannel: "任务计时器",
+  timerAlertDenied: "Growra 的通知已关闭，因此应用关闭时计时器不会提醒你。你可以在手机设置中开启。",
   reminderTitle: "Growra",
   reminderBody: "你的任务随时等着你。",
   reminderChannel: "每日提醒",
@@ -608,6 +609,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "这个房间里的物品会回到你的背包。",
   roomCopyReplace: "替换",
   roomCopyCancel: "取消",
+  roomScanPicture: "扫描图片",
+  roomScanCamera: "用相机扫描",
+  roomScanHint: "请将相机对准 Growra 房间二维码。",
+  roomScanDenied: "相机权限已关闭。你仍可粘贴代码或扫描图片。",
+  roomScanNoQr: "图片中未找到二维码。请改为粘贴房间代码。",
+  roomScanUnreadable: "无法读取该图片。请改为粘贴房间代码。",
   roomCodeErrors: {
     format: "这不是房间代码。",
     checksum: "这个房间代码不完整或已被修改。请让对方重新发送。",
@@ -773,6 +780,20 @@ const copy: AppCopy = {
 };
 
 const changelog: ChangelogEntry[] = [
+  {
+    version: "1.12.0",
+    dateLabel: "版本 1.12.0 · 2026 年 11 月",
+    items: [
+      "可以在图片页脚加入二维码来分享房间。",
+      "可以用相机或从图片中扫描房间二维码。",
+      "关闭页脚时，房间代码文本会随图片一起分享。",
+      "点按计时器提醒会打开对应的任务。",
+      "当通知权限导致计时器提醒被屏蔽时，会显示一次性提示加以说明。",
+    ],
+    fixes: [
+      "计时器提醒改用更新后的通知渠道，因此声音和振动设置在 Android 上可以正确生效。",
+    ],
+  },
   {
     version: "1.11.0",
     dateLabel: "版本 1.11.0 · 2026 年 11 月",

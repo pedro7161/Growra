@@ -566,6 +566,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "Süre doldu",
   notifyTimerBody: "“{task}” zamanlayıcısı bitti.",
   notifyTimerChannel: "Görev zamanlayıcıları",
+  timerAlertDenied: "Growra bildirimleri kapalı, bu yüzden uygulama kapalıyken zamanlayıcı seni uyarmaz. Telefon ayarlarından açabilirsin.",
   reminderTitle: "Growra",
   reminderBody: "Görevlerin, hazır olduğunda seni bekliyor.",
   reminderChannel: "Günlük hatırlatıcı",
@@ -609,6 +610,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "Bu odadaki eşyalar çantana geri döner.",
   roomCopyReplace: "Değiştir",
   roomCopyCancel: "İptal",
+  roomScanPicture: "Resmi tara",
+  roomScanCamera: "Kamerayla tara",
+  roomScanHint: "Kamerayı bir Growra oda QR koduna doğrult.",
+  roomScanDenied: "Kamera erişimi kapalı. Yine de kod yapıştırabilir veya resmi tarayabilirsin.",
+  roomScanNoQr: "Bu resimde QR kodu bulunamadı. Oda kodunu yapıştır.",
+  roomScanUnreadable: "Bu resim okunamadı. Oda kodunu yapıştır.",
   roomCodeErrors: {
     format: "Bu bir oda kodu değil.",
     checksum: "Bu oda kodu eksik ya da değiştirilmiş. Tekrar iste.",
@@ -774,6 +781,20 @@ const copy: AppCopy = {
 };
 
 const changelog: ChangelogEntry[] = [
+  {
+    version: "1.12.0",
+    dateLabel: "Sürüm 1.12.0 · Kasım 2026",
+    items: [
+      "Bir odayı resmin alt bilgisindeki QR koduyla paylaş.",
+      "Bir odanın QR kodunu kamerayla veya bir resimden tara.",
+      "Alt bilgi kapalıyken oda kodu metni resimle birlikte paylaşılır.",
+      "Bir zamanlayıcı bildirimine dokunmak ilgili görevi açar.",
+      "Zamanlayıcı bildirimleri bildirim izni nedeniyle engellendiğinde, tek seferlik bir uyarı bunu açıklar.",
+    ],
+    fixes: [
+      "Zamanlayıcı bildirimleri güncellenmiş bildirim kanallarını kullanıyor; böylece ses ve titreşim ayarları Android'de doğru çalışıyor.",
+    ],
+  },
   {
     version: "1.11.0",
     dateLabel: "Sürüm 1.11.0 · Kasım 2026",

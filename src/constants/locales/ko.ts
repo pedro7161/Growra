@@ -566,6 +566,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "시간이 다 됐어요",
   notifyTimerBody: "“{task}” 타이머가 끝났어요.",
   notifyTimerChannel: "할 일 타이머",
+  timerAlertDenied: "Growra 알림이 꺼져 있어서 앱을 닫으면 타이머가 알려 주지 못해요. 기기 설정에서 켤 수 있어요.",
   reminderTitle: "Growra",
   reminderBody: "할 일이 기다리고 있어요. 준비되면 언제든지.",
   reminderChannel: "매일 알림",
@@ -609,6 +610,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "이 방의 물건은 가방으로 돌아가요.",
   roomCopyReplace: "바꾸기",
   roomCopyCancel: "취소",
+  roomScanPicture: "사진 스캔",
+  roomScanCamera: "카메라로 스캔",
+  roomScanHint: "Growra 방 QR 코드에 카메라를 향해 주세요.",
+  roomScanDenied: "카메라 접근이 꺼져 있습니다. 코드를 붙여 넣거나 사진을 스캔할 수 있습니다.",
+  roomScanNoQr: "이 사진에서 QR 코드를 찾지 못했습니다. 방 코드를 붙여 넣으세요.",
+  roomScanUnreadable: "이 사진을 읽을 수 없습니다. 방 코드를 붙여 넣으세요.",
   roomCodeErrors: {
     format: "방 코드가 아니에요.",
     checksum: "방 코드가 잘렸거나 바뀌었어요. 다시 받아 주세요.",
@@ -774,6 +781,20 @@ const copy: AppCopy = {
 };
 
 const changelog: ChangelogEntry[] = [
+  {
+    version: "1.12.0",
+    dateLabel: "버전 1.12.0 · 2026년 11월",
+    items: [
+      "사진 하단에 QR 코드를 넣어 방을 공유할 수 있어요.",
+      "카메라나 사진으로 방의 QR 코드를 스캔할 수 있어요.",
+      "하단 표시를 끄면 방 코드 텍스트가 사진과 함께 공유돼요.",
+      "타이머 알림을 누르면 해당 작업이 열려요.",
+      "알림 권한 때문에 타이머 알림이 차단되면 한 번만 안내해 드려요.",
+    ],
+    fixes: [
+      "타이머 알림이 업데이트된 알림 채널을 사용해서, Android에서 소리와 진동 설정이 올바르게 적용돼요.",
+    ],
+  },
   {
     version: "1.11.0",
     dateLabel: "버전 1.11.0 · 2026년 11월",

@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "Waktu habis",
   notifyTimerBody: "Pengatur waktu untuk “{task}” sudah selesai.",
   notifyTimerChannel: "Pengatur waktu tugas",
+  timerAlertDenied: "Notifikasi Growra dimatikan, jadi timer tidak akan memberi tahu saat aplikasi ditutup. Kamu bisa menyalakannya di pengaturan ponsel.",
   reminderTitle: "Growra",
   reminderBody: "Tugasmu menunggu kapan pun kamu siap.",
   reminderChannel: "Pengingat harian",
@@ -608,6 +609,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "Barang-barang di kamar ini kembali ke tasmu.",
   roomCopyReplace: "Ganti",
   roomCopyCancel: "Batal",
+  roomScanPicture: "Pindai gambar",
+  roomScanCamera: "Pindai dengan kamera",
+  roomScanHint: "Arahkan kamera ke kode QR kamar Growra.",
+  roomScanDenied: "Akses kamera mati. Kamu tetap bisa menempel kode atau memindai gambar.",
+  roomScanNoQr: "Tidak ada kode QR di gambar itu. Tempel kode kamar saja.",
+  roomScanUnreadable: "Gambar itu tidak bisa dibaca. Tempel kode kamar saja.",
   roomCodeErrors: {
     format: "Itu bukan kode kamar.",
     checksum: "Kode kamar ini tidak lengkap atau sudah diubah. Minta lagi.",
@@ -773,6 +780,20 @@ const copy: AppCopy = {
 };
 
 const changelog: ChangelogEntry[] = [
+  {
+    version: "1.12.0",
+    dateLabel: "Versi 1.12.0 · November 2026",
+    items: [
+      "Bagikan ruangan dengan kode QR di footer gambar.",
+      "Pindai kode QR ruangan dengan kamera atau dari sebuah gambar.",
+      "Saat footer dimatikan, teks kode ruangan dibagikan bersama gambar.",
+      "Mengetuk pengingat timer akan membuka tugas tersebut.",
+      "Pemberitahuan sekali tampil menjelaskan saat pengingat timer diblokir oleh izin notifikasi.",
+    ],
+    fixes: [
+      "Pengingat timer kini memakai kanal notifikasi yang diperbarui, sehingga pengaturan suara dan getar berlaku dengan benar di Android.",
+    ],
+  },
   {
     version: "1.11.0",
     dateLabel: "Versi 1.11.0 · November 2026",

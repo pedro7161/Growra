@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "時間です",
   notifyTimerBody: "「{task}」のタイマーが終わりました。",
   notifyTimerChannel: "タスクのタイマー",
+  timerAlertDenied: "Growraの通知がオフのため、アプリを閉じているとタイマーでお知らせできません。端末の設定でオンにできます。",
   reminderTitle: "Growra",
   reminderBody: "タスクがあなたを待っています。いつでもどうぞ。",
   reminderChannel: "毎日のリマインダー",
@@ -608,6 +609,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "この部屋のものはかばんに戻ります。",
   roomCopyReplace: "置き換える",
   roomCopyCancel: "キャンセル",
+  roomScanPicture: "画像をスキャン",
+  roomScanCamera: "カメラでスキャン",
+  roomScanHint: "GrowraのQRコードにカメラを向けてください。",
+  roomScanDenied: "カメラへのアクセスがオフです。コードの貼り付けや画像のスキャンは使えます。",
+  roomScanNoQr: "この画像にQRコードが見つかりません。部屋のコードを貼り付けてください。",
+  roomScanUnreadable: "この画像を読み取れませんでした。部屋のコードを貼り付けてください。",
   roomCodeErrors: {
     format: "部屋のコードではありません。",
     checksum: "この部屋のコードは途中で切れているか、書き換えられています。もう一度送ってもらってください。",
@@ -773,6 +780,20 @@ const copy: AppCopy = {
 };
 
 const changelog: ChangelogEntry[] = [
+  {
+    version: "1.12.0",
+    dateLabel: "バージョン1.12.0 · 2026年11月",
+    items: [
+      "画像のフッターにQRコードを入れて、ルームを共有できます。",
+      "カメラまたは画像から、ルームのQRコードを読み取れます。",
+      "フッターをオフにしている場合は、ルームコードのテキストが画像と一緒に共有されます。",
+      "タイマーの通知をタップすると、そのタスクが開きます。",
+      "通知の許可によってタイマーの通知がブロックされているときは、一度だけお知らせで説明します。",
+    ],
+    fixes: [
+      "タイマーの通知で更新された通知チャンネルを使うようにしました。これにより、Androidで音とバイブレーションの設定が正しく反映されます。",
+    ],
+  },
   {
     version: "1.11.0",
     dateLabel: "バージョン1.11.0 · 2026年11月",

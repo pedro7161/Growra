@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "C'est l'heure",
   notifyTimerBody: "Le minuteur de « {task} » est terminé.",
   notifyTimerChannel: "Minuteurs des tâches",
+  timerAlertDenied: "Les notifications de Growra sont désactivées : un minuteur ne te préviendra pas quand l'appli est fermée. Tu peux les activer dans les réglages du téléphone.",
   reminderTitle: "Growra",
   reminderBody: "Tes tâches t'attendent quand tu veux.",
   reminderChannel: "Rappel quotidien",
@@ -608,6 +609,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "Les objets de cette chambre retournent dans ton sac.",
   roomCopyReplace: "Remplacer",
   roomCopyCancel: "Annuler",
+  roomScanPicture: "Scanner une image",
+  roomScanCamera: "Scanner avec la caméra",
+  roomScanHint: "Pointe la caméra vers un QR code de chambre Growra.",
+  roomScanDenied: "L'accès à la caméra est désactivé. Tu peux toujours coller un code ou scanner une image.",
+  roomScanNoQr: "Aucun QR code dans cette image. Colle plutôt le code de la chambre.",
+  roomScanUnreadable: "Impossible de lire cette image. Colle plutôt le code de la chambre.",
   roomCodeErrors: {
     format: "Ce n'est pas un code de chambre.",
     checksum: "Ce code de chambre est incomplet ou a été modifié. Redemande-le.",
@@ -773,6 +780,20 @@ const copy: AppCopy = {
 };
 
 const changelog: ChangelogEntry[] = [
+  {
+    version: "1.12.0",
+    dateLabel: "Version 1.12.0 · novembre 2026",
+    items: [
+      "Partage une pièce avec un code QR sur le pied de l'image.",
+      "Scanne le code QR d'une pièce avec l'appareil photo ou depuis une image.",
+      "Quand le pied de l'image est désactivé, le texte du code de la pièce est partagé avec l'image.",
+      "Toucher une alerte du minuteur ouvre cette tâche.",
+      "Un message unique explique quand les alertes du minuteur sont bloquées par l'autorisation de notification.",
+    ],
+    fixes: [
+      "Les alertes du minuteur utilisent des canaux de notification mis à jour, donc les réglages de son et de vibration s'appliquent correctement sur Android.",
+    ],
+  },
   {
     version: "1.11.0",
     dateLabel: "Version 1.11.0 · novembre 2026",

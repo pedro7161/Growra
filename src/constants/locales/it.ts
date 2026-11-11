@@ -565,6 +565,7 @@ const copy: AppCopy = {
   notifyTimerTitle: "Tempo scaduto",
   notifyTimerBody: "Il timer di “{task}” è finito.",
   notifyTimerChannel: "Timer delle attività",
+  timerAlertDenied: "Le notifiche di Growra sono disattivate, quindi un timer non ti avviserà con l'app chiusa. Puoi attivarle nelle impostazioni del telefono.",
   reminderTitle: "Growra",
   reminderBody: "Le tue attività ti aspettano quando vuoi.",
   reminderChannel: "Promemoria giornaliero",
@@ -608,6 +609,12 @@ const copy: AppCopy = {
   roomCopyConfirmBody: "Gli oggetti di questa stanza tornano nella tua borsa.",
   roomCopyReplace: "Sostituisci",
   roomCopyCancel: "Annulla",
+  roomScanPicture: "Scansiona un'immagine",
+  roomScanCamera: "Scansiona con la fotocamera",
+  roomScanHint: "Inquadra un QR code di una stanza Growra.",
+  roomScanDenied: "L'accesso alla fotocamera è disattivato. Puoi comunque incollare un codice o scansionare un'immagine.",
+  roomScanNoQr: "Nessun QR code in questa immagine. Incolla il codice stanza.",
+  roomScanUnreadable: "Impossibile leggere questa immagine. Incolla il codice stanza.",
   roomCodeErrors: {
     format: "Questo non è un codice stanza.",
     checksum: "Questo codice stanza è incompleto o è stato modificato. Fattelo rimandare.",
@@ -773,6 +780,20 @@ const copy: AppCopy = {
 };
 
 const changelog: ChangelogEntry[] = [
+  {
+    version: "1.12.0",
+    dateLabel: "Versione 1.12.0 · novembre 2026",
+    items: [
+      "Condividi una stanza con un codice QR nel piè di pagina dell'immagine.",
+      "Scansiona il codice QR di una stanza con la fotocamera o da un'immagine.",
+      "Quando il piè di pagina è disattivato, il testo del codice della stanza viene condiviso insieme all'immagine.",
+      "Toccando un avviso del timer si apre quell'attività.",
+      "Un avviso una tantum spiega quando gli avvisi del timer sono bloccati dal permesso di notifica.",
+    ],
+    fixes: [
+      "Gli avvisi del timer usano canali di notifica aggiornati, così le impostazioni di suono e vibrazione si applicano correttamente su Android.",
+    ],
+  },
   {
     version: "1.11.0",
     dateLabel: "Versione 1.11.0 · novembre 2026",

@@ -371,6 +371,8 @@ export interface GameState {
   roomShareFooter: boolean;
   /** The one-time "keep a backup" card has been shown (#54); it never comes back. */
   backupNudgeShown: boolean;
+  /** The one-time "timer alerts are off" notice has been shown (#38); it never comes back. */
+  timerDeniedNoticeShown: boolean;
   /** The app version whose What's New notes the player chose to stop seeing ("" = none yet). */
   whatsNewHiddenFor: string;
   workItems: WorkItem[];

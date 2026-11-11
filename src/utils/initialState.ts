@@ -39,6 +39,7 @@ export function createInitialGameState(): GameState {
     ownedRoomStyles: ["wooden-bedroom"],
     roomShareFooter: true,
     backupNudgeShown: false,
+    timerDeniedNoticeShown: false,
     whatsNewHiddenFor: "",
     workItems: [],
     groups: [],
