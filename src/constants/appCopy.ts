@@ -374,6 +374,14 @@ export interface AppCopy {
   companionEvolvedTitle: string;
   companionRevealSubtitle: string;
   companionMood: Record<CompanionMood, string>;
+  /** Extra plain mood lines per mood; the dashboard picks one per day (with companionMood as the first). */
+  companionMoodMore: Record<CompanionMood, string[]>;
+  /** Praise when the last task due today is ticked off: gentle, points to rest. */
+  praiseRestLines: string[];
+  /** Praise on reaching a big day (BIG_DAY_TASKS tasks). */
+  praiseBigDayLines: string[];
+  settingsCompanionReactions: string;
+  settingsCompanionReactionsHelp: string;
   /** The mood lines during Halloween and Christmas. */
   companionSeasonMood: Record<Season, Record<CompanionMood, string>>;
   /** Greetings on the day itself (shown instead of the mood line, unless the companion is asleep). */
@@ -970,6 +978,36 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     companionJoinedTitle: "{name} joined you!",
     companionEvolvedTitle: "{name} evolved!",
     companionRevealSubtitle: "It noticed how you use Growra.",
+    companionMoodMore: {
+      hello: [
+        "{name} is here whenever you want to start.",
+        "{name} waves hello. No rush.",
+      ],
+      happy: [
+        "{name} is pleased with how today is going.",
+        "{name} is smiling at your progress.",
+      ],
+      glowing: [
+        "{name} is beaming. What a great day!",
+        "{name} can't stop smiling. Well done!",
+      ],
+      sleepy: [
+        "{name} is curled up and glad you're back. Take it easy.",
+        "{name} is happy to see you. Start small, no rush.",
+      ],
+    },
+    praiseRestLines: [
+      "Everything due is done. {name} says rest up!",
+      "All clear for today. Enjoy a break!",
+      "Nothing left for today. {name} is proud of you.",
+    ],
+    praiseBigDayLines: [
+      "A big day! {name} is amazed!",
+      "What a day! {name} is cheering loudly.",
+      "A big day, and you did it. Well done!",
+    ],
+    settingsCompanionReactions: "Companion reactions",
+    settingsCompanionReactionsHelp: "Show your companion's short speech bubble after you finish a task or shift, and vary its daily line. Turn off for a quiet companion; nothing else changes.",
     companionMood: {
       hello: "{name} says hi. Ready when you are.",
       happy: "{name} is happy with today.",
@@ -1717,6 +1755,36 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     companionJoinedTitle: "{name} juntou-se a ti!",
     companionEvolvedTitle: "{name} evoluiu!",
     companionRevealSubtitle: "Reparou na forma como usas o Growra.",
+    companionMoodMore: {
+      hello: [
+        "{name} está aqui quando quiseres começar.",
+        "{name} acena. Sem pressa.",
+      ],
+      happy: [
+        "{name} está contente com o teu dia.",
+        "{name} sorri com o teu progresso.",
+      ],
+      glowing: [
+        "{name} está radiante. Que grande dia!",
+        "{name} não para de sorrir. Muito bem!",
+      ],
+      sleepy: [
+        "{name} está enroscado e feliz por voltares. Vai com calma.",
+        "{name} está feliz por te ver. Começa pequeno, sem pressa.",
+      ],
+    },
+    praiseRestLines: [
+      "Tudo o que era para hoje está feito. {name} diz: descansa!",
+      "Tudo em dia por hoje. Aproveita uma pausa!",
+      "Nada mais para hoje. {name} tem orgulho em ti.",
+    ],
+    praiseBigDayLines: [
+      "Um grande dia! {name} está maravilhado!",
+      "Que dia! {name} aplaude em voz alta.",
+      "Um grande dia, e conseguiste. Muito bem!",
+    ],
+    settingsCompanionReactions: "Reações do companheiro",
+    settingsCompanionReactionsHelp: "Mostra o balão de fala do teu companheiro depois de concluíres uma tarefa ou turno, e varia a frase do dia. Desliga para um companheiro mais calado; o resto não muda.",
     companionMood: {
       hello: "{name} diz olá. Pronto quando tu estiveres.",
       happy: "{name} está contente com o dia de hoje.",

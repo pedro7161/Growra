@@ -355,6 +355,36 @@ const copy: AppCopy = {
   companionJoinedTitle: "{name} si è unito a te!",
   companionEvolvedTitle: "{name} si è evoluto!",
   companionRevealSubtitle: "Ha notato come usi Growra.",
+  companionMoodMore: {
+    hello: [
+      "{name} è qui quando vuoi iniziare.",
+      "{name} ti saluta. Senza fretta.",
+    ],
+    happy: [
+      "{name} è contento di come va la giornata.",
+      "{name} sorride dei tuoi progressi.",
+    ],
+    glowing: [
+      "{name} è raggiante. Che bella giornata!",
+      "{name} non smette di sorridere. Bravo!",
+    ],
+    sleepy: [
+      "{name} si è raggomitolato ed è felice che tu sia tornato. Fai con calma.",
+      "{name} è felice di vederti. Comincia in piccolo, senza fretta.",
+    ],
+  },
+  praiseRestLines: [
+    "Tutto il previsto è fatto. {name} dice: riposati!",
+    "Per oggi è tutto a posto. Goditi una pausa!",
+    "Per oggi non resta nulla. {name} è fiero di te.",
+  ],
+  praiseBigDayLines: [
+    "Una gran giornata! {name} è stupito!",
+    "Che giornata! {name} fa il tifo a squarciagola.",
+    "Una gran giornata, e ce l'hai fatta. Bravo!",
+  ],
+  settingsCompanionReactions: "Reazioni del compagno",
+  settingsCompanionReactionsHelp: "Mostra il fumetto del tuo compagno quando finisci un'attività o un turno e varia la sua frase del giorno. Disattiva per un compagno silenzioso; nient'altro cambia.",
   companionMood: {
     hello: "{name} ti saluta. Pronto quando lo sei tu.",
     happy: "{name} è contento di oggi.",

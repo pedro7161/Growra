@@ -355,6 +355,36 @@ const copy: AppCopy = {
   companionJoinedTitle: "{name} ist dabei!",
   companionEvolvedTitle: "{name} hat sich entwickelt!",
   companionRevealSubtitle: "Es hat bemerkt, wie du Growra nutzt.",
+  companionMoodMore: {
+    hello: [
+      "{name} ist da, wann immer du anfangen möchtest.",
+      "{name} winkt dir zu. Keine Eile.",
+    ],
+    happy: [
+      "{name} freut sich über deinen Tag.",
+      "{name} lächelt über deinen Fortschritt.",
+    ],
+    glowing: [
+      "{name} strahlt. Was für ein toller Tag!",
+      "{name} kann nicht aufhören zu lächeln. Gut gemacht!",
+    ],
+    sleepy: [
+      "{name} hat sich eingerollt und freut sich, dass du da bist. Lass es ruhig angehen.",
+      "{name} freut sich, dich zu sehen. Fang klein an, ohne Eile.",
+    ],
+  },
+  praiseRestLines: [
+    "Alles Fällige ist erledigt. {name} sagt: ruh dich aus!",
+    "Für heute ist alles geschafft. Gönn dir eine Pause!",
+    "Für heute ist nichts mehr offen. {name} ist stolz auf dich.",
+  ],
+  praiseBigDayLines: [
+    "Ein großer Tag! {name} staunt!",
+    "Was für ein Tag! {name} jubelt laut.",
+    "Ein großer Tag, und du hast ihn geschafft. Gut gemacht!",
+  ],
+  settingsCompanionReactions: "Reaktionen des Begleiters",
+  settingsCompanionReactionsHelp: "Zeigt die kurze Sprechblase deines Begleiters, wenn du eine Aufgabe oder Schicht abschließt, und wechselt seinen Tagesspruch. Ausschalten für einen ruhigen Begleiter; sonst ändert sich nichts.",
   companionMood: {
     hello: "{name} sagt Hallo. Bereit, wenn du es bist.",
     happy: "{name} freut sich über den heutigen Tag.",
