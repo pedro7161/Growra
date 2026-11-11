@@ -477,10 +477,14 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted
         : saveData.gameState.tasks.filter((task) => task.status === TaskStatus.COMPLETED).length,
+    // Saves from before the tutorial existed have no flag. A player who already has tasks,
+    // companions or finished tasks is not a newcomer: never force them into onboarding (#82).
     tutorialCompleted:
       saveData.gameState.tutorialCompleted !== undefined
         ? saveData.gameState.tutorialCompleted
-        : false,
+        : saveData.gameState.tasks.length > 0 ||
+          saveData.gameState.pets.length > 0 ||
+          (saveData.gameState.totalTasksCompleted ?? 0) > 0,
     tutorialRewardGranted:
       saveData.gameState.tutorialRewardGranted !== undefined
         ? saveData.gameState.tutorialRewardGranted

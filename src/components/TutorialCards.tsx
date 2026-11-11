@@ -7,7 +7,7 @@ import { TUTORIAL_FINISH_REWARD, TUTORIAL_FIRST_TASK_REWARD } from "../utils/tut
 
 const icon = require("../../assets/images/update-icon.png");
 
-/** welcome: first launch. finish: tutorial done (shows the gift). tour: "Replay tutorial" from Settings. */
+/** welcome: first launch. finish: tutorial done (shows the gift). tour: "Replay tutorial" from Settings; starts the guided replay. */
 export type TutorialCardMode = "welcome" | "finish" | "tour";
 
 interface TutorialCardsProps {
@@ -59,14 +59,14 @@ export default function TutorialCards({ mode, settings, onStart, onSkip, onClose
           </View>
           <TouchableOpacity
             style={[styles.primary, { backgroundColor: theme.accent }]}
-            onPress={mode === "welcome" ? onStart : onClose}
+            onPress={mode === "finish" ? onClose : onStart}
           >
             <Text style={[styles.primaryText, { color: theme.accentText }]}>
-              {mode === "welcome" ? copy.tutorialStart : copy.tutorialLetsGo}
+              {mode === "finish" ? copy.tutorialLetsGo : copy.tutorialStart}
             </Text>
           </TouchableOpacity>
-          {mode === "welcome" && (
-            <TouchableOpacity onPress={onSkip}>
+          {mode !== "finish" && (
+            <TouchableOpacity onPress={mode === "welcome" ? onSkip : onClose} style={styles.linkTouch}>
               <Text style={[styles.link, { color: theme.mutedText }]}>{copy.tutorialSkipAll}</Text>
             </TouchableOpacity>
           )}
@@ -88,5 +88,6 @@ const styles = StyleSheet.create({
   point: { fontSize: 15, lineHeight: 21 },
   primary: { borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 4 },
   primaryText: { fontSize: 16, fontWeight: "700" },
+  linkTouch: { minHeight: 44, justifyContent: "center" },
   link: { fontSize: 14, fontWeight: "600", textAlign: "center", paddingVertical: 6 },
 });
