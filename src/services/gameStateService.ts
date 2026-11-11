@@ -36,6 +36,7 @@ import { getNextAvailableDate, getStartOfDay } from "../utils/taskSchedule";
 import { defaultSettings, defaultTimerAlertSettings } from "../utils/settings";
 import { isAppLanguage } from "../constants/languages";
 import { SAVE_VERSION } from "../utils/initialState";
+import { normalizeWelcomeClaimedDay } from "../utils/dailyWelcome";
 import { createTaskTimer } from "../utils/taskTimer";
 import { BOND_GROWTH_THRESHOLDS, createEmptyUsage } from "../utils/companions";
 
@@ -147,6 +148,7 @@ type PersistedGameState = Omit<
   | "roomShareFooter"
   | "backupNudgeShown"
   | "timerDeniedNoticeShown"
+  | "welcomeClaimedDay"
   | "whatsNewHiddenFor"
   | "workItems"
   | "groups"
@@ -161,6 +163,7 @@ type PersistedGameState = Omit<
   roomShareFooter?: boolean;
   backupNudgeShown?: boolean;
   timerDeniedNoticeShown?: boolean;
+  welcomeClaimedDay?: string;
   whatsNewHiddenFor?: string;
   workItems?: WorkItem[];
   groups?: Group[];
@@ -466,6 +469,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     roomShareFooter: saveData.gameState.roomShareFooter ?? true,
     backupNudgeShown: saveData.gameState.backupNudgeShown === true,
     timerDeniedNoticeShown: saveData.gameState.timerDeniedNoticeShown === true,
+    welcomeClaimedDay: normalizeWelcomeClaimedDay(saveData.gameState.welcomeClaimedDay),
     whatsNewHiddenFor: saveData.gameState.whatsNewHiddenFor ?? "",
     workItems: saveData.gameState.workItems ?? [],
     groups,
@@ -473,10 +477,14 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted
         : saveData.gameState.tasks.filter((task) => task.status === TaskStatus.COMPLETED).length,
+    // Saves from before the tutorial existed have no flag. A player who already has tasks,
+    // companions or finished tasks is not a newcomer: never force them into onboarding (#82).
     tutorialCompleted:
       saveData.gameState.tutorialCompleted !== undefined
         ? saveData.gameState.tutorialCompleted
-        : false,
+        : saveData.gameState.tasks.length > 0 ||
+          saveData.gameState.pets.length > 0 ||
+          (saveData.gameState.totalTasksCompleted ?? 0) > 0,
     tutorialRewardGranted:
       saveData.gameState.tutorialRewardGranted !== undefined
         ? saveData.gameState.tutorialRewardGranted
@@ -490,6 +498,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
           ? storedSettings.appearance
           : "system",
       confirmExit: storedSettings.confirmExit !== false,
+      dailyWelcome: storedSettings.dailyWelcome !== false,
       taskToolsOpen: storedSettings.taskToolsOpen !== false,
       dailyReminder: normalizeDailyReminder(storedSettings.dailyReminder),
       musicEnabled: storedSettings.musicEnabled === true,

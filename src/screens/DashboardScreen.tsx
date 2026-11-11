@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AddTaskModal from "../components/AddTaskModal";
+import WeeklySummaryModal from "../components/WeeklySummaryModal";
 import TaskTimerControls from "../components/TaskTimerControls";
 import CompanionArtwork from "../components/CompanionArtwork";
 import DashboardGroupSection from "../components/DashboardGroupSection";
@@ -56,6 +57,11 @@ interface DashboardScreenProps {
   /** Shown once after 2+ days away (#53); null otherwise. */
   returnRecap: ReturnRecap | null;
   onDismissReturnRecap: () => void;
+  /** The optional daily welcome card (#75): dismissing only hides it for this visit. */
+  dailyWelcomeVisible: boolean;
+  dailyWelcomeCoins: number;
+  onClaimDailyWelcome: () => void;
+  onDismissDailyWelcome: () => void;
   /** The one-time backup card (#54). */
   backupNudgeVisible: boolean;
   onShareBackup: () => void;
@@ -85,6 +91,10 @@ export default function DashboardScreen({
   onTimerReady,
   returnRecap,
   onDismissReturnRecap,
+  dailyWelcomeVisible,
+  dailyWelcomeCoins,
+  onClaimDailyWelcome,
+  onDismissDailyWelcome,
   backupNudgeVisible,
   onShareBackup,
   onDismissBackupNudge,
@@ -101,6 +111,7 @@ export default function DashboardScreen({
   const theme = getAppTheme(gameState.settings.theme);
   const now = Date.now();
   const [modalVisible, setModalVisible] = useState(false);
+  const [weeklyVisible, setWeeklyVisible] = useState(false);
   const [showPlayerLevelDetail, setShowPlayerLevelDetail] = useState(false);
   const equippedPet = gameState.pets.find(
     (p) => p.id === gameState.equippedPetId,
@@ -209,6 +220,27 @@ export default function DashboardScreen({
           </View>
         )}
 
+        {dailyWelcomeVisible && (
+          <View style={[styles.noticeCard, { backgroundColor: theme.surface, borderColor: theme.accentSoft }]}>
+            <Text style={[styles.noticeTitle, { color: theme.text }]}>{copy.dailyWelcomeTitle}</Text>
+            <Text style={[styles.noticeBody, { color: theme.mutedText }]}>
+              {copy.dailyWelcomeBody.replace("{coins}", formatCount(dailyWelcomeCoins, locale))}
+            </Text>
+            <View style={styles.noticeActions}>
+              <TouchableOpacity onPress={onDismissDailyWelcome} hitSlop={8} accessibilityRole="button">
+                <Text style={[styles.noticeLink, { color: theme.mutedText }]}>{copy.dailyWelcomeDismiss}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.noticeButton, { backgroundColor: theme.accent }]}
+                onPress={onClaimDailyWelcome}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.noticeButtonText, { color: theme.accentText }]}>{copy.dailyWelcomeClaim}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {backupNudgeVisible && (
           <View style={[styles.noticeCard, { backgroundColor: theme.surface, borderColor: theme.accentSoft }]}>
             <Text style={[styles.noticeTitle, { color: theme.text }]}>{copy.backupNudgeTitle}</Text>
@@ -227,6 +259,23 @@ export default function DashboardScreen({
             </View>
           </View>
         )}
+
+        <TouchableOpacity
+          style={styles.weeklyLink}
+          onPress={() => setWeeklyVisible(true)}
+          disabled={tutorialLocked}
+          hitSlop={8}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.noticeLink, { color: theme.accent }]}>{copy.weeklySummaryOpen}</Text>
+        </TouchableOpacity>
+        <WeeklySummaryModal
+          visible={weeklyVisible}
+          days={gameState.days}
+          createdAt={gameState.createdAt}
+          settings={gameState.settings}
+          onClose={() => setWeeklyVisible(false)}
+        />
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -559,6 +608,7 @@ const styles = StyleSheet.create({
   noticeTitle: { fontSize: 16, fontWeight: "700" },
   noticeBody: { fontSize: 14, lineHeight: 20 },
   noticeActions: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap", gap: 16, marginTop: 4 },
+  weeklyLink: { alignSelf: "flex-start", paddingVertical: 6, marginBottom: 12 },
   noticeLink: { fontSize: 14, fontWeight: "700" },
   noticeButton: { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 },
   noticeButtonText: { fontSize: 14, fontWeight: "700" },

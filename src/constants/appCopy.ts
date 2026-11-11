@@ -389,7 +389,24 @@ export interface AppCopy {
   welcomeBack: string;
   returnRecapLine: string;
   returnRecapFocus: string;
+  weeklySummaryOpen: string;
+  weeklySummaryTitle: string;
+  weeklySummaryTasks: string;
+  weeklySummaryActiveDays: string;
+  weeklySummaryRecurring: string;
+  weeklySummaryFocus: string;
+  weeklySummaryEmpty: string;
+  weeklySummaryPartial: string;
+  weeklySummaryNotTracked: string;
+  weeklySummaryDayLabel: string;
+  weeklySummaryClose: string;
   welcomeBackDismiss: string;
+  dailyWelcomeTitle: string;
+  dailyWelcomeBody: string;
+  dailyWelcomeClaim: string;
+  dailyWelcomeDismiss: string;
+  settingsDailyWelcome: string;
+  settingsDailyWelcomeHelp: string;
   backupNudgeTitle: string;
   backupNudgeBody: string;
   backupNudgeShare: string;
@@ -400,6 +417,13 @@ export interface AppCopy {
   whatsNewClose: string;
   whatsNewHide: string;
   tutorialChooseCompanionHint: string;
+  tutorialBack: string;
+  tutorialPreviewBadge: string;
+  tutorialGuideLabel: string;
+  tutorialPetInvite: string;
+  tutorialPetClose: string;
+  tutorialReplayCompleteTask: string;
+  tutorialReplayOpenRealm: string;
   companionFoundTitle: string;
   companionFoundSubtitle: string;
   journeyTitle: string;
@@ -1017,7 +1041,24 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     welcomeBack: "Good to see you again.",
     returnRecapLine: "Your last {days} active days: {done} tasks done.",
     returnRecapFocus: "Your last {days} active days: {done} tasks done, {focus} focus sessions.",
+    weeklySummaryOpen: "See how this week went",
+    weeklySummaryTitle: "Your last 7 days",
+    weeklySummaryTasks: "Tasks done",
+    weeklySummaryActiveDays: "Days with a task done: {active} of {total}",
+    weeklySummaryRecurring: "Repeating tasks done",
+    weeklySummaryFocus: "Focus sessions finished",
+    weeklySummaryEmpty: "A quiet week, and that is perfectly fine. Whenever you finish something, it will show up here.",
+    weeklySummaryPartial: "Growra has only kept this record for {days} of these days, so earlier days are left out.",
+    weeklySummaryNotTracked: "not recorded",
+    weeklySummaryDayLabel: "{day}: {done} tasks done",
+    weeklySummaryClose: "Close",
     welcomeBackDismiss: "OK",
+    dailyWelcomeTitle: "A small hello",
+    dailyWelcomeBody: "A little gift for opening Growra today: {coins} coins. Take it whenever you like, or skip it. Nothing is lost either way.",
+    dailyWelcomeClaim: "Claim",
+    dailyWelcomeDismiss: "Not now",
+    settingsDailyWelcome: "Daily welcome",
+    settingsDailyWelcomeHelp: "Show a small once-a-day welcome gift of a few coins when you open the app. Skipping a day costs nothing. Turn off to hide it.",
     backupNudgeTitle: "Keep a copy of your progress",
     backupNudgeBody: "Your tasks and progress live only on this phone. Share a backup code to somewhere safe, like a note or an email to yourself, so you can bring everything back on a new phone.",
     backupNudgeShare: "Share backup code",
@@ -1028,6 +1069,13 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     whatsNewClose: "Got it",
     whatsNewHide: "Don't show again until the next update",
     tutorialChooseCompanionHint: "Choose your first companion. The others join as you use Growra.",
+    tutorialBack: "Back",
+    tutorialPreviewBadge: "Coming up",
+    tutorialGuideLabel: "{name}, your guide",
+    tutorialPetInvite: "I'm {name}. Pick a companion below, any of us would love to join you!",
+    tutorialPetClose: "Now I'm yours, I'm {name}! Open Journey: every day you finish a task adds a tile to our road.",
+    tutorialReplayCompleteTask: "Tap the box next to a task to complete it. You earn coins and Bond, and your companion cheers you on.",
+    tutorialReplayOpenRealm: "Open Pets any time to meet your companions.",
     companionFoundTitle: "{name} found something!",
     companionFoundSubtitle: "A {item} from your focus session. It's in your bag on the Journey.",
     journeyTitle: "Journey",
@@ -1751,7 +1799,24 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     welcomeBack: "É bom ver-te outra vez.",
     returnRecapLine: "Os teus últimos {days} dias ativos: {done} tarefas feitas.",
     returnRecapFocus: "Os teus últimos {days} dias ativos: {done} tarefas feitas, {focus} sessões de foco.",
+    weeklySummaryOpen: "Ver como correu esta semana",
+    weeklySummaryTitle: "Os teus últimos 7 dias",
+    weeklySummaryTasks: "Tarefas feitas",
+    weeklySummaryActiveDays: "Dias com uma tarefa feita: {active} de {total}",
+    weeklySummaryRecurring: "Tarefas repetidas feitas",
+    weeklySummaryFocus: "Sessões de foco concluídas",
+    weeklySummaryEmpty: "Uma semana tranquila, e está tudo bem. Quando terminares algo, aparece aqui.",
+    weeklySummaryPartial: "O Growra só guarda este registo em {days} destes dias, por isso os dias anteriores ficam de fora.",
+    weeklySummaryNotTracked: "sem registo",
+    weeklySummaryDayLabel: "{day}: {done} tarefas feitas",
+    weeklySummaryClose: "Fechar",
     welcomeBackDismiss: "OK",
+    dailyWelcomeTitle: "Um pequeno olá",
+    dailyWelcomeBody: "Um miminho por abrires o Growra hoje: {coins} moedas. Recebe quando quiseres, ou deixa. Não se perde nada.",
+    dailyWelcomeClaim: "Receber",
+    dailyWelcomeDismiss: "Agora não",
+    settingsDailyWelcome: "Boas-vindas diárias",
+    settingsDailyWelcomeHelp: "Mostra um pequeno presente de boas-vindas por dia, com algumas moedas, ao abrires a app. Saltar um dia não custa nada. Desliga para o esconder.",
     backupNudgeTitle: "Guarda uma cópia do teu progresso",
     backupNudgeBody: "As tuas tarefas e o teu progresso só existem neste telemóvel. Partilha um código de backup para um sítio seguro, como uma nota ou um email para ti, para recuperares tudo num telemóvel novo.",
     backupNudgeShare: "Partilhar código de backup",
@@ -1762,6 +1827,13 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     whatsNewClose: "Percebi",
     whatsNewHide: "Não mostrar outra vez até à próxima atualização",
     tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro. Os outros juntam-se a ti quando usas o Growra.",
+    tutorialBack: "Voltar",
+    tutorialPreviewBadge: "A seguir",
+    tutorialGuideLabel: "{name}, o teu guia",
+    tutorialPetInvite: "Sou o {name}. Escolhe um companheiro abaixo, qualquer um de nós adorava juntar-se a ti!",
+    tutorialPetClose: "Agora sou teu, sou o {name}! Abre a Jornada: cada dia em que concluis uma tarefa junta um bloco ao nosso caminho.",
+    tutorialReplayCompleteTask: "Toca na caixa ao lado de uma tarefa para a concluir. Ganhas moedas e Vínculo, e o teu companheiro anima-te.",
+    tutorialReplayOpenRealm: "Abre Companheiros quando quiseres para conhecer os teus companheiros.",
     companionFoundTitle: "{name} encontrou uma coisa!",
     companionFoundSubtitle: "Um(a) {item} da tua sessão de foco. Está na tua mochila na Jornada.",
     journeyTitle: "Jornada",

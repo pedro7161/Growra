@@ -18,6 +18,7 @@ export const defaultSettings: AppSettings = {
   theme: "mint",
   appearance: "system",
   confirmExit: true,
+  dailyWelcome: true,
   taskToolsOpen: true,
   dailyReminder: { enabled: false, hour: 20, minute: 0 },
   musicEnabled: false,

@@ -31,6 +31,16 @@ import * as Sharing from "expo-sharing";
 import CompanionRevealModal from "./components/CompanionRevealModal";
 import { reachedStreakMilestone } from "./utils/streakMilestones";
 import TutorialOverlay from "./components/TutorialOverlay";
+import {
+  GUIDE_STEPS,
+  REPLAY_SCREEN,
+  REPLAY_STEPS,
+  getGuideSpeaker,
+  guideBack,
+  guideCanAdvance,
+  guideNext,
+  guideStepAt,
+} from "./utils/tutorialGuide";
 import TutorialCards, { TutorialCardMode } from "./components/TutorialCards";
 import {
   applyFirstTaskReward,
@@ -55,6 +65,7 @@ import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/rev
 import { timerDeniedNotice } from "./utils/notificationPlan";
 import { ensureNotificationPermission, listenForNotificationTaps, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
 import { getReturnRecap, ReturnRecap, shouldShowBackupNudge } from "./utils/returnRecap";
+import { canClaimDailyWelcome, claimDailyWelcome, DAILY_WELCOME_COINS } from "./utils/dailyWelcome";
 import {
   AppLanguage,
   AppSettings,
@@ -187,6 +198,8 @@ export default function App() {
   const lastSaveWarningRef = useRef(0);
   const [returnRecap, setReturnRecap] = useState<ReturnRecap | null>(null);
   const [backupNudgeVisible, setBackupNudgeVisible] = useState(false);
+  /** "Not now" on the daily welcome (#75) hides it until the next launch; nothing is saved. */
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [whatsNew, setWhatsNew] = useState<ChangelogEntry | null>(null);
   const [loading, setLoading] = useState(true);
   /** Set when the save was written by a newer Growra: nothing is loaded or overwritten (#50). */
@@ -202,6 +215,13 @@ export default function App() {
   const tutorialStep = gameState
     ? getTutorialStep(gameState, activeScreen === "work-calendar" ? "task-calendar" : activeScreen, taskTutorialUiState.modalVisible)
     : "done";
+  /** Back / Next only move which bubble is shown; the real step always comes from the saved game. */
+  const [guideOffset, setGuideOffset] = useState(0);
+  /** Index into REPLAY_STEPS while the Settings replay runs; null otherwise. The replay writes nothing. */
+  const [replayIndex, setReplayIndex] = useState<number | null>(null);
+  useEffect(() => {
+    setGuideOffset(0);
+  }, [tutorialStep]);
   const [plusVisible, setPlusVisible] = useState(false);
   const [exploreBusy, setExploreBusy] = useState(false);
   const exploreBusyRef = useRef(false);
@@ -740,10 +760,46 @@ export default function App() {
   };
 
   const handleSkipTutorial = async () => {
+    if (replayIndex !== null) {
+      // Ending a replay changes nothing in the save.
+      setReplayIndex(null);
+      return;
+    }
     const current = gameStateRef.current;
     setTutorialVisible(false);
     setTutorialCard(null);
+    setReplayIndex(null);
     if (current) await persistGameState(skipTutorial(current));
+  };
+
+  const handleGuideBack = () => {
+    if (replayIndex !== null) {
+      const index = Math.max(0, replayIndex - 1);
+      setReplayIndex(index);
+      setActiveScreen(REPLAY_SCREEN[REPLAY_STEPS[index]]);
+      return;
+    }
+    if (tutorialStep === "done") return;
+    setGuideOffset(guideBack(GUIDE_STEPS, tutorialStep, guideOffset));
+  };
+
+  const handleGuideNext = () => {
+    if (replayIndex !== null) {
+      if (replayIndex >= REPLAY_STEPS.length - 1) {
+        // The replay ends on Journey, like the real tutorial. Nothing is saved or paid.
+        setReplayIndex(null);
+        setActiveScreen("journey");
+        return;
+      }
+      const index = replayIndex + 1;
+      setReplayIndex(index);
+      setActiveScreen(REPLAY_SCREEN[REPLAY_STEPS[index]]);
+      return;
+    }
+    if (tutorialStep === "done") return;
+    const next = guideNext(GUIDE_STEPS, tutorialStep, guideOffset);
+    setGuideOffset(next.offset);
+    if (next.navigate) handleNavigate(next.navigate);
   };
 
   // The tutorial ends when the player opens the Journey after choosing a companion: pay the
@@ -770,6 +826,22 @@ export default function App() {
     const next = { ...latest, settings: { ...latest.settings, dailyReminder } };
     await persistGameState(next);
     syncNotifications(next, true);
+  };
+
+  const handleClaimDailyWelcome = async () => {
+    const current = gameStateRef.current;
+    if (!current) return;
+    // Pays through the ref's latest state, so a double tap finds the day already claimed.
+    const claim = claimDailyWelcome(current, Date.now());
+    if (claim.coins === 0) return;
+    gameStateRef.current = claim.state;
+    await persistGameState(claim.state);
+  };
+
+  const handleDailyWelcomeChange = async (dailyWelcome: boolean) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, dailyWelcome } });
   };
 
   const handleConfirmExitChange = async (confirmExit: boolean) => {
@@ -1284,6 +1356,16 @@ export default function App() {
             }
             onOpenGroup={(groupId) => void openHolderScreen(groupId)}
             workNow={workNow}
+            dailyWelcomeVisible={!welcomeDismissed && canClaimDailyWelcome(gameState, Date.now())}
+            dailyWelcomeCoins={DAILY_WELCOME_COINS}
+            onClaimDailyWelcome={() => {
+              playUiTap();
+              void handleClaimDailyWelcome();
+            }}
+            onDismissDailyWelcome={() => {
+              setWelcomeDismissed(true);
+              playUiTap();
+            }}
             backupNudgeVisible={backupNudgeVisible}
             onShareBackup={() => {
               setBackupNudgeVisible(false);
@@ -1504,6 +1586,7 @@ export default function App() {
           onThemeChange={handleThemeChange}
           onAppearanceChange={handleAppearanceChange}
           onConfirmExitChange={handleConfirmExitChange}
+          onDailyWelcomeChange={(enabled) => void handleDailyWelcomeChange(enabled)}
           onDailyReminderChange={(reminder) => void handleDailyReminderChange(reminder)}
           onReplayTutorial={() => {
             setSettingsVisible(false);
@@ -1570,15 +1653,43 @@ export default function App() {
           }}
         />
         <TutorialOverlay
-          visible={tutorialVisible && tutorialStep !== "done" && tutorialCard === null}
-          step={tutorialStep}
+          visible={replayIndex !== null || (tutorialVisible && tutorialStep !== "done" && tutorialCard === null)}
+          step={
+            replayIndex !== null
+              ? REPLAY_STEPS[replayIndex]
+              : tutorialStep === "done"
+                ? "done"
+                : guideStepAt(GUIDE_STEPS, tutorialStep, guideOffset)
+          }
           settings={viewState.settings}
+          speaker={getGuideSpeaker(gameState)}
+          replay={replayIndex !== null}
+          preview={replayIndex === null && guideOffset > 0}
+          canGoBack={
+            replayIndex !== null
+              ? replayIndex > 0
+              : tutorialStep !== "done" && guideBack(GUIDE_STEPS, tutorialStep, guideOffset) !== guideOffset
+          }
+          canGoNext={
+            replayIndex !== null || (tutorialStep !== "done" && (guideOffset > 0 || guideCanAdvance(GUIDE_STEPS, tutorialStep, guideOffset)))
+          }
+          nextFinishes={replayIndex !== null && replayIndex === REPLAY_STEPS.length - 1}
+          onBack={handleGuideBack}
+          onNext={handleGuideNext}
           onSkip={handleSkipTutorial}
         />
         <TutorialCards
           mode={tutorialCard}
           settings={viewState.settings}
           onStart={() => {
+            if (tutorialCard === "tour") {
+              // Replay from Settings: a guided walk-through that never saves or pays anything.
+              setTutorialCard(null);
+              setReplayIndex(0);
+              setActiveScreen(REPLAY_SCREEN[REPLAY_STEPS[0]]);
+              playUiTap();
+              return;
+            }
             setTutorialCard(null);
             setTutorialVisible(true);
             playUiTap();
