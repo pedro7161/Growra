@@ -59,6 +59,8 @@ interface TasksScreenProps {
     selectedPredefinedTaskId: string;
   }) => void;
   /** `alsoAddTo`: groups that get a linked copy. */
+  onSaveTaskAsTemplate: (task: Task) => void;
+  onDeleteTemplate: (templateId: string) => void;
   onAddTask: (task: Task, customTemplate?: CustomTaskTemplate, alsoAddTo?: string[]) => void;
   onCompleteTask: (taskId: string) => void;
   /** `others`: the other copies of a linked task the edit also reaches. */
@@ -89,6 +91,8 @@ export default function TasksScreen({
   onBackToChooser,
   tutorialTarget,
   onTutorialStateChange,
+  onSaveTaskAsTemplate,
+  onDeleteTemplate,
   onAddTask,
   onCompleteTask,
   onUpdateTask,
@@ -410,6 +414,7 @@ export default function TasksScreen({
         }}
         settings={settings}
         customTaskTemplates={customTaskTemplates}
+        onDeleteTemplate={onDeleteTemplate}
         existingTasks={tasks}
         tutorialEnabled={tutorialCreateFlow}
         tutorialTarget={
@@ -426,6 +431,7 @@ export default function TasksScreen({
       <TaskDetailsModal
         visible={selectedTask !== null}
         task={selectedTask}
+        onSaveAsTemplate={onSaveTaskAsTemplate}
         settings={settings}
         customTaskTemplates={customTaskTemplates}
         onClose={() => {

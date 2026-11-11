@@ -81,6 +81,12 @@ export interface CustomTaskTemplate {
   description: string;
   category: string;
   createdAt: number;
+  /** Optional so templates saved before #77 still load; absent means the form defaults. */
+  frequency?: TaskFrequency;
+  priority?: TaskPriority;
+  durationMinutes?: number;
+  /** Timer length in minutes; absent or 0 means no timer. */
+  timerMinutes?: number;
 }
 
 export interface Task {

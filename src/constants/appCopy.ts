@@ -248,6 +248,11 @@ export interface AppCopy {
   addTaskSaveTemplate: string;
   addTaskSaveTemplateHelp: string;
   addTaskSavedCustomTasks: string;
+  templateSaveFromTask: string;
+  templateSavedNotice: string;
+  templateDelete: string;
+  templateDeleteTitle: string;
+  templateDeleteBody: string;
   addTaskNamePlaceholder: string;
   addTaskDescriptionPlaceholder: string;
   /** Why Add did nothing: the task has no name yet (the only thing still required). */
@@ -841,6 +846,11 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     addTaskSaveTemplate: "Save for later",
     addTaskSaveTemplateHelp: "Stores this custom task and category as a reusable template you can pick again later.",
     addTaskSavedCustomTasks: "Saved custom tasks",
+    templateSaveFromTask: "Save as template",
+    templateSavedNotice: "Saved as a template.",
+    templateDelete: "Delete template",
+    templateDeleteTitle: "Delete template?",
+    templateDeleteBody: "Tasks already created from it are not changed.",
     addTaskNamePlaceholder: "Enter task name",
     addTaskDescriptionPlaceholder: "Enter task description (optional)",
     addTaskNameMissing: "Give the task a name first. Everything else is optional.",
@@ -1583,6 +1593,11 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     addTaskSaveTemplate: "Guardar para depois",
     addTaskSaveTemplateHelp: "Guarda esta tarefa personalizada e categoria como modelo reutilizável para escolher novamente mais tarde.",
     addTaskSavedCustomTasks: "Tarefas personalizadas guardadas",
+    templateSaveFromTask: "Guardar como modelo",
+    templateSavedNotice: "Guardado como modelo.",
+    templateDelete: "Apagar modelo",
+    templateDeleteTitle: "Apagar modelo?",
+    templateDeleteBody: "As tarefas já criadas a partir dele não mudam.",
     addTaskNamePlaceholder: "Escreve o nome da tarefa",
     addTaskDescriptionPlaceholder: "Escreve a descrição da tarefa (opcional)",
     addTaskNameMissing: "Dá primeiro um nome à tarefa. O resto é opcional.",

@@ -52,6 +52,8 @@ interface AddTaskModalProps {
   onClose: () => void;
   settings: AppSettings;
   customTaskTemplates: CustomTaskTemplate[];
+  /** Deletes a saved template; tasks already made from it are untouched. Hidden when absent. */
+  onDeleteTemplate?: (templateId: string) => void;
   /** The player's tasks, so the category field can offer the categories they already use. */
   existingTasks?: Task[];
   tutorialEnabled: boolean;
@@ -76,6 +78,7 @@ export default function AddTaskModal({
   onClose,
   settings,
   customTaskTemplates,
+  onDeleteTemplate,
   existingTasks = [],
   tutorialEnabled,
   tutorialTarget,
@@ -255,6 +258,25 @@ export default function AddTaskModal({
     setCategory(template.category);
     setCustomTemplateId(template.id);
     setSaveAsTemplate(false);
+    if (template.frequency) setFrequency(template.frequency);
+    if (template.priority) setPriority(template.priority);
+    setDurationMinutes(template.durationMinutes ?? null);
+    setTimerEnabled((template.timerMinutes ?? 0) > 0);
+    if (template.timerMinutes) setTimerDurationMinutes(template.timerMinutes);
+  };
+
+  const handleDeleteTemplate = (template: CustomTaskTemplate) => {
+    Alert.alert(copy.templateDeleteTitle, copy.templateDeleteBody, [
+      { text: copy.addTaskCancel, style: "cancel" },
+      {
+        text: copy.templateDelete,
+        style: "destructive",
+        onPress: () => {
+          onDeleteTemplate?.(template.id);
+          if (customTemplateId === template.id) setCustomTemplateId("");
+        },
+      },
+    ]);
   };
 
   return (
@@ -469,6 +491,20 @@ export default function AddTaskModal({
                                   >
                                     {task.description}
                                   </Text>
+                                  {onDeleteTemplate ? (
+                                    <TouchableOpacity
+                                      onPress={() => handleDeleteTemplate(task)}
+                                      disabled={tutorialOn}
+                                      accessibilityRole="button"
+                                      accessibilityLabel={`${copy.templateDelete}: ${task.name}`}
+                                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                      style={{ minHeight: 44, justifyContent: "center", alignSelf: "flex-start" }}
+                                    >
+                                      <Text style={{ color: theme.danger, fontSize: 13, fontWeight: "700" }}>
+                                        {copy.templateDelete}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  ) : null}
                                 </TouchableOpacity>
                               ))
                             : null}

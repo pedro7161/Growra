@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { normalizeCustomTaskTemplates } from "../utils/customTaskTemplates";
 import {
   DayRecord,
   Decoration,
@@ -515,11 +516,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       dashboardCollapsed: normalizeDashboardCollapsed(storedSettings.dashboardCollapsed),
       calendarShow: normalizeCalendarShow(persistedSettings),
     },
-    customTaskTemplates: saveData.gameState.customTaskTemplates
-      ? saveData.gameState.customTaskTemplates.map((template) => ({
-          ...template,
-        }))
-      : [],
+    customTaskTemplates: normalizeCustomTaskTemplates(saveData.gameState.customTaskTemplates),
     tasks: saveData.gameState.tasks.map(normalizeTask),
     pets,
     equippedPetId: activePetId,

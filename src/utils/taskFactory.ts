@@ -84,12 +84,13 @@ export function buildTaskFromFormValues(values: TaskFormValues): {
 
   const customTemplate =
     values.type === TaskType.CUSTOM && values.saveAsTemplate
-      ? createCustomTaskTemplate(
-          values.name,
-          values.description,
-          values.category,
-          values.customTemplateId,
-        )
+      ? {
+          ...createCustomTaskTemplate(values.name, values.description, values.category, values.customTemplateId),
+          frequency: values.frequency,
+          priority: values.priority,
+          ...(values.durationMinutes ? { durationMinutes: values.durationMinutes } : {}),
+          ...(values.timerEnabled && values.timerDurationMinutes > 0 ? { timerMinutes: values.timerDurationMinutes } : {}),
+        }
       : undefined;
 
   return { task, customTemplate };
@@ -185,5 +186,21 @@ export function createPredefinedTask(
     timerEnabled,
     timerDurationMinutes,
     durationMinutes
+  );
+}
+
+/** Builds a brand-new, independent task (fresh id, pending, zero progress) from a template. */
+export function createTaskFromTemplate(template: CustomTaskTemplate, dueDate: number): Task {
+  return createCustomTask(
+    template.name,
+    template.description,
+    template.category,
+    template.frequency ?? TaskFrequency.ONCE,
+    template.id,
+    dueDate,
+    (template.timerMinutes ?? 0) > 0,
+    template.timerMinutes ?? 0,
+    template.priority ?? TaskPriority.MEDIUM,
+    template.durationMinutes ?? null,
   );
 }
