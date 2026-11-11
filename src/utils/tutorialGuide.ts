@@ -2,6 +2,7 @@ import { GameState } from "../types";
 import { STARTER_TEMPLATE_IDS } from "./companions";
 import { getPetTemplates } from "./gameplay";
 import { getAppCopy } from "../constants/appCopy";
+import { getPetImage } from "../constants/petImages";
 import { TUTORIAL_FIRST_TASK_REWARD, TutorialStep } from "./tutorial";
 
 // The talking-pet guide: who speaks, and how Back / Next move between the bubbles. The real
@@ -47,6 +48,11 @@ export const REPLAY_SCREEN: Record<GuideStep, "dashboard" | "tasks" | "companion
   "open-journey": "companions",
 };
 
+/** Fills {placeholders}; a function replacer keeps "$&" or "$'" in a pet's name literal. */
+export function fillTemplate(text: string, values: Record<string, string | number>): string {
+  return text.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
+}
+
 export interface GuideSpeaker {
   templateId: string;
   name: string;
@@ -56,15 +62,26 @@ export interface GuideSpeaker {
   adopted: boolean;
 }
 
+/** A saved variant id that no longer has art would leave the portrait blank: use the default look. */
+function knownVariant(templateId: string, stage: number, variantId: string | undefined): string {
+  if (!variantId || variantId === "default") return "default";
+  try {
+    return getPetImage(templateId, stage, variantId) ? variantId : "default";
+  } catch {
+    return "default";
+  }
+}
+
 /** The adopted companion speaks; before adoption the first starter does, with name from its template. */
 export function getGuideSpeaker(gameState: GameState): GuideSpeaker {
   const pet = gameState.pets.find((item) => item.id === gameState.equippedPetId) ?? gameState.pets[0];
   if (pet) {
+    const templateName = getPetTemplates().find((template) => template.id === pet.templateId)?.name ?? pet.templateId;
     return {
       templateId: pet.templateId,
-      name: pet.name,
+      name: pet.name?.trim() || templateName,
       evolutionStage: pet.evolutionStage,
-      variantId: pet.activeImageVariantId || "default",
+      variantId: knownVariant(pet.templateId, pet.evolutionStage, pet.activeImageVariantId),
       adopted: true,
     };
   }
@@ -126,14 +143,14 @@ export function tutorialMessage(
     case "complete-task":
       return replay
         ? copy.tutorialReplayCompleteTask
-        : copy.tutorialCompleteTaskHint.replace("{coins}", String(TUTORIAL_FIRST_TASK_REWARD));
+        : fillTemplate(copy.tutorialCompleteTaskHint, { coins: TUTORIAL_FIRST_TASK_REWARD });
     case "open-realm":
       return replay ? copy.tutorialReplayOpenRealm : copy.tutorialOpenRealm;
     case "choose-companion":
       return speaker.adopted
         ? copy.tutorialChooseCompanionHint
-        : `${copy.tutorialPetInvite.replace("{name}", speaker.name)} ${copy.tutorialChooseCompanionHint}`;
+        : `${fillTemplate(copy.tutorialPetInvite, { name: speaker.name })} ${copy.tutorialChooseCompanionHint}`;
     case "open-journey":
-      return copy.tutorialPetClose.replace("{name}", speaker.name);
+      return fillTemplate(copy.tutorialPetClose, { name: speaker.name });
   }
 }

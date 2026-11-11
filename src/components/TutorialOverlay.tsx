@@ -1,11 +1,12 @@
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { getPetImage } from "../constants/petImages";
 import { AppSettings } from "../types";
 import { TUTORIAL_STEP_COUNT, TutorialStep, tutorialStepNumber } from "../utils/tutorial";
-import { GuideSpeaker, tutorialMessage } from "../utils/tutorialGuide";
+import { GuideSpeaker, fillTemplate, tutorialMessage } from "../utils/tutorialGuide";
 import CompanionArtwork from "./CompanionArtwork";
 
 export type { TutorialStep } from "../utils/tutorial";
@@ -30,6 +31,8 @@ interface TutorialOverlayProps {
 }
 
 const MIN_TOUCH = 44;
+/** Space kept free for the bottom tab bar (plus the safe-area inset) so it stays tappable. */
+const TAB_BAR_CLEARANCE = 96;
 
 /**
  * The talking-pet guide: the companion's portrait with a speech bubble (its tail points at the
@@ -53,19 +56,20 @@ export default function TutorialOverlay({
   const copy = getAppCopy(settings.language);
   const theme = getAppTheme(settings.theme);
   const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   if (!visible || step === "done") return null;
 
   const current = tutorialStepNumber(step);
   const portrait = getPetImage(speaker.templateId, speaker.evolutionStage, speaker.variantId);
 
   return (
-    <View pointerEvents="box-none" style={styles.overlayRoot}>
+    <View pointerEvents="box-none" style={[styles.overlayRoot, { paddingBottom: TAB_BAR_CLEARANCE + insets.bottom }]}>
       <View style={styles.row}>
         <View
           style={[styles.portraitFrame, { backgroundColor: theme.surface, borderColor: theme.accent }]}
           accessible
           accessibilityRole="image"
-          accessibilityLabel={copy.tutorialGuideLabel.replace("{name}", speaker.name)}
+          accessibilityLabel={fillTemplate(copy.tutorialGuideLabel, { name: speaker.name })}
         >
           <CompanionArtwork source={portrait} templateId={speaker.templateId} style={styles.portrait} />
         </View>
@@ -92,7 +96,7 @@ export default function TutorialOverlay({
               </View>
             </View>
             <Text style={[styles.stepLabel, { color: theme.mutedText }]}>
-              {copy.tutorialStepLabel.replace("{n}", String(current)).replace("{total}", String(TUTORIAL_STEP_COUNT))}
+              {fillTemplate(copy.tutorialStepLabel, { n: current, total: TUTORIAL_STEP_COUNT })}
               {preview ? ` · ${copy.tutorialPreviewBadge}` : ""}
             </Text>
             <ScrollView style={{ maxHeight: Math.max(96, height * 0.28) }} showsVerticalScrollIndicator={false}>
@@ -145,8 +149,6 @@ const styles = StyleSheet.create({
     zIndex: 40,
     justifyContent: "flex-end",
     paddingHorizontal: 8,
-    // Sits just above the bottom tab bar, which stays tappable.
-    paddingBottom: 96,
   },
   row: { flexDirection: "row", alignItems: "flex-end", gap: 6 },
   portraitFrame: {

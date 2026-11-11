@@ -1,8 +1,9 @@
 import React from "react";
-import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getAppCopy } from "../constants/appCopy";
 import { getAppTheme } from "../constants/appTheme";
 import { AppSettings } from "../types";
+import { fillTemplate } from "../utils/tutorialGuide";
 import { TUTORIAL_FINISH_REWARD, TUTORIAL_FIRST_TASK_REWARD } from "../utils/tutorial";
 
 const icon = require("../../assets/images/update-icon.png");
@@ -31,7 +32,7 @@ export default function TutorialCards({ mode, settings, onStart, onSkip, onClose
     mode === "welcome" ? copy.tutorialWelcomeTitle : mode === "finish" ? copy.tutorialRewardTitle : copy.tutorialTourTitle;
   const subtitle =
     mode === "welcome"
-      ? copy.tutorialWelcomeBody.replace("{coins}", String(TUTORIAL_FIRST_TASK_REWARD + TUTORIAL_FINISH_REWARD))
+      ? fillTemplate(copy.tutorialWelcomeBody, { coins: TUTORIAL_FIRST_TASK_REWARD + TUTORIAL_FINISH_REWARD })
       : mode === "finish"
         ? copy.tutorialFinishBody
         : copy.tutorialTourBody;
@@ -39,14 +40,17 @@ export default function TutorialCards({ mode, settings, onStart, onSkip, onClose
   return (
     <Modal visible transparent animationType="fade" onRequestClose={mode === "welcome" ? onSkip : onClose}>
       <View style={styles.backdrop}>
-        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
+        <ScrollView
+          style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}
+          contentContainerStyle={styles.cardContent}
+        >
           <Image source={icon} style={styles.icon} />
           <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
           <Text style={[styles.subtitle, { color: theme.mutedText }]}>{subtitle}</Text>
           {mode === "finish" && (
             <View style={[styles.gift, { backgroundColor: theme.accentSoft }]}>
               <Text style={[styles.giftText, { color: theme.accent }]}>
-                {copy.tutorialFinishGift.replace("{coins}", String(TUTORIAL_FINISH_REWARD))}
+                {fillTemplate(copy.tutorialFinishGift, { coins: TUTORIAL_FINISH_REWARD })}
               </Text>
             </View>
           )}
@@ -60,17 +64,18 @@ export default function TutorialCards({ mode, settings, onStart, onSkip, onClose
           <TouchableOpacity
             style={[styles.primary, { backgroundColor: theme.accent }]}
             onPress={mode === "finish" ? onClose : onStart}
+            accessibilityRole="button"
           >
             <Text style={[styles.primaryText, { color: theme.accentText }]}>
               {mode === "finish" ? copy.tutorialLetsGo : copy.tutorialStart}
             </Text>
           </TouchableOpacity>
           {mode !== "finish" && (
-            <TouchableOpacity onPress={mode === "welcome" ? onSkip : onClose} style={styles.linkTouch}>
+            <TouchableOpacity onPress={mode === "welcome" ? onSkip : onClose} style={styles.linkTouch} accessibilityRole="button">
               <Text style={[styles.link, { color: theme.mutedText }]}>{copy.tutorialSkipAll}</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -78,7 +83,9 @@ export default function TutorialCards({ mode, settings, onStart, onSkip, onClose
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: "rgba(0, 0, 0, 0.5)" },
-  card: { borderRadius: 22, borderWidth: 1, padding: 22, gap: 10, alignItems: "stretch" },
+  // Scrolls so large fonts or short screens never push Start / Skip out of reach.
+  card: { borderRadius: 22, borderWidth: 1, flexGrow: 0 },
+  cardContent: { padding: 22, gap: 10, alignItems: "stretch" },
   icon: { width: 72, height: 72, borderRadius: 18, alignSelf: "center" },
   title: { fontSize: 24, fontWeight: "800", textAlign: "center" },
   subtitle: { fontSize: 14, lineHeight: 20, textAlign: "center" },
@@ -86,7 +93,7 @@ const styles = StyleSheet.create({
   giftText: { fontSize: 15, fontWeight: "800" },
   points: { gap: 8, marginVertical: 6 },
   point: { fontSize: 15, lineHeight: 21 },
-  primary: { borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 4 },
+  primary: { borderRadius: 14, minHeight: 48, justifyContent: "center", paddingVertical: 14, alignItems: "center", marginTop: 4 },
   primaryText: { fontSize: 16, fontWeight: "700" },
   linkTouch: { minHeight: 44, justifyContent: "center" },
   link: { fontSize: 14, fontWeight: "600", textAlign: "center", paddingVertical: 6 },
