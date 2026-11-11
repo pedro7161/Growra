@@ -73,6 +73,13 @@ function normalizeDailyReminder(value: unknown): AppSettings["dailyReminder"] {
   };
 }
 
+function normalizeHolderHistorySince(stored: unknown): number {
+  if (typeof stored === "number" && Number.isFinite(stored) && stored > 0) return getStartOfDay(stored);
+  const tomorrow = new Date(getStartOfDay(Date.now()));
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.getTime();
+}
+
 function savedVersion(data: unknown): number {
   const version = isObject(data) ? data.version : undefined;
   return typeof version === "number" && Number.isFinite(version) ? version : 0;
@@ -142,6 +149,7 @@ type PersistedGameState = Omit<
   | "companionEvents"
   | "notices"
   | "days"
+  | "holderHistorySince"
   | "decorations"
   | "plus"
   | "explore"
@@ -157,6 +165,7 @@ type PersistedGameState = Omit<
   | "settings"
 > & {
   days?: DayRecord[];
+  holderHistorySince?: number;
   decorations?: Decoration[];
   plus?: PlusState;
   explore?: ExploreState;
@@ -463,6 +472,9 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       ...(hadExpeditions ? [{ kind: "journey-migrated" as const, coins: gearCoins }] : []),
     ],
     days: saveData.gameState.days ?? buildDaysFromTasks(saveData.gameState.tasks as Task[]),
+    // Saves from before per-holder history (#79) can't say who finished what on earlier days, so the first
+    // day it can speak for is the next one; anything before stays combined-only instead of guessed.
+    holderHistorySince: normalizeHolderHistorySince(saveData.gameState.holderHistorySince),
     decorations: saveData.gameState.decorations ?? [],
     plus: saveData.gameState.plus ?? { owned: false, lastCheckedAt: 0 },
     explore: saveData.gameState.explore ?? { day: 0, count: 0 },

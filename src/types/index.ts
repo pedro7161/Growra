@@ -238,6 +238,16 @@ export interface DayRecord {
   timersFinished: number;
   scheduledAhead: number; // tasks created or moved to a later day
   completions: { name: string; at: number }[]; // capped, for the tile and look-back cards
+  /**
+   * What each holder (Personal, Work, a group) finished that day, for the calendar history card (#79).
+   * Only written from GameState.holderHistorySince on; older records have none, so they stay combined-only.
+   */
+  byHolder?: Record<string, HolderDayRecord>;
+}
+
+export interface HolderDayRecord {
+  done: number;
+  completions: { name: string; at: number }[]; // capped like DayRecord.completions
 }
 
 export interface Decoration {
@@ -374,6 +384,11 @@ export interface GameState {
   companionEvents: CompanionEvent[]; // joins/evolutions waiting to be shown
   notices: GameNotice[]; // one-time messages (e.g. the gacha → companions migration)
   days: DayRecord[];
+  /**
+   * Start of the first local day whose `days` records say which holder finished what (#79). Earlier days only have
+   * combined totals, so the calendar reports them as such instead of guessing.
+   */
+  holderHistorySince: number;
   decorations: Decoration[];
   streak: Streak;
   plus: PlusState;

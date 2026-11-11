@@ -6,7 +6,7 @@ import { getAppTheme } from "../constants/appTheme";
 import { AppSettings, DayRecord, Group, HolderId, Task, TaskPriority, TaskStatus, WorkItem, WorkOccurrence } from "../types";
 import { getOccurrencesBetween, toDateKey } from "../utils/workSchedule";
 import { getStartOfDay } from "../utils/taskSchedule";
-import { getHistoryDay, indexDays } from "../utils/calendarHistory";
+import { getHistoryDay, HistoryScope, indexDays } from "../utils/calendarHistory";
 import { formatCount } from "../utils/formatCount";
 import { getPredefinedTask } from "../constants/predefinedTasks";
 import { getLocaleFromSettings } from "../utils/settings";
@@ -21,6 +21,8 @@ interface TaskCalendarScreenProps {
   /** Saved daily history (read only) and when the save began, for the history card. */
   days: DayRecord[];
   createdAt: number;
+  /** First day whose records say which holder finished what; earlier days are combined-only. */
+  holderHistorySince: number;
   /** The holder the calendar was opened from; it is always shown. */
   holder: HolderId;
   onToggleHolder: (holder: HolderId) => void;
@@ -131,10 +133,11 @@ function cellLabel(
   locale: string,
   index: ReturnType<typeof indexDays>,
   dayStart: number,
-  createdAt: number
+  createdAt: number,
+  scope: HistoryScope
 ): string {
   const date = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" }).format(new Date(dayStart));
-  const history = getHistoryDay(index, dayStart, createdAt, Date.now());
+  const history = getHistoryDay(index, dayStart, createdAt, Date.now(), scope);
   if (history.status === "done") return copy.calendarDayDone.replace("{day}", date).replace("{done}", formatCount(history.done, locale));
   if (history.status === "untracked") return copy.calendarDayNotTracked.replace("{day}", date);
   return date;
@@ -242,6 +245,7 @@ export default function TaskCalendarScreen({
   groups,
   days,
   createdAt,
+  holderHistorySince,
   holder,
   onToggleHolder,
   onOpenHolder,
@@ -254,7 +258,9 @@ export default function TaskCalendarScreen({
   const [selectedDayStart, setSelectedDayStart] = useState(() => getStartOfDay(Date.now()));
 
   const historyIndex = useMemo(() => indexDays(days), [days]);
-  const selectedHistory = getHistoryDay(historyIndex, selectedDayStart, createdAt, Date.now());
+  // The history card follows the opened holder only; other holders shown on the calendar never add to it.
+  const historyScope = useMemo<HistoryScope>(() => ({ holder, holderSince: holderHistorySince }), [holder, holderHistorySince]);
+  const selectedHistory = getHistoryDay(historyIndex, selectedDayStart, createdAt, Date.now(), historyScope);
   const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
   // The opened holder first, so it leads the chips, the day list and the colour of shared days.
   const holders = useMemo(() => {
@@ -437,7 +443,7 @@ export default function TaskCalendarScreen({
                   onPress={() => setSelectedDayStart(cell.dayStart)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: cell.dayStart === selectedDayStart && cell.inMonth }}
-                  accessibilityLabel={cell.inMonth ? cellLabel(copy, locale, historyIndex, cell.dayStart, createdAt) : undefined}
+                  accessibilityLabel={cell.inMonth ? cellLabel(copy, locale, historyIndex, cell.dayStart, createdAt, historyScope) : undefined}
                   style={[
                     styles.dayCell,
                     {
@@ -566,10 +572,19 @@ export default function TaskCalendarScreen({
           <Text style={[styles.dayDetailsTitle, { color: theme.text }]} accessibilityRole="header">
             {copy.calendarHistoryTitle}
           </Text>
+          <Text style={[styles.dayTaskMeta, { color: theme.mutedText }]}>
+            {copy.calendarHistoryOwner.replace("{holder}", holders[0].label)}
+          </Text>
           {selectedHistory.status === "future" ? (
             <Text style={[styles.noActivityText, { color: theme.mutedText }]}>{copy.calendarHistoryFuture}</Text>
           ) : selectedHistory.status === "untracked" ? (
             <Text style={[styles.noActivityText, { color: theme.mutedText }]}>{copy.calendarHistoryNotTracked}</Text>
+          ) : selectedHistory.status === "combined" ? (
+            <Text style={[styles.noActivityText, { color: theme.mutedText }]}>
+              {(selectedHistory.allDone > 0 ? copy.calendarHistoryCombined : copy.calendarHistoryCombinedNone)
+                .replace("{holder}", holders[0].label)
+                .replace("{done}", formatCount(selectedHistory.allDone, locale))}
+            </Text>
           ) : selectedHistory.status === "none" ? (
             <Text style={[styles.noActivityText, { color: theme.mutedText }]}>{copy.calendarHistoryNone}</Text>
           ) : (
@@ -593,6 +608,13 @@ export default function TaskCalendarScreen({
               ) : null}
             </>
           )}
+          {selectedHistory.status === "done" || selectedHistory.status === "none" ? (
+            selectedHistory.allDone > selectedHistory.done ? (
+              <Text style={[styles.noActivityText, { color: theme.mutedText }]}>
+                {copy.calendarHistoryAll.replace("{done}", formatCount(selectedHistory.allDone, locale))}
+              </Text>
+            ) : null
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>

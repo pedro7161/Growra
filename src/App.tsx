@@ -1537,6 +1537,7 @@ export default function App() {
             groups={gameState.groups}
             days={gameState.days}
             createdAt={gameState.createdAt}
+            holderHistorySince={gameState.holderHistorySince}
             holder={calendarHolder}
             onToggleHolder={(toggled) => void handleCalendarHolderToggle(toggled)}
             onOpenHolder={(opened) => void openHolderScreen(opened)}
