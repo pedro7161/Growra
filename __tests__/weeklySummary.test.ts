@@ -1,3 +1,5 @@
+import { gameStateService } from '../src/services/gameStateService';
+import { createInitialGameState, createSaveData } from '../src/utils/initialState';
 import { createDayRecord } from '../src/utils/journey';
 import { getWeeklySummary, SUMMARY_DAYS } from '../src/utils/weeklySummary';
 import { DayRecord } from '../src/types';
@@ -90,5 +92,19 @@ describe('weekly summary (#76)', () => {
     const summary = getWeeklySummary([], 0, local(11, 1));
     expect(summary.empty).toBe(true);
     expect(summary.trackedDays).toBe(1);
+  });
+
+  it('gives the same summary after a backup code export and import', () => {
+    const now = local(6, 10);
+    const state = {
+      ...createInitialGameState(),
+      createdAt: created,
+      days: [rec(local(6, 9), 3, { recurringDone: 1, timersFinished: 2 }), rec(local(6, 7), 2)],
+    };
+    const restored = gameStateService.importSaveCode(gameStateService.exportSaveCode(createSaveData(state))).gameState;
+    expect(getWeeklySummary(restored.days, restored.createdAt, now)).toEqual(
+      getWeeklySummary(state.days, state.createdAt, now),
+    );
+    expect(getWeeklySummary(restored.days, restored.createdAt, now).totalDone).toBe(5);
   });
 });
