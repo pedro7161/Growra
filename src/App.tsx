@@ -128,6 +128,7 @@ import {
   unlink,
 } from "./utils/groupLinks";
 import { applyLinkedWorkEdit, deleteTaskCopies, editTaskCopies, linkedCopies, taskEditChange } from "./utils/linkedEdits";
+import { normalizeWeeklyGoal } from "./utils/weeklyGoal";
 import type { GroupFields } from "./components/GroupFormModal";
 import {
   finishTaskTimer,
@@ -862,6 +863,12 @@ export default function App() {
     await persistGameState({ ...gameState, settings: { ...gameState.settings, dailyWelcome } });
   };
 
+  const handleWeeklyGoalChange = async (goal: number) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, weeklyGoal: normalizeWeeklyGoal(goal) } });
+  };
+
   const handleCompanionReactionsChange = async (companionReactions: boolean) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
@@ -1400,6 +1407,7 @@ export default function App() {
                 if (code) void Share.share({ message: code }).catch(() => undefined);
               });
             }}
+            onWeeklyGoalChange={(goal) => void handleWeeklyGoalChange(goal)}
             onDismissBackupNudge={() => {
               setBackupNudgeVisible(false);
               playUiTap();
