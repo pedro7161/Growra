@@ -145,4 +145,21 @@ describe('daily welcome persistence', () => {
     const result = await gameStateService.loadGame();
     expect(result.status).toBe('corrupt');
   });
+
+  it('a backup code round trip keeps the claim day, so a restore the same day does not pay again', () => {
+    const claim = claimDailyWelcome(player(), at(2026, 11, 10, 9));
+    const code = gameStateService.exportSaveCode(createSaveData(claim.state));
+    const restored = gameStateService.importSaveCode(code).gameState;
+    expect(restored.welcomeClaimedDay).toBe('2026-11-10');
+    expect(claimDailyWelcome(restored, at(2026, 11, 10, 20)).coins).toBe(0);
+    expect(claimDailyWelcome(restored, at(2026, 11, 11, 8)).coins).toBe(DAILY_WELCOME_COINS);
+  });
+
+  it('a backup code from before the welcome field restores as never claimed with the setting on', () => {
+    const code = gameStateService.exportSaveCode(JSON.parse(oldSave()));
+    const restored = gameStateService.importSaveCode(code).gameState;
+    expect(restored.welcomeClaimedDay).toBe('');
+    expect(restored.settings.dailyWelcome).toBe(true);
+    expect(restored.coins).toBe(77);
+  });
 });
