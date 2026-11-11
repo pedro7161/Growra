@@ -805,6 +805,20 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.12.0",
+    dateLabel: "Versi 1.12.0 · November 2026",
+    items: [
+      "Bagikan ruangan dengan kode QR di footer gambar.",
+      "Pindai kode QR ruangan dengan kamera atau dari sebuah gambar.",
+      "Saat footer dimatikan, teks kode ruangan dibagikan bersama gambar.",
+      "Mengetuk pengingat timer akan membuka tugas tersebut.",
+      "Pemberitahuan sekali tampil menjelaskan saat pengingat timer diblokir oleh izin notifikasi.",
+    ],
+    fixes: [
+      "Pengingat timer kini memakai kanal notifikasi yang diperbarui, sehingga pengaturan suara dan getar berlaku dengan benar di Android.",
+    ],
+  },
+  {
     version: "1.11.0",
     dateLabel: "Versi 1.11.0 · November 2026",
     items: [

@@ -805,6 +805,20 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.12.0",
+    dateLabel: "Versione 1.12.0 · novembre 2026",
+    items: [
+      "Condividi una stanza con un codice QR nel piè di pagina dell'immagine.",
+      "Scansiona il codice QR di una stanza con la fotocamera o da un'immagine.",
+      "Quando il piè di pagina è disattivato, il testo del codice della stanza viene condiviso insieme all'immagine.",
+      "Toccando un avviso del timer si apre quell'attività.",
+      "Un avviso una tantum spiega quando gli avvisi del timer sono bloccati dal permesso di notifica.",
+    ],
+    fixes: [
+      "Gli avvisi del timer usano canali di notifica aggiornati, così le impostazioni di suono e vibrazione si applicano correttamente su Android.",
+    ],
+  },
+  {
     version: "1.11.0",
     dateLabel: "Versione 1.11.0 · novembre 2026",
     items: [
