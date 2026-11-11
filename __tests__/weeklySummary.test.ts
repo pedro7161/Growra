@@ -1,3 +1,5 @@
+import { gameStateService } from '../src/services/gameStateService';
+import { createInitialGameState, createSaveData } from '../src/utils/initialState';
 import { createDayRecord } from '../src/utils/journey';
 import { getWeeklySummary, SUMMARY_DAYS } from '../src/utils/weeklySummary';
 import { DayRecord } from '../src/types';
@@ -93,8 +95,6 @@ describe('weekly summary (#76)', () => {
   });
 
   it('gives the same summary after a backup code export and import', () => {
-    const { gameStateService } = require('../src/services/gameStateService');
-    const { createInitialGameState, createSaveData } = require('../src/utils/initialState');
     const now = local(6, 10);
     const state = {
       ...createInitialGameState(),
