@@ -53,7 +53,7 @@ export function createInitialGameState(): GameState {
  * The save format this build writes. Bump it whenever a build changes the save shape, so an older
  * build refuses that save instead of quietly dropping what it doesn't understand (#50).
  */
-export const SAVE_VERSION = 24; // 19: whatsNewHiddenFor (#64); 20: ghost room items (#41); 21: work schedule; 22: groups; 23: welcomeClaimedDay + dailyWelcome (#75); 24: companionReactions (#78)
+export const SAVE_VERSION = 25; // 19: whatsNewHiddenFor (#64); 20: ghost room items (#41); 21: work schedule; 22: groups; 23: welcomeClaimedDay + dailyWelcome (#75); 24: companionReactions (#78); 25: weeklyGoal (#80)
 
 export function createSaveData(gameState: GameState): SaveData {
   return {

@@ -20,6 +20,7 @@ export const defaultSettings: AppSettings = {
   confirmExit: true,
   dailyWelcome: true,
   companionReactions: true,
+  weeklyGoal: 0,
   taskToolsOpen: true,
   dailyReminder: { enabled: false, hour: 20, minute: 0 },
   musicEnabled: false,
