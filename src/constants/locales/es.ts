@@ -863,6 +863,22 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.13.0",
+    dateLabel: "Versión 1.13.0 · Noviembre 2026",
+    items: [
+      "Una recompensa de bienvenida suave y opcional cuando vuelves: fácil de cerrar, una vez al día, 2 monedas.",
+      "Una hoja opcional con el resumen semanal de progreso.",
+      "Guarda una tarea como plantilla y reutilízala: al aplicarla se crea una tarea nueva e independiente, y puedes borrar plantillas de la lista guardada.",
+      "Reacciones más variadas del compañero, con un ajuste de activado/desactivado.",
+      "El calendario muestra el historial de cada titular, con los totales combinados por separado. Los días más antiguos muestran \"solo combinado\".",
+      "Define un objetivo semanal opcional desde el resumen semanal. Los objetivos no cumplidos no cuestan nada.",
+      "Tu compañero inicial ahora guía a los usuarios nuevos con bocadillos de diálogo y los botones Atrás, Siguiente y Omitir. Repítelo desde Ajustes; los usuarios existentes no están obligados a verlo.",
+    ],
+    fixes: [
+      "Se corrigieron los nombres de ejemplo de la guía y se mejoró su diseño en pantallas pequeñas.",
+    ],
+  },
+  {
     version: "1.12.0",
     dateLabel: "Versión 1.12.0 · Noviembre 2026",
     items: [

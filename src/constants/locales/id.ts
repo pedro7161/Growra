@@ -863,6 +863,22 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.13.0",
+    dateLabel: "Versi 1.13.0 · November 2026",
+    items: [
+      "Hadiah selamat datang yang lembut dan opsional saat kamu kembali: mudah ditutup, sekali sehari, 2 koin.",
+      "Lembar ringkasan kemajuan mingguan yang opsional.",
+      "Simpan tugas sebagai templat dan pakai lagi: menerapkan templat membuat tugas baru yang independen, dan kamu bisa menghapus templat dari daftar tersimpan.",
+      "Reaksi pendamping yang lebih kaya, dengan pengaturan Aktif/Nonaktif.",
+      "Kalender menampilkan riwayat setiap pemegang, dengan total gabungan ditampilkan terpisah. Hari yang lebih lama menampilkan \"hanya gabungan\".",
+      "Tetapkan target mingguan opsional dari ringkasan mingguan. Target yang terlewat tidak merugikan apa pun.",
+      "Pendamping awalmu kini memandu pengguna baru lewat balon ucapan dengan tombol Kembali, Berikutnya, dan Lewati. Putar ulang dari Pengaturan; pengguna lama tidak dipaksa mengikutinya.",
+    ],
+    fixes: [
+      "Memperbaiki nama contoh di panduan dan menyempurnakan tata letak di layar pendek.",
+    ],
+  },
+  {
     version: "1.12.0",
     dateLabel: "Versi 1.12.0 · November 2026",
     items: [

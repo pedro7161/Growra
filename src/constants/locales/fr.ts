@@ -863,6 +863,22 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.13.0",
+    dateLabel: "Version 1.13.0 · novembre 2026",
+    items: [
+      "Une récompense de bienvenue douce et facultative à ton retour : facile à fermer, une fois par jour, 2 pièces.",
+      "Un récapitulatif hebdomadaire de progression facultatif.",
+      "Enregistre une tâche comme modèle et réutilise-la : l'appliquer crée une nouvelle tâche indépendante, et tu peux supprimer les modèles de la liste enregistrée.",
+      "Des réactions du compagnon plus variées, avec un réglage Activé/Désactivé.",
+      "Le calendrier affiche l'historique de chaque titulaire, avec les totaux combinés séparés. Les jours plus anciens affichent « combiné uniquement ».",
+      "Définis un objectif hebdomadaire facultatif depuis le récapitulatif hebdomadaire. Un objectif manqué ne coûte rien.",
+      "Ton compagnon de départ guide désormais les nouveaux utilisateurs avec des bulles de dialogue et les boutons Retour, Suivant et Passer. Rejoue-le depuis les Réglages ; les utilisateurs existants n'y sont pas obligés.",
+    ],
+    fixes: [
+      "Noms d'exemple corrigés dans le guide et mise en page améliorée sur les petits écrans.",
+    ],
+  },
+  {
     version: "1.12.0",
     dateLabel: "Version 1.12.0 · novembre 2026",
     items: [

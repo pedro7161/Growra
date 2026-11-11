@@ -863,6 +863,22 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.13.0",
+    dateLabel: "Versione 1.13.0 · novembre 2026",
+    items: [
+      "Un premio di benvenuto delicato e facoltativo quando torni: facile da chiudere, una volta al giorno, 2 monete.",
+      "Un riepilogo settimanale dei progressi facoltativo.",
+      "Salva un'attività come modello e riutilizzala: applicarlo crea una nuova attività indipendente e puoi eliminare i modelli dall'elenco salvato.",
+      "Reazioni del compagno più varie, con un'impostazione Attivo/Disattivo.",
+      "Il calendario mostra la cronologia di ogni titolare, con i totali combinati mostrati a parte. I giorni più vecchi mostrano \"solo combinato\".",
+      "Imposta un obiettivo settimanale facoltativo dal riepilogo settimanale. Gli obiettivi mancati non costano nulla.",
+      "Il tuo compagno iniziale ora guida i nuovi utenti con fumetti e i pulsanti Indietro, Avanti e Salta. Rivedilo dalle Impostazioni; gli utenti esistenti non sono obbligati a farlo.",
+    ],
+    fixes: [
+      "Corretti i nomi di esempio nella guida e migliorato il layout sugli schermi bassi.",
+    ],
+  },
+  {
     version: "1.12.0",
     dateLabel: "Versione 1.12.0 · novembre 2026",
     items: [

@@ -863,6 +863,22 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.13.0",
+    dateLabel: "Version 1.13.0 · November 2026",
+    items: [
+      "Eine sanfte, optionale Willkommensbelohnung bei deiner Rückkehr: leicht zu schließen, einmal pro Tag, 2 Münzen.",
+      "Eine optionale wöchentliche Fortschrittsübersicht.",
+      "Speichere eine Aufgabe als Vorlage und nutze sie erneut: Beim Anwenden entsteht eine neue, unabhängige Aufgabe, und gespeicherte Vorlagen lassen sich löschen.",
+      "Abwechslungsreichere Reaktionen des Begleiters, mit Ein/Aus-Einstellung.",
+      "Der Kalender zeigt den Verlauf jedes Inhabers, die Gesamtsummen werden getrennt angezeigt. Ältere Tage zeigen „nur gesamt“.",
+      "Lege in der Wochenübersicht ein optionales Wochenziel fest. Verfehlte Ziele kosten nichts.",
+      "Dein Starter-Begleiter führt neue Nutzer jetzt in Sprechblasen mit Zurück, Weiter und Überspringen. Wiederhole die Einführung in den Einstellungen; bestehende Nutzer werden nicht dazu gezwungen.",
+    ],
+    fixes: [
+      "Platzhalternamen in der Einführung korrigiert und das Layout auf kurzen Bildschirmen verbessert.",
+    ],
+  },
+  {
     version: "1.12.0",
     dateLabel: "Version 1.12.0 · November 2026",
     items: [

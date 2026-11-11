@@ -864,6 +864,22 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.13.0",
+    dateLabel: "Sürüm 1.13.0 · Kasım 2026",
+    items: [
+      "Geri döndüğünde nazik ve isteğe bağlı bir karşılama ödülü: kolayca kapatılır, günde bir kez, 2 jeton.",
+      "İsteğe bağlı haftalık ilerleme özeti.",
+      "Bir görevi şablon olarak kaydet ve yeniden kullan: şablon uygulamak yeni, bağımsız bir görev oluşturur ve kayıtlı listeden şablonları silebilirsin.",
+      "Daha zengin yoldaş tepkileri, Açık/Kapalı ayarıyla.",
+      "Takvim her sahibin geçmişini gösterir, toplam değerler ayrı gösterilir. Daha eski günlerde \"yalnızca toplam\" görünür.",
+      "Haftalık özetten isteğe bağlı bir haftalık hedef belirle. Kaçırılan hedefler hiçbir şeye mal olmaz.",
+      "Başlangıç yoldaşın artık yeni kullanıcılara konuşma balonlarıyla Geri, İleri ve Atla düğmeleriyle rehberlik ediyor. Ayarlar'dan tekrar oynatabilirsin; mevcut kullanıcılar buna zorlanmaz.",
+    ],
+    fixes: [
+      "Rehberdeki yer tutucu adlar düzeltildi ve kısa ekranlardaki düzen iyileştirildi.",
+    ],
+  },
+  {
     version: "1.12.0",
     dateLabel: "Sürüm 1.12.0 · Kasım 2026",
     items: [

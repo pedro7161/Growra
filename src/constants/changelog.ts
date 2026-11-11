@@ -23,6 +23,22 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<"en" | "pt", ChangelogEntry[]> = {
   en: [
     {
+      version: "1.13.0",
+      dateLabel: "Version 1.13.0 · November 2026",
+      items: [
+        "A gentle, optional welcome reward when you come back: easy to dismiss, once per day, 2 coins.",
+        "An optional weekly progress summary sheet.",
+        "Save a task as a template and reuse it: applying one creates a new, independent task, and you can delete templates from the saved list.",
+        "Richer companion reactions, with an On/Off setting.",
+        "The calendar shows each holder's history, with combined totals shown separately. Older days show \"combined only\".",
+        "Set an optional weekly goal from the weekly summary sheet. Missed goals cost nothing.",
+        "Your starter companion now guides new users in speech bubbles with Back, Next and Skip. Replay it from Settings; existing users are not forced into it.",
+      ],
+      fixes: [
+        "Fixed placeholder names in the guide and improved its layout on short screens.",
+      ],
+    },
+    {
       version: "1.12.0",
       dateLabel: "Version 1.12.0 · November 2026",
       items: [
@@ -219,6 +235,22 @@ const changelogByLanguage: Record<"en" | "pt", ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      version: "1.13.0",
+      dateLabel: "Versão 1.13.0 · novembro de 2026",
+      items: [
+        "Uma recompensa de boas-vindas suave e opcional quando voltas: fácil de dispensar, uma vez por dia, 2 moedas.",
+        "Uma folha opcional com o resumo semanal do progresso.",
+        "Guarda uma tarefa como modelo e reutiliza-a: aplicar um modelo cria uma tarefa nova e independente, e podes apagar modelos da lista guardada.",
+        "Reações mais ricas do companheiro, com uma definição Ligado/Desligado.",
+        "O calendário mostra o histórico de cada titular, com os totais combinados à parte. Os dias mais antigos mostram \"só combinado\".",
+        "Define um objetivo semanal opcional a partir do resumo semanal. Os objetivos falhados não custam nada.",
+        "O teu companheiro inicial guia agora os novos utilizadores em balões de fala com Voltar, Seguinte e Saltar. Repete-o nas Definições; os utilizadores existentes não são obrigados a vê-lo.",
+      ],
+      fixes: [
+        "Corrigidos os nomes de exemplo no guia e melhorado o layout em ecrãs pequenos.",
+      ],
+    },
     {
       version: "1.12.0",
       dateLabel: "Versão 1.12.0 · novembro de 2026",
