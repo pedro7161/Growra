@@ -20,6 +20,7 @@ import {
   guideCanAdvance,
   guideNext,
   guideStepAt,
+  fillTemplate,
   tutorialMessage,
 } from '../src/utils/tutorialGuide';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -207,6 +208,51 @@ describe('guide copy', () => {
       }
       for (const key of ['tutorialGuideLabel', 'tutorialPetInvite', 'tutorialPetClose'] as const) {
         expect([language, key, copy[key].includes('{name}')]).toEqual([language, key, true]);
+      }
+    }
+  });
+});
+
+describe('review fixes (#82)', () => {
+  const adopted = () => adoptStarter(createInitialGameState(), STARTER_TEMPLATE_IDS[1]);
+
+  it('keeps "$&" and "$\'" in a pet name literal when filling the bubble', () => {
+    const copy = getAppCopy('en');
+    const speaker = { ...getGuideSpeaker(adopted()), name: "Mo$&$'o" };
+    expect(tutorialMessage('open-journey', copy, speaker, false)).toContain("I'm Mo$&$'o!");
+    expect(fillTemplate('{name} {name}', { name: '$&' })).toBe('$& $&');
+    expect(fillTemplate('{coins} {x}', { coins: 5 })).toBe('5 {x}');
+  });
+
+  it('never fills a blank pet name into the bubble header', () => {
+    const state = adopted();
+    const blank = { ...state, pets: state.pets.map((pet) => ({ ...pet, name: '   ' })) };
+    expect(getGuideSpeaker(blank).name.trim().length).toBeGreaterThan(0);
+  });
+
+  it('falls back to the default portrait when the saved variant has no art', () => {
+    const state = adopted();
+    const stale = { ...state, pets: state.pets.map((pet) => ({ ...pet, activeImageVariantId: 'removed-variant' })) };
+    expect(getGuideSpeaker(stale).variantId).toBe('default');
+  });
+
+  it('does not glue a Hangul particle onto the pet name in Korean', () => {
+    const copy = getAppCopy('ko');
+    expect(copy.tutorialPetInvite).not.toMatch(/\{name\}[가-힣]/);
+    expect(copy.tutorialPetClose).not.toMatch(/\{name\}[가-힣]/);
+  });
+
+  it('leaves no unfilled placeholder in any language for any bubble', () => {
+    const speaker = getGuideSpeaker(adopted());
+    const fresh = getGuideSpeaker(createInitialGameState());
+    for (const language of APP_LANGUAGES) {
+      const copy = getAppCopy(language);
+      for (const step of GUIDE_STEPS) {
+        for (const replay of [false, true]) {
+          for (const who of [speaker, fresh]) {
+            expect([language, step, tutorialMessage(step, copy, who, replay)]).not.toEqual([language, step, expect.stringMatching(/\{\w+\}/)]);
+          }
+        }
       }
     }
   });
