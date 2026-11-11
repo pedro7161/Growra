@@ -356,6 +356,36 @@ const copy: AppCopy = {
   companionJoinedTitle: "새 친구: {name}!",
   companionEvolvedTitle: "진화했어요: {name}!",
   companionRevealSubtitle: "내가 Growra를 쓰는 방식을 알아봤어요.",
+  companionMoodMore: {
+    hello: [
+      "{name}(은)는 언제든 시작할 수 있게 여기 있어요.",
+      "{name}(이)가 손을 흔들어요. 서두르지 않아도 돼요.",
+    ],
+    happy: [
+      "{name}(은)는 오늘 하루에 만족해해요.",
+      "{name}(은)는 당신의 진행에 미소 짓고 있어요.",
+    ],
+    glowing: [
+      "{name}(이)가 환하게 빛나요. 멋진 하루예요!",
+      "{name}(은)는 웃음을 멈추지 못해요. 잘했어요!",
+    ],
+    sleepy: [
+      "{name}(은)는 웅크린 채 당신이 돌아와 기뻐해요. 천천히 해요.",
+      "{name}(은)는 당신을 봐서 기뻐요. 작게 시작해요, 서두르지 않아도 돼요.",
+    ],
+  },
+  praiseRestLines: [
+    "해야 할 일을 모두 마쳤어요. {name}(이)가 푹 쉬래요!",
+    "오늘은 모두 끝! 잠깐 쉬어 가세요!",
+    "오늘은 남은 게 없어요. {name}(은)는 당신이 자랑스러워요.",
+  ],
+  praiseBigDayLines: [
+    "대단한 하루! {name}도 깜짝 놀랐어요!",
+    "멋진 하루! {name}(이)가 크게 응원해요.",
+    "대단한 하루를 해냈어요. 잘했어요!",
+  ],
+  settingsCompanionReactions: "동료 반응",
+  settingsCompanionReactionsHelp: "작업이나 근무를 마치면 동료의 짧은 말풍선을 보여 주고, 하루 한마디도 다양하게 바꿔요. 조용한 동료를 원하면 끄세요. 다른 건 달라지지 않아요.",
   companionMood: {
     hello: "{name}: 안녕! 준비되면 언제든지.",
     happy: "{name}: 오늘 정말 좋아!",

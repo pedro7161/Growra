@@ -500,6 +500,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
           : "system",
       confirmExit: storedSettings.confirmExit !== false,
       dailyWelcome: storedSettings.dailyWelcome !== false,
+      companionReactions: storedSettings.companionReactions !== false,
       taskToolsOpen: storedSettings.taskToolsOpen !== false,
       dailyReminder: normalizeDailyReminder(storedSettings.dailyReminder),
       musicEnabled: storedSettings.musicEnabled === true,

@@ -36,7 +36,7 @@ describe("seasonal companion lines", () => {
   it("uses the season's mood lines during the season, and keeps a sleeping companion asleep", () => {
     expect(companionLine(en, "glowing", "Moss", at(10, 20))).toContain("jack-o'-lantern");
     expect(companionLine(en, "sleepy", "Moss", at(12, 25))).toContain("napping by the fire");
-    expect(companionLine(en, "happy", "Moss", at(6, 1))).toBe("Moss is happy with today.");
+    expect(companionLine(en, "happy", "Moss", at(6, 1), false)).toBe("Moss is happy with today.");
   });
 
   it("has every seasonal line in Portuguese too", () => {

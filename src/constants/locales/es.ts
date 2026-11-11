@@ -355,6 +355,36 @@ const copy: AppCopy = {
   companionJoinedTitle: "¡{name} se ha unido!",
   companionEvolvedTitle: "¡{name} ha evolucionado!",
   companionRevealSubtitle: "Se fijó en cómo usas Growra.",
+  companionMoodMore: {
+    hello: [
+      "{name} está aquí cuando quieras empezar.",
+      "{name} te saluda. Sin prisa.",
+    ],
+    happy: [
+      "{name} está contento con cómo va el día.",
+      "{name} sonríe con tu progreso.",
+    ],
+    glowing: [
+      "{name} brilla de alegría. ¡Qué gran día!",
+      "{name} no deja de sonreír. ¡Bien hecho!",
+    ],
+    sleepy: [
+      "{name} está hecho un ovillo y se alegra de que vuelvas. Tómatelo con calma.",
+      "{name} se alegra de verte. Empieza poco a poco, sin prisa.",
+    ],
+  },
+  praiseRestLines: [
+    "Todo lo pendiente está hecho. ¡{name} dice que descanses!",
+    "Todo listo por hoy. ¡Disfruta de una pausa!",
+    "Hoy no queda nada. {name} está orgulloso de ti.",
+  ],
+  praiseBigDayLines: [
+    "¡Un gran día! ¡{name} está asombrado!",
+    "¡Qué día! {name} te aplaude con ganas.",
+    "Un gran día, y lo lograste. ¡Bien hecho!",
+  ],
+  settingsCompanionReactions: "Reacciones del compañero",
+  settingsCompanionReactionsHelp: "Muestra el globo de diálogo de tu compañero al terminar una tarea o turno y varía su frase del día. Desactívalo para un compañero callado; nada más cambia.",
   companionMood: {
     hello: "{name} te saluda. Listo cuando tú lo estés.",
     happy: "{name} está contento con el día de hoy.",

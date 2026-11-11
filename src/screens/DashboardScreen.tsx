@@ -145,7 +145,7 @@ export default function DashboardScreen({
     ? (1 + streakBonus) * (1 + equippedPet.taskMultiplier)
     : 1 + streakBonus;
   const mood = getCompanionMood(gameState, now);
-  const moodLine = equippedPet ? companionLine(copy, mood, equippedPet.name, now) : "";
+  const moodLine = equippedPet ? companionLine(copy, mood, equippedPet.name, now, gameState.settings.companionReactions) : "";
 
   const currentLevel = gameState.level;
   const levelStartExp =

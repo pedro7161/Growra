@@ -355,6 +355,36 @@ const copy: AppCopy = {
   companionJoinedTitle: "{name} 加入了你！",
   companionEvolvedTitle: "{name} 进化了！",
   companionRevealSubtitle: "它注意到了你使用 Growra 的方式。",
+  companionMoodMore: {
+    hello: [
+      "你想开始时，{name}就在这里。",
+      "{name}向你挥手。不用着急。",
+    ],
+    happy: [
+      "{name}对今天的进展很满意。",
+      "{name}看到你的进步，笑了。",
+    ],
+    glowing: [
+      "{name}容光焕发。多棒的一天!",
+      "{name}笑个不停。干得好!",
+    ],
+    sleepy: [
+      "{name}蜷成一团，很高兴你回来了。慢慢来。",
+      "{name}见到你很开心。从小事开始，不用急。",
+    ],
+  },
+  praiseRestLines: [
+    "该做的都做完了。{name}说:好好休息吧!",
+    "今天都搞定了。好好歇一会儿!",
+    "今天没有剩下的事了。{name}为你骄傲。",
+  ],
+  praiseBigDayLines: [
+    "了不起的一天!{name}惊呆了!",
+    "多棒的一天!{name}在大声为你加油。",
+    "了不起的一天，你做到了。干得好!",
+  ],
+  settingsCompanionReactions: "伙伴反应",
+  settingsCompanionReactionsHelp: "完成任务或班次后显示伙伴的小对话气泡，并让它每天的话有所变化。想要安静的伙伴就关闭;其他一切不变。",
   companionMood: {
     hello: "{name} 向你问好。你准备好了它就准备好了。",
     happy: "{name} 对今天很满意。",

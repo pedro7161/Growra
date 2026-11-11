@@ -356,6 +356,36 @@ const copy: AppCopy = {
   companionJoinedTitle: "Yeni dost: {name}!",
   companionEvolvedTitle: "Evrimleşti: {name}!",
   companionRevealSubtitle: "Growra'yı nasıl kullandığını fark etti.",
+  companionMoodMore: {
+    hello: [
+      "{name} başlamak istediğinde burada.",
+      "{name} el sallıyor. Acele yok.",
+    ],
+    happy: [
+      "{name} bugünün gidişatından memnun.",
+      "{name} ilerlemene gülümsüyor.",
+    ],
+    glowing: [
+      "{name} parlıyor. Ne harika bir gün!",
+      "{name} gülümsemeden duramıyor. Aferin!",
+    ],
+    sleepy: [
+      "{name} kıvrılmış, döndüğüne sevindi. Yavaş yavaş.",
+      "{name} seni gördüğüne sevindi. Küçük başla, acele yok.",
+    ],
+  },
+  praiseRestLines: [
+    "Vakti gelenlerin hepsi bitti. {name} diyor ki: dinlen!",
+    "Bugünlük her şey tamam. Bir mola ver!",
+    "Bugün için bir şey kalmadı. {name} seninle gurur duyuyor.",
+  ],
+  praiseBigDayLines: [
+    "Büyük bir gün! {name} hayran kaldı!",
+    "Ne gün ama! {name} yüksek sesle alkışlıyor.",
+    "Büyük bir gün ve başardın. Aferin!",
+  ],
+  settingsCompanionReactions: "Arkadaş tepkileri",
+  settingsCompanionReactionsHelp: "Bir görevi veya vardiyayı bitirince arkadaşının kısa konuşma balonunu gösterir ve günlük sözünü çeşitlendirir. Sessiz bir arkadaş için kapat; başka hiçbir şey değişmez.",
   companionMood: {
     hello: "{name} merhaba diyor. Sen hazır olduğunda o da hazır.",
     happy: "{name} bugünden memnun.",

@@ -355,6 +355,36 @@ const copy: AppCopy = {
   companionJoinedTitle: "{name}がなかまになった！",
   companionEvolvedTitle: "{name}が進化した！",
   companionRevealSubtitle: "あなたのGrowraの使い方に気づいたみたい。",
+  companionMoodMore: {
+    hello: [
+      "{name}はいつでも始められるよう待っています。",
+      "{name}が手を振っています。あわてなくて大丈夫。",
+    ],
+    happy: [
+      "{name}は今日の調子にご機嫌です。",
+      "{name}はあなたの進み具合に微笑んでいます。",
+    ],
+    glowing: [
+      "{name}は輝いています。すてきな一日!",
+      "{name}は笑顔が止まりません。よくできました!",
+    ],
+    sleepy: [
+      "{name}は丸くなって、あなたが戻ってきて嬉しそうです。のんびりいきましょう。",
+      "{name}はあなたに会えて嬉しいです。小さく始めれば大丈夫。",
+    ],
+  },
+  praiseRestLines: [
+    "やることは全部終わりました。{name}が「ゆっくり休んでね」と言っています!",
+    "今日はすべて完了です。ひと休みしましょう!",
+    "今日はもう残りなし。{name}はあなたを誇りに思っています。",
+  ],
+  praiseBigDayLines: [
+    "大きな一日!{name}もびっくりです!",
+    "すごい一日!{name}が大声で応援しています。",
+    "大きな一日をやり遂げました。よくできました!",
+  ],
+  settingsCompanionReactions: "相棒のリアクション",
+  settingsCompanionReactionsHelp: "タスクやシフトを終えたときの相棒の吹き出しを表示し、その日の一言にも変化をつけます。静かな相棒にしたいときはオフに。ほかは何も変わりません。",
   companionMood: {
     hello: "{name}があいさつしています。準備ができたらいつでもどうぞ。",
     happy: "{name}は今日に満足しています。",

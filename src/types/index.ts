@@ -50,6 +50,8 @@ export interface AppSettings {
   confirmExit: boolean;
   /** Offer the small once-a-day welcome reward (#75). */
   dailyWelcome: boolean;
+  /** The companion's speech bubble after a tick and its varied daily line (#78); off = a quiet companion. */
+  companionReactions: boolean;
   /** Search and quick add rows on the Tasks screen are shown (the player can fold them away). */
   taskToolsOpen: boolean;
   /** One optional reminder a day (#39); off unless the player turns it on. */

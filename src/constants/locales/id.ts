@@ -355,6 +355,36 @@ const copy: AppCopy = {
   companionJoinedTitle: "{name} bergabung denganmu!",
   companionEvolvedTitle: "{name} berevolusi!",
   companionRevealSubtitle: "Ia memperhatikan caramu memakai Growra.",
+  companionMoodMore: {
+    hello: [
+      "{name} ada di sini kapan pun kamu ingin mulai.",
+      "{name} melambai menyapa. Tidak perlu terburu-buru.",
+    ],
+    happy: [
+      "{name} senang dengan harimu.",
+      "{name} tersenyum melihat kemajuanmu.",
+    ],
+    glowing: [
+      "{name} berseri-seri. Hari yang hebat!",
+      "{name} terus tersenyum. Kerja bagus!",
+    ],
+    sleepy: [
+      "{name} meringkuk dan senang kamu kembali. Santai saja.",
+      "{name} senang melihatmu. Mulai dari yang kecil, tanpa terburu-buru.",
+    ],
+  },
+  praiseRestLines: [
+    "Semua yang jatuh tempo sudah selesai. {name} bilang: istirahatlah!",
+    "Semuanya beres untuk hari ini. Nikmati waktu istirahat!",
+    "Tidak ada lagi untuk hari ini. {name} bangga padamu.",
+  ],
+  praiseBigDayLines: [
+    "Hari yang besar! {name} takjub!",
+    "Hari yang luar biasa! {name} bersorak keras.",
+    "Hari yang besar, dan kamu berhasil. Kerja bagus!",
+  ],
+  settingsCompanionReactions: "Reaksi pendamping",
+  settingsCompanionReactionsHelp: "Tampilkan balon ucapan singkat pendampingmu setelah menyelesaikan tugas atau shift, dan variasikan kalimat hariannya. Matikan untuk pendamping yang pendiam; hal lain tidak berubah.",
   companionMood: {
     hello: "{name} menyapa. Siap kapan pun kamu siap.",
     happy: "{name} senang dengan hari ini.",

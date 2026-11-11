@@ -37,6 +37,7 @@ interface SettingsModalProps {
   onAudioPreferenceChange: (key: "musicEnabled" | "sfxEnabled", enabled: boolean) => void;
   onConfirmExitChange: (enabled: boolean) => void;
   onDailyWelcomeChange: (enabled: boolean) => void;
+  onCompanionReactionsChange: (enabled: boolean) => void;
   onDailyReminderChange: (reminder: DailyReminderSettings) => void;
   onReplayTutorial: () => void;
   onTimerAlertModeChange: (mode: TimerAlertMode) => void;
@@ -61,6 +62,7 @@ export default function SettingsModal({
   onAppearanceChange,
   onConfirmExitChange,
   onDailyWelcomeChange,
+  onCompanionReactionsChange,
   onDailyReminderChange,
   onReplayTutorial,
   onAudioPreferenceChange,
@@ -279,6 +281,25 @@ export default function SettingsModal({
                 label={copy.settingsOff}
                 active={!gameState.settings.dailyWelcome}
                 onPress={() => onDailyWelcomeChange(false)}
+                themeId={theme.id}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{copy.settingsCompanionReactions}</Text>
+            <Text style={[styles.helpText, { color: theme.mutedText }]}>{copy.settingsCompanionReactionsHelp}</Text>
+            <View style={styles.optionRow}>
+              <OptionButton
+                label={copy.settingsOn}
+                active={gameState.settings.companionReactions}
+                onPress={() => onCompanionReactionsChange(true)}
+                themeId={theme.id}
+              />
+              <OptionButton
+                label={copy.settingsOff}
+                active={!gameState.settings.companionReactions}
+                onPress={() => onCompanionReactionsChange(false)}
                 themeId={theme.id}
               />
             </View>
