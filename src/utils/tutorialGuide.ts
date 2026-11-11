@@ -1,7 +1,8 @@
 import { GameState } from "../types";
 import { STARTER_TEMPLATE_IDS } from "./companions";
 import { getPetTemplates } from "./gameplay";
-import { TutorialStep } from "./tutorial";
+import { getAppCopy } from "../constants/appCopy";
+import { TUTORIAL_FIRST_TASK_REWARD, TutorialStep } from "./tutorial";
 
 // The talking-pet guide: who speaks, and how Back / Next move between the bubbles. The real
 // tutorial step is always derived from the saved game (see getTutorialStep); Back / Next only
@@ -30,6 +31,20 @@ const NAVIGATION_TARGET: Partial<Record<GuideStep, GuideTarget>> = {
   "open-tasks": "tasks",
   "open-realm": "companions",
   "open-journey": "journey",
+};
+
+/** Previewing the next bubble would mislead here: the player must pick a companion first. */
+const NO_PEEK: GuideStep[] = ["choose-companion"];
+
+/** Screen shown with each replay bubble (replay never needs the player to act). */
+export const REPLAY_SCREEN: Record<GuideStep, "dashboard" | "tasks" | "companions"> = {
+  "open-tasks": "dashboard",
+  "tap-add-task": "tasks",
+  "confirm-task-add": "tasks",
+  "complete-task": "tasks",
+  "open-realm": "tasks",
+  "choose-companion": "companions",
+  "open-journey": "companions",
 };
 
 export interface GuideSpeaker {
@@ -85,11 +100,40 @@ export function guideNext(steps: GuideStep[], real: GuideStep, offset: number): 
   const target = NAVIGATION_TARGET[real] ?? null;
   if (target) return { offset: 0, navigate: target };
   const base = Math.max(0, steps.indexOf(real));
-  const canPeek = offset === 0 && base < steps.length - 1;
+  const canPeek = offset === 0 && base < steps.length - 1 && !NO_PEEK.includes(real);
   return { offset: canPeek ? 1 : offset, navigate: null };
 }
 
 /** True when Next has nothing left to do (replay: it finishes the tour instead). */
 export function guideCanAdvance(steps: GuideStep[], real: GuideStep, offset: number): boolean {
-  return offset < 0 || Boolean(NAVIGATION_TARGET[real]) || (offset === 0 && steps.indexOf(real) < steps.length - 1);
+  return offset < 0 || Boolean(NAVIGATION_TARGET[real]) || (offset === 0 && steps.indexOf(real) < steps.length - 1 && !NO_PEEK.includes(real));
+}
+
+/** What the pet says for a step. */
+export function tutorialMessage(
+  step: Exclude<TutorialStep, "done">,
+  copy: ReturnType<typeof getAppCopy>,
+  speaker: GuideSpeaker,
+  replay: boolean,
+): string {
+  switch (step) {
+    case "open-tasks":
+      return copy.tutorialOpenTasks;
+    case "tap-add-task":
+      return copy.tutorialCreateTaskHint;
+    case "confirm-task-add":
+      return copy.tutorialConfirmTaskAddHint;
+    case "complete-task":
+      return replay
+        ? copy.tutorialReplayCompleteTask
+        : copy.tutorialCompleteTaskHint.replace("{coins}", String(TUTORIAL_FIRST_TASK_REWARD));
+    case "open-realm":
+      return replay ? copy.tutorialReplayOpenRealm : copy.tutorialOpenRealm;
+    case "choose-companion":
+      return speaker.adopted
+        ? copy.tutorialChooseCompanionHint
+        : `${copy.tutorialPetInvite.replace("{name}", speaker.name)} ${copy.tutorialChooseCompanionHint}`;
+    case "open-journey":
+      return copy.tutorialPetClose.replace("{name}", speaker.name);
+  }
 }
