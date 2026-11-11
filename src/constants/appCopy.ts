@@ -413,6 +413,16 @@ export interface AppCopy {
   weeklySummaryNotTracked: string;
   weeklySummaryDayLabel: string;
   weeklySummaryClose: string;
+  calendarPrevMonth: string;
+  calendarNextMonth: string;
+  calendarHistoryTitle: string;
+  calendarHistoryCount: string;
+  calendarHistoryNone: string;
+  calendarHistoryNotTracked: string;
+  calendarHistoryFuture: string;
+  calendarHistoryTruncated: string;
+  calendarDayDone: string;
+  calendarDayNotTracked: string;
   welcomeBackDismiss: string;
   dailyWelcomeTitle: string;
   dailyWelcomeBody: string;
@@ -1100,6 +1110,16 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     weeklySummaryNotTracked: "not recorded",
     weeklySummaryDayLabel: "{day}: {done} tasks done",
     weeklySummaryClose: "Close",
+    calendarPrevMonth: "Previous month",
+    calendarNextMonth: "Next month",
+    calendarHistoryTitle: "Finished on this day",
+    calendarHistoryCount: "{done} done",
+    calendarHistoryNone: "Nothing was marked done on this day.",
+    calendarHistoryNotTracked: "Growra was not keeping this record yet, so there is nothing to show for this day.",
+    calendarHistoryFuture: "This day has not happened yet.",
+    calendarHistoryTruncated: "Only some of the finished tasks were saved by name; the count above is complete.",
+    calendarDayDone: "{day}: {done} tasks done",
+    calendarDayNotTracked: "{day}: not recorded",
     welcomeBackDismiss: "OK",
     dailyWelcomeTitle: "A small hello",
     dailyWelcomeBody: "A little gift for opening Growra today: {coins} coins. Take it whenever you like, or skip it. Nothing is lost either way.",
@@ -1893,6 +1913,16 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     weeklySummaryNotTracked: "sem registo",
     weeklySummaryDayLabel: "{day}: {done} tarefas feitas",
     weeklySummaryClose: "Fechar",
+    calendarPrevMonth: "Mês anterior",
+    calendarNextMonth: "Mês seguinte",
+    calendarHistoryTitle: "Concluído neste dia",
+    calendarHistoryCount: "{done} feitas",
+    calendarHistoryNone: "Nada foi marcado como feito neste dia.",
+    calendarHistoryNotTracked: "O Growra ainda não guardava este registo, por isso não há nada para mostrar neste dia.",
+    calendarHistoryFuture: "Este dia ainda não aconteceu.",
+    calendarHistoryTruncated: "Só algumas tarefas concluídas foram guardadas pelo nome; a contagem acima está completa.",
+    calendarDayDone: "{day}: {done} tarefas feitas",
+    calendarDayNotTracked: "{day}: sem registo",
     welcomeBackDismiss: "OK",
     dailyWelcomeTitle: "Um pequeno olá",
     dailyWelcomeBody: "Um miminho por abrires o Growra hoje: {coins} moedas. Recebe quando quiseres, ou deixa. Não se perde nada.",

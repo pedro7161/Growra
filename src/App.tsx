@@ -1527,6 +1527,8 @@ export default function App() {
             tasks={gameState.tasks}
             workItems={gameState.workItems}
             groups={gameState.groups}
+            days={gameState.days}
+            createdAt={gameState.createdAt}
             holder={calendarHolder}
             onToggleHolder={(toggled) => void handleCalendarHolderToggle(toggled)}
             onOpenHolder={(opened) => void openHolderScreen(opened)}
