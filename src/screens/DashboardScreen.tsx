@@ -47,6 +47,7 @@ interface DashboardScreenProps {
   gameState: GameState;
   tutorialLocked: boolean;
   onAddTask: (task: Task, customTemplate?: CustomTaskTemplate) => void;
+  onDeleteTemplate: (templateId: string) => void;
   onCompleteTask: (taskId: string) => void;
   onOpenSettings: () => void;
   onUiTap: () => void;
@@ -82,6 +83,7 @@ export default function DashboardScreen({
   gameState,
   tutorialLocked,
   onAddTask,
+  onDeleteTemplate,
   onCompleteTask,
   onOpenSettings,
   onUiTap,
@@ -572,6 +574,7 @@ export default function DashboardScreen({
         }}
         settings={gameState.settings}
         customTaskTemplates={gameState.customTaskTemplates}
+        onDeleteTemplate={onDeleteTemplate}
         existingTasks={gameState.tasks}
         tutorialEnabled={tutorialLocked}
         tutorialTarget={null}

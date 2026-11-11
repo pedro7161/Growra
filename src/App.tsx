@@ -81,7 +81,7 @@ import {
   WorkItem,
   HolderId,
 } from "./types";
-import { upsertCustomTaskTemplate } from "./utils/customTaskTemplates";
+import { removeCustomTaskTemplate, saveTaskAsTemplate, upsertCustomTaskTemplate } from "./utils/customTaskTemplates";
 import {
   adoptStarter,
   applyTaskCreated,
@@ -601,6 +601,22 @@ export default function App() {
   };
 
   /** `others`: holders whose linked copy is deleted too. */
+  const handleSaveTaskAsTemplate = async (task: Task) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const { templates } = saveTaskAsTemplate(gameState.customTaskTemplates, task);
+    await persistGameState({ ...gameState, customTaskTemplates: templates });
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({
+      ...gameState,
+      customTaskTemplates: removeCustomTaskTemplate(gameState.customTaskTemplates, templateId),
+    });
+  };
+
   const handleDeleteTask = async (taskId: string, holder: HolderId = "personal", others: HolderId[] = []) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
@@ -1332,6 +1348,7 @@ export default function App() {
             gameState={viewState}
             tutorialLocked={tutorialStep !== "done"}
             onAddTask={handleAddTask}
+            onDeleteTemplate={(id) => void handleDeleteTemplate(id)}
             onCompleteTask={handleCompleteTask}
             onOpenSettings={() => {
               setSettingsVisible(true);
@@ -1465,6 +1482,8 @@ export default function App() {
                       : null
             }
             onTutorialStateChange={setTaskTutorialUiState}
+            onSaveTaskAsTemplate={(task) => void handleSaveTaskAsTemplate(task)}
+            onDeleteTemplate={(id) => void handleDeleteTemplate(id)}
             onAddTask={(task, customTemplate, alsoAddTo) => void handleAddTask(task, customTemplate, holder, alsoAddTo)}
             onCompleteTask={(taskId) => void handleCompleteTask(taskId, holder)}
             onUpdateTask={(task, others) => void handleUpdateTask(task, holder, others)}
