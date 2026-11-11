@@ -4,7 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import PraiseBubble from "./components/PraiseBubble";
-import { pickPraiseLine } from "./utils/companionText";
+import { pickPraiseLine, praiseKindForTick, type PraiseKind } from "./utils/companionText";
 import SettingsModal from "./components/SettingsModal";
 import GrowraPlusModal from "./components/GrowraPlusModal";
 import WhatsNewModal from "./components/WhatsNewModal";
@@ -505,8 +505,10 @@ export default function App() {
   /** The active companion's short line after a tick, for ~2.5 s; a new tick replaces it. No companion, no bubble. */
   const showPraise = (state: GameState, kind: "task" | "shift") => {
     const companion = getActiveCompanion(state);
-    if (!companion) return;
-    const line = pickPraiseLine(getAppCopy(state.settings.language), kind, companion.name, lastPraiseRef.current);
+    // Reactions off (#78): a quiet companion shows no bubble.
+    if (!companion || !state.settings.companionReactions) return;
+    const praiseKind: PraiseKind = kind === "shift" ? "shift" : praiseKindForTick(state, Date.now());
+    const line = pickPraiseLine(getAppCopy(state.settings.language), praiseKind, companion.name, lastPraiseRef.current);
     lastPraiseRef.current = line;
     setPraise(line);
     if (praiseTimerRef.current) clearTimeout(praiseTimerRef.current);
@@ -858,6 +860,13 @@ export default function App() {
     const gameState = gameStateRef.current;
     if (!gameState) return;
     await persistGameState({ ...gameState, settings: { ...gameState.settings, dailyWelcome } });
+  };
+
+  const handleCompanionReactionsChange = async (companionReactions: boolean) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    if (!companionReactions) setPraise(null);
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, companionReactions } });
   };
 
   const handleConfirmExitChange = async (confirmExit: boolean) => {
@@ -1606,6 +1615,7 @@ export default function App() {
           onAppearanceChange={handleAppearanceChange}
           onConfirmExitChange={handleConfirmExitChange}
           onDailyWelcomeChange={(enabled) => void handleDailyWelcomeChange(enabled)}
+          onCompanionReactionsChange={(enabled) => void handleCompanionReactionsChange(enabled)}
           onDailyReminderChange={(reminder) => void handleDailyReminderChange(reminder)}
           onReplayTutorial={() => {
             setSettingsVisible(false);
