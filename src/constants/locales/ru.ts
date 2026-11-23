@@ -864,6 +864,14 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.13.1",
+    dateLabel: "Версия 1.13.1 · ноябрь 2026",
+    items: [
+      "Праздничный новогодний значок приложения.",
+    ],
+    fixes: [],
+  },
+  {
     version: "1.13.0",
     dateLabel: "Версия 1.13.0 · ноябрь 2026",
     items: [

@@ -863,6 +863,14 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.13.1",
+    dateLabel: "Version 1.13.1 · novembre 2026",
+    items: [
+      "Une icône de Noël pour les fêtes.",
+    ],
+    fixes: [],
+  },
+  {
     version: "1.13.0",
     dateLabel: "Version 1.13.0 · novembre 2026",
     items: [

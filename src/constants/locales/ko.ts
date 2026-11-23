@@ -864,6 +864,14 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.13.1",
+    dateLabel: "버전 1.13.1 · 2026년 11월",
+    items: [
+      "시즌을 맞은 크리스마스 앱 아이콘.",
+    ],
+    fixes: [],
+  },
+  {
     version: "1.13.0",
     dateLabel: "버전 1.13.0 · 2026년 11월",
     items: [

@@ -864,6 +864,14 @@ const copy: AppCopy = {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.13.1",
+    dateLabel: "Sürüm 1.13.1 · Kasım 2026",
+    items: [
+      "Sezona özel yılbaşı uygulama simgesi.",
+    ],
+    fixes: [],
+  },
+  {
     version: "1.13.0",
     dateLabel: "Sürüm 1.13.0 · Kasım 2026",
     items: [

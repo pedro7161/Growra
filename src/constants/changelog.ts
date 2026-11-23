@@ -23,6 +23,14 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<"en" | "pt", ChangelogEntry[]> = {
   en: [
     {
+      version: "1.13.1",
+      dateLabel: "Version 1.13.1 · November 2026",
+      items: [
+        "A festive Christmas app icon for the season.",
+      ],
+      fixes: [],
+    },
+    {
       version: "1.13.0",
       dateLabel: "Version 1.13.0 · November 2026",
       items: [
@@ -235,6 +243,14 @@ const changelogByLanguage: Record<"en" | "pt", ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      version: "1.13.1",
+      dateLabel: "Versão 1.13.1 · novembro de 2026",
+      items: [
+        "Um ícone de Natal para a época festiva.",
+      ],
+      fixes: [],
+    },
     {
       version: "1.13.0",
       dateLabel: "Versão 1.13.0 · novembro de 2026",
