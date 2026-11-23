@@ -143,7 +143,8 @@ describe("groups", () => {
       level: s.level,
       streak: s.streak,
       usage: s.usage,
-      days: s.days,
+      // A group tick only adds to that group's own tally; days with something paid stay as they were.
+      days: s.days.filter((day) => day.done > 0),
       pets: s.pets,
       companionEvents: s.companionEvents,
       decorations: s.decorations,
@@ -156,14 +157,14 @@ describe("groups", () => {
     expect(done.status).toBe(TaskStatus.COMPLETED);
     expect(done.dueDate).toBe(local(2026, 11, 21));
     expect(rewardFields(afterTask)).toEqual(before);
-    expect({ ...afterTask, groups: state.groups }).toEqual(state);
+    expect({ ...afterTask, groups: state.groups, days: state.days }).toEqual(state);
     // A second tick does nothing.
     expect(completeGroupTask(afterTask, "g1", task.id, NOW)).toBe(afterTask);
 
     const afterShift = completeGroupOccurrence(afterTask, "g2", "w1", "2026-11-20", NOW);
     expect(getHolderWorkItems(afterShift, "g2")[0].completedDateKeys).toEqual(["2026-11-20"]);
     expect(rewardFields(afterShift)).toEqual(before);
-    expect({ ...afterShift, groups: afterTask.groups }).toEqual(afterTask);
+    expect({ ...afterShift, groups: afterTask.groups, days: afterTask.days }).toEqual(afterTask);
     // Before the shift starts it can't be ticked, and ticking again does nothing.
     expect(completeGroupOccurrence(afterTask, "g2", "w1", "2026-11-20", local(2026, 11, 20, 8))).toBe(afterTask);
     expect(completeGroupOccurrence(afterShift, "g2", "w1", "2026-11-20", NOW)).toBe(afterShift);

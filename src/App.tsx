@@ -4,7 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomNavigation from "./components/BottomNavigation";
 import PraiseBubble from "./components/PraiseBubble";
-import { pickPraiseLine } from "./utils/companionText";
+import { pickPraiseLine, praiseKindForTick, type PraiseKind } from "./utils/companionText";
 import SettingsModal from "./components/SettingsModal";
 import GrowraPlusModal from "./components/GrowraPlusModal";
 import WhatsNewModal from "./components/WhatsNewModal";
@@ -31,6 +31,16 @@ import * as Sharing from "expo-sharing";
 import CompanionRevealModal from "./components/CompanionRevealModal";
 import { reachedStreakMilestone } from "./utils/streakMilestones";
 import TutorialOverlay from "./components/TutorialOverlay";
+import {
+  GUIDE_STEPS,
+  REPLAY_SCREEN,
+  REPLAY_STEPS,
+  getGuideSpeaker,
+  guideBack,
+  guideCanAdvance,
+  guideNext,
+  guideStepAt,
+} from "./utils/tutorialGuide";
 import TutorialCards, { TutorialCardMode } from "./components/TutorialCards";
 import {
   applyFirstTaskReward,
@@ -52,8 +62,10 @@ import TasksChooser from "./components/TasksChooser";
 import { buildWorkPreview } from "./utils/workPreview";
 import { gameStateService } from "./services/gameStateService";
 import { maybeAskForReview, openStoreListing, reachedCamp } from "./services/reviewService";
-import { ensureNotificationPermission, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
+import { timerDeniedNotice } from "./utils/notificationPlan";
+import { ensureNotificationPermission, listenForNotificationTaps, syncDailyReminder, syncTimerNotifications } from "./services/notificationService";
 import { getReturnRecap, ReturnRecap, shouldShowBackupNudge } from "./utils/returnRecap";
+import { canClaimDailyWelcome, claimDailyWelcome, DAILY_WELCOME_COINS } from "./utils/dailyWelcome";
 import {
   AppLanguage,
   AppSettings,
@@ -69,7 +81,7 @@ import {
   WorkItem,
   HolderId,
 } from "./types";
-import { upsertCustomTaskTemplate } from "./utils/customTaskTemplates";
+import { removeCustomTaskTemplate, saveTaskAsTemplate, upsertCustomTaskTemplate } from "./utils/customTaskTemplates";
 import {
   adoptStarter,
   applyTaskCreated,
@@ -116,6 +128,7 @@ import {
   unlink,
 } from "./utils/groupLinks";
 import { applyLinkedWorkEdit, deleteTaskCopies, editTaskCopies, linkedCopies, taskEditChange } from "./utils/linkedEdits";
+import { normalizeWeeklyGoal } from "./utils/weeklyGoal";
 import type { GroupFields } from "./components/GroupFormModal";
 import {
   finishTaskTimer,
@@ -186,6 +199,8 @@ export default function App() {
   const lastSaveWarningRef = useRef(0);
   const [returnRecap, setReturnRecap] = useState<ReturnRecap | null>(null);
   const [backupNudgeVisible, setBackupNudgeVisible] = useState(false);
+  /** "Not now" on the daily welcome (#75) hides it until the next launch; nothing is saved. */
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [whatsNew, setWhatsNew] = useState<ChangelogEntry | null>(null);
   const [loading, setLoading] = useState(true);
   /** Set when the save was written by a newer Growra: nothing is loaded or overwritten (#50). */
@@ -201,6 +216,13 @@ export default function App() {
   const tutorialStep = gameState
     ? getTutorialStep(gameState, activeScreen === "work-calendar" ? "task-calendar" : activeScreen, taskTutorialUiState.modalVisible)
     : "done";
+  /** Back / Next only move which bubble is shown; the real step always comes from the saved game. */
+  const [guideOffset, setGuideOffset] = useState(0);
+  /** Index into REPLAY_STEPS while the Settings replay runs; null otherwise. The replay writes nothing. */
+  const [replayIndex, setReplayIndex] = useState<number | null>(null);
+  useEffect(() => {
+    setGuideOffset(0);
+  }, [tutorialStep]);
   const [plusVisible, setPlusVisible] = useState(false);
   const [exploreBusy, setExploreBusy] = useState(false);
   const exploreBusyRef = useRef(false);
@@ -277,6 +299,13 @@ export default function App() {
   useEffect(() => {
     loadGame();
   }, []);
+
+  // A tap on a timer notification opens that task's list (#38); once loaded, so a cold start can find the task.
+  useEffect(() => {
+    if (loading) return;
+    return listenForNotificationTaps(() => gameStateRef.current, (holder) => void openHolderScreen(holder));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- openHolderScreen only reads refs and setters
+  }, [loading]);
 
   // The ambience follows the screen (home / journey / room editor) and pauses while the app is inactive.
   useEffect(() => {
@@ -477,8 +506,10 @@ export default function App() {
   /** The active companion's short line after a tick, for ~2.5 s; a new tick replaces it. No companion, no bubble. */
   const showPraise = (state: GameState, kind: "task" | "shift") => {
     const companion = getActiveCompanion(state);
-    if (!companion) return;
-    const line = pickPraiseLine(getAppCopy(state.settings.language), kind, companion.name, lastPraiseRef.current);
+    // Reactions off (#78): a quiet companion shows no bubble.
+    if (!companion || !state.settings.companionReactions) return;
+    const praiseKind: PraiseKind = kind === "shift" ? "shift" : praiseKindForTick(state, Date.now());
+    const line = pickPraiseLine(getAppCopy(state.settings.language), praiseKind, companion.name, lastPraiseRef.current);
     lastPraiseRef.current = line;
     setPraise(line);
     if (praiseTimerRef.current) clearTimeout(praiseTimerRef.current);
@@ -573,6 +604,22 @@ export default function App() {
   };
 
   /** `others`: holders whose linked copy is deleted too. */
+  const handleSaveTaskAsTemplate = async (task: Task) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    const { templates } = saveTaskAsTemplate(gameState.customTaskTemplates, task);
+    await persistGameState({ ...gameState, customTaskTemplates: templates });
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({
+      ...gameState,
+      customTaskTemplates: removeCustomTaskTemplate(gameState.customTaskTemplates, templateId),
+    });
+  };
+
   const handleDeleteTask = async (taskId: string, holder: HolderId = "personal", others: HolderId[] = []) => {
     const gameState = gameStateRef.current;
     if (!gameState) return;
@@ -628,7 +675,16 @@ export default function App() {
 
   const handleStartTimer = async (taskId: string, holder: HolderId = "personal") => {
     // The first timer start is the moment to ask; a refusal only means no background alert.
-    await ensureNotificationPermission();
+    const granted = await ensureNotificationPermission();
+    const current = gameStateRef.current;
+    if (current) {
+      const notice = timerDeniedNotice(current, granted);
+      if (notice.show) {
+        const copy = getAppCopy(current.settings.language);
+        Alert.alert(copy.notifyTimerChannel, copy.timerAlertDenied);
+        await persistGameState(notice.next);
+      }
+    }
     await applyTimerUpdate(taskId, startTaskTimer, holder);
     void playGrowraCue("timer-start", gameStateRef.current?.settings.sfxEnabled ?? false);
   };
@@ -723,10 +779,46 @@ export default function App() {
   };
 
   const handleSkipTutorial = async () => {
+    if (replayIndex !== null) {
+      // Ending a replay changes nothing in the save.
+      setReplayIndex(null);
+      return;
+    }
     const current = gameStateRef.current;
     setTutorialVisible(false);
     setTutorialCard(null);
+    setReplayIndex(null);
     if (current) await persistGameState(skipTutorial(current));
+  };
+
+  const handleGuideBack = () => {
+    if (replayIndex !== null) {
+      const index = Math.max(0, replayIndex - 1);
+      setReplayIndex(index);
+      setActiveScreen(REPLAY_SCREEN[REPLAY_STEPS[index]]);
+      return;
+    }
+    if (tutorialStep === "done") return;
+    setGuideOffset(guideBack(GUIDE_STEPS, tutorialStep, guideOffset));
+  };
+
+  const handleGuideNext = () => {
+    if (replayIndex !== null) {
+      if (replayIndex >= REPLAY_STEPS.length - 1) {
+        // The replay ends on Journey, like the real tutorial. Nothing is saved or paid.
+        setReplayIndex(null);
+        setActiveScreen("journey");
+        return;
+      }
+      const index = replayIndex + 1;
+      setReplayIndex(index);
+      setActiveScreen(REPLAY_SCREEN[REPLAY_STEPS[index]]);
+      return;
+    }
+    if (tutorialStep === "done") return;
+    const next = guideNext(GUIDE_STEPS, tutorialStep, guideOffset);
+    setGuideOffset(next.offset);
+    if (next.navigate) handleNavigate(next.navigate);
   };
 
   // The tutorial ends when the player opens the Journey after choosing a companion: pay the
@@ -753,6 +845,35 @@ export default function App() {
     const next = { ...latest, settings: { ...latest.settings, dailyReminder } };
     await persistGameState(next);
     syncNotifications(next, true);
+  };
+
+  const handleClaimDailyWelcome = async () => {
+    const current = gameStateRef.current;
+    if (!current) return;
+    // Pays through the ref's latest state, so a double tap finds the day already claimed.
+    const claim = claimDailyWelcome(current, Date.now());
+    if (claim.coins === 0) return;
+    gameStateRef.current = claim.state;
+    await persistGameState(claim.state);
+  };
+
+  const handleDailyWelcomeChange = async (dailyWelcome: boolean) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, dailyWelcome } });
+  };
+
+  const handleWeeklyGoalChange = async (goal: number) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, weeklyGoal: normalizeWeeklyGoal(goal) } });
+  };
+
+  const handleCompanionReactionsChange = async (companionReactions: boolean) => {
+    const gameState = gameStateRef.current;
+    if (!gameState) return;
+    if (!companionReactions) setPraise(null);
+    await persistGameState({ ...gameState, settings: { ...gameState.settings, companionReactions } });
   };
 
   const handleConfirmExitChange = async (confirmExit: boolean) => {
@@ -1089,13 +1210,13 @@ export default function App() {
     }
   };
 
-  const handleShareRoom = async (view: View, room: Room) => {
+  const handleShareRoom = async (view: View, room: Room, message?: string) => {
     const current = gameStateRef.current;
     if (!current) return;
     const copy = getAppCopy(current.settings.language);
     const owner = current.pets.find((pet) => pet.id === room.ownerPetId);
     try {
-      await shareRoomPicture(view, buildRoomShareMessage(copy, owner?.name ?? null));
+      await shareRoomPicture(view, message ?? buildRoomShareMessage(copy, owner?.name ?? null));
       void playGrowraCue("room-picture-shared", current.settings.sfxEnabled);
     } catch {
       Alert.alert("🏠", copy.roomShareError);
@@ -1243,6 +1364,7 @@ export default function App() {
             gameState={viewState}
             tutorialLocked={tutorialStep !== "done"}
             onAddTask={handleAddTask}
+            onDeleteTemplate={(id) => void handleDeleteTemplate(id)}
             onCompleteTask={handleCompleteTask}
             onOpenSettings={() => {
               setSettingsVisible(true);
@@ -1267,6 +1389,16 @@ export default function App() {
             }
             onOpenGroup={(groupId) => void openHolderScreen(groupId)}
             workNow={workNow}
+            dailyWelcomeVisible={!welcomeDismissed && canClaimDailyWelcome(gameState, Date.now())}
+            dailyWelcomeCoins={DAILY_WELCOME_COINS}
+            onClaimDailyWelcome={() => {
+              playUiTap();
+              void handleClaimDailyWelcome();
+            }}
+            onDismissDailyWelcome={() => {
+              setWelcomeDismissed(true);
+              playUiTap();
+            }}
             backupNudgeVisible={backupNudgeVisible}
             onShareBackup={() => {
               setBackupNudgeVisible(false);
@@ -1275,6 +1407,7 @@ export default function App() {
                 if (code) void Share.share({ message: code }).catch(() => undefined);
               });
             }}
+            onWeeklyGoalChange={(goal) => void handleWeeklyGoalChange(goal)}
             onDismissBackupNudge={() => {
               setBackupNudgeVisible(false);
               playUiTap();
@@ -1366,6 +1499,8 @@ export default function App() {
                       : null
             }
             onTutorialStateChange={setTaskTutorialUiState}
+            onSaveTaskAsTemplate={(task) => void handleSaveTaskAsTemplate(task)}
+            onDeleteTemplate={(id) => void handleDeleteTemplate(id)}
             onAddTask={(task, customTemplate, alsoAddTo) => void handleAddTask(task, customTemplate, holder, alsoAddTo)}
             onCompleteTask={(taskId) => void handleCompleteTask(taskId, holder)}
             onUpdateTask={(task, others) => void handleUpdateTask(task, holder, others)}
@@ -1400,6 +1535,9 @@ export default function App() {
             tasks={gameState.tasks}
             workItems={gameState.workItems}
             groups={gameState.groups}
+            days={gameState.days}
+            createdAt={gameState.createdAt}
+            holderHistorySince={gameState.holderHistorySince}
             holder={calendarHolder}
             onToggleHolder={(toggled) => void handleCalendarHolderToggle(toggled)}
             onOpenHolder={(opened) => void openHolderScreen(opened)}
@@ -1487,6 +1625,8 @@ export default function App() {
           onThemeChange={handleThemeChange}
           onAppearanceChange={handleAppearanceChange}
           onConfirmExitChange={handleConfirmExitChange}
+          onDailyWelcomeChange={(enabled) => void handleDailyWelcomeChange(enabled)}
+          onCompanionReactionsChange={(enabled) => void handleCompanionReactionsChange(enabled)}
           onDailyReminderChange={(reminder) => void handleDailyReminderChange(reminder)}
           onReplayTutorial={() => {
             setSettingsVisible(false);
@@ -1553,15 +1693,43 @@ export default function App() {
           }}
         />
         <TutorialOverlay
-          visible={tutorialVisible && tutorialStep !== "done" && tutorialCard === null}
-          step={tutorialStep}
+          visible={replayIndex !== null || (tutorialVisible && tutorialStep !== "done" && tutorialCard === null)}
+          step={
+            replayIndex !== null
+              ? REPLAY_STEPS[replayIndex]
+              : tutorialStep === "done"
+                ? "done"
+                : guideStepAt(GUIDE_STEPS, tutorialStep, guideOffset)
+          }
           settings={viewState.settings}
+          speaker={getGuideSpeaker(gameState)}
+          replay={replayIndex !== null}
+          preview={replayIndex === null && guideOffset > 0}
+          canGoBack={
+            replayIndex !== null
+              ? replayIndex > 0
+              : tutorialStep !== "done" && guideBack(GUIDE_STEPS, tutorialStep, guideOffset) !== guideOffset
+          }
+          canGoNext={
+            replayIndex !== null || (tutorialStep !== "done" && (guideOffset > 0 || guideCanAdvance(GUIDE_STEPS, tutorialStep, guideOffset)))
+          }
+          nextFinishes={replayIndex !== null && replayIndex === REPLAY_STEPS.length - 1}
+          onBack={handleGuideBack}
+          onNext={handleGuideNext}
           onSkip={handleSkipTutorial}
         />
         <TutorialCards
           mode={tutorialCard}
           settings={viewState.settings}
           onStart={() => {
+            if (tutorialCard === "tour") {
+              // Replay from Settings: a guided walk-through that never saves or pays anything.
+              setTutorialCard(null);
+              setReplayIndex(0);
+              setActiveScreen(REPLAY_SCREEN[REPLAY_STEPS[0]]);
+              playUiTap();
+              return;
+            }
             setTutorialCard(null);
             setTutorialVisible(true);
             playUiTap();

@@ -36,6 +36,8 @@ interface TaskDetailsModalProps {
   onSave: (task: Task, others: HolderId[]) => void;
   /** `others`: the other copies to delete with it. */
   onDelete: (taskId: string, others: HolderId[]) => void;
+  /** Saves the task's reusable fields as a template; hidden when absent. */
+  onSaveAsTemplate?: (task: Task) => void;
   /** The other copies of a linked task. */
   linkedCopies?: LinkedCopy[];
   /** Makes the task independent of its copies. */
@@ -50,6 +52,7 @@ export default function TaskDetailsModal({
   onClose,
   onSave,
   onDelete,
+  onSaveAsTemplate,
   linkedCopies = [],
   onUnlink,
 }: TaskDetailsModalProps) {
@@ -355,6 +358,19 @@ export default function TaskDetailsModal({
           </View>
 
           {onUnlink ? <LinkedCopiesCard settings={settings} copies={linkedCopies} onUnlink={onUnlink} /> : null}
+
+          {onSaveAsTemplate && !draftTask.predefinedTaskId ? (
+            <TouchableOpacity
+              style={[styles.deleteButton, { backgroundColor: theme.surfaceMuted, marginBottom: 10 }]}
+              accessibilityRole="button"
+              onPress={() => {
+                onSaveAsTemplate(draftTask);
+                Alert.alert(copy.templateSaveFromTask, copy.templateSavedNotice);
+              }}
+            >
+              <Text style={[styles.deleteButtonText, { color: theme.text }]}>{copy.templateSaveFromTask}</Text>
+            </TouchableOpacity>
+          ) : null}
 
           {!confirmingDelete ? (
             <TouchableOpacity

@@ -248,6 +248,11 @@ export interface AppCopy {
   addTaskSaveTemplate: string;
   addTaskSaveTemplateHelp: string;
   addTaskSavedCustomTasks: string;
+  templateSaveFromTask: string;
+  templateSavedNotice: string;
+  templateDelete: string;
+  templateDeleteTitle: string;
+  templateDeleteBody: string;
   addTaskNamePlaceholder: string;
   addTaskDescriptionPlaceholder: string;
   /** Why Add did nothing: the task has no name yet (the only thing still required). */
@@ -369,6 +374,14 @@ export interface AppCopy {
   companionEvolvedTitle: string;
   companionRevealSubtitle: string;
   companionMood: Record<CompanionMood, string>;
+  /** Extra plain mood lines per mood; the dashboard picks one per day (with companionMood as the first). */
+  companionMoodMore: Record<CompanionMood, string[]>;
+  /** Praise when the last task due today is ticked off: gentle, points to rest. */
+  praiseRestLines: string[];
+  /** Praise on reaching a big day (BIG_DAY_TASKS tasks). */
+  praiseBigDayLines: string[];
+  settingsCompanionReactions: string;
+  settingsCompanionReactionsHelp: string;
   /** The mood lines during Halloween and Christmas. */
   companionSeasonMood: Record<Season, Record<CompanionMood, string>>;
   /** Greetings on the day itself (shown instead of the mood line, unless the companion is asleep). */
@@ -389,7 +402,47 @@ export interface AppCopy {
   welcomeBack: string;
   returnRecapLine: string;
   returnRecapFocus: string;
+  weeklySummaryOpen: string;
+  weeklySummaryTitle: string;
+  weeklySummaryTasks: string;
+  weeklySummaryActiveDays: string;
+  weeklySummaryRecurring: string;
+  weeklySummaryFocus: string;
+  weeklySummaryEmpty: string;
+  weeklySummaryPartial: string;
+  weeklySummaryNotTracked: string;
+  weeklySummaryDayLabel: string;
+  weeklySummaryClose: string;
+  weeklyGoalTitle: string;
+  weeklyGoalSetup: string;
+  weeklyGoalValue: string;
+  weeklyGoalProgress: string;
+  weeklyGoalMet: string;
+  weeklyGoalHint: string;
+  weeklyGoalMore: string;
+  weeklyGoalLess: string;
+  weeklyGoalOff: string;
+  calendarPrevMonth: string;
+  calendarNextMonth: string;
+  calendarHistoryTitle: string;
+  calendarHistoryCount: string;
+  calendarHistoryNone: string;
+  calendarHistoryNotTracked: string;
+  calendarHistoryFuture: string;
+  calendarHistoryTruncated: string;
+  calendarHistoryOwner: string;
+  calendarHistoryAll: string;
+  calendarHistoryCombined: string;
+  calendarHistoryCombinedNone: string;
+  calendarDayDone: string;
+  calendarDayNotTracked: string;
   welcomeBackDismiss: string;
+  dailyWelcomeTitle: string;
+  dailyWelcomeBody: string;
+  dailyWelcomeClaim: string;
+  dailyWelcomeDismiss: string;
+  settingsDailyWelcome: string;
+  settingsDailyWelcomeHelp: string;
   backupNudgeTitle: string;
   backupNudgeBody: string;
   backupNudgeShare: string;
@@ -400,6 +453,13 @@ export interface AppCopy {
   whatsNewClose: string;
   whatsNewHide: string;
   tutorialChooseCompanionHint: string;
+  tutorialBack: string;
+  tutorialPreviewBadge: string;
+  tutorialGuideLabel: string;
+  tutorialPetInvite: string;
+  tutorialPetClose: string;
+  tutorialReplayCompleteTask: string;
+  tutorialReplayOpenRealm: string;
   companionFoundTitle: string;
   companionFoundSubtitle: string;
   journeyTitle: string;
@@ -465,6 +525,12 @@ export interface AppCopy {
   roomCopyConfirmBody: string;
   roomCopyReplace: string;
   roomCopyCancel: string;
+  roomScanPicture: string;
+  roomScanCamera: string;
+  roomScanHint: string;
+  roomScanDenied: string;
+  roomScanNoQr: string;
+  roomScanUnreadable: string;
   roomCodeErrors: Record<RoomCodeError, string>;
   roomCopyDoneTitle: string;
   roomCopyAllThere: string;
@@ -494,6 +560,7 @@ export interface AppCopy {
   notifyTimerTitle: string;
   notifyTimerBody: string;
   notifyTimerChannel: string;
+  timerAlertDenied: string;
   reminderTitle: string;
   reminderBody: string;
   reminderChannel: string;
@@ -810,6 +877,11 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     addTaskSaveTemplate: "Save for later",
     addTaskSaveTemplateHelp: "Stores this custom task and category as a reusable template you can pick again later.",
     addTaskSavedCustomTasks: "Saved custom tasks",
+    templateSaveFromTask: "Save as template",
+    templateSavedNotice: "Saved as a template.",
+    templateDelete: "Delete template",
+    templateDeleteTitle: "Delete template?",
+    templateDeleteBody: "Tasks already created from it are not changed.",
     addTaskNamePlaceholder: "Enter task name",
     addTaskDescriptionPlaceholder: "Enter task description (optional)",
     addTaskNameMissing: "Give the task a name first. Everything else is optional.",
@@ -929,6 +1001,36 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     companionJoinedTitle: "{name} joined you!",
     companionEvolvedTitle: "{name} evolved!",
     companionRevealSubtitle: "It noticed how you use Growra.",
+    companionMoodMore: {
+      hello: [
+        "{name} is here whenever you want to start.",
+        "{name} waves hello. No rush.",
+      ],
+      happy: [
+        "{name} is pleased with how today is going.",
+        "{name} is smiling at your progress.",
+      ],
+      glowing: [
+        "{name} is beaming. What a great day!",
+        "{name} can't stop smiling. Well done!",
+      ],
+      sleepy: [
+        "{name} is curled up and glad you're back. Take it easy.",
+        "{name} is happy to see you. Start small, no rush.",
+      ],
+    },
+    praiseRestLines: [
+      "Everything due is done. {name} says rest up!",
+      "All clear for today. Enjoy a break!",
+      "Nothing left for today. {name} is proud of you.",
+    ],
+    praiseBigDayLines: [
+      "A big day! {name} is amazed!",
+      "What a day! {name} is cheering loudly.",
+      "A big day, and you did it. Well done!",
+    ],
+    settingsCompanionReactions: "Companion reactions",
+    settingsCompanionReactionsHelp: "Show your companion's short speech bubble after you finish a task or shift, and vary its daily line. Turn off for a quiet companion; nothing else changes.",
     companionMood: {
       hello: "{name} says hi. Ready when you are.",
       happy: "{name} is happy with today.",
@@ -1010,7 +1112,47 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     welcomeBack: "Good to see you again.",
     returnRecapLine: "Your last {days} active days: {done} tasks done.",
     returnRecapFocus: "Your last {days} active days: {done} tasks done, {focus} focus sessions.",
+    weeklySummaryOpen: "See how this week went",
+    weeklySummaryTitle: "Your last 7 days",
+    weeklySummaryTasks: "Tasks done",
+    weeklySummaryActiveDays: "Days with a task done: {active} of {total}",
+    weeklySummaryRecurring: "Repeating tasks done",
+    weeklySummaryFocus: "Focus sessions finished",
+    weeklySummaryEmpty: "A quiet week, and that is perfectly fine. Whenever you finish something, it will show up here.",
+    weeklySummaryPartial: "Growra has only kept this record for {days} of these days, so earlier days are left out.",
+    weeklySummaryNotTracked: "not recorded",
+    weeklySummaryDayLabel: "{day}: {done} tasks done",
+    weeklySummaryClose: "Close",
+    weeklyGoalTitle: "Weekly goal",
+    weeklyGoalSetup: "Set a weekly goal (optional)",
+    weeklyGoalValue: "{goal} tasks a week",
+    weeklyGoalProgress: "{done} of {goal} tasks this week",
+    weeklyGoalMet: "You reached this week's goal. Nice.",
+    weeklyGoalHint: "Counts tasks you finish from Monday to Sunday. It is only for you, and nothing is lost if you do not reach it.",
+    weeklyGoalMore: "Raise goal",
+    weeklyGoalLess: "Lower goal",
+    weeklyGoalOff: "Turn goal off",
+    calendarPrevMonth: "Previous month",
+    calendarNextMonth: "Next month",
+    calendarHistoryTitle: "Finished on this day",
+    calendarHistoryCount: "{done} done",
+    calendarHistoryNone: "Nothing was marked done on this day.",
+    calendarHistoryNotTracked: "Growra was not keeping this record yet, so there is nothing to show for this day.",
+    calendarHistoryFuture: "This day has not happened yet.",
+    calendarHistoryTruncated: "Only some of the finished tasks were saved by name; the count above is complete.",
+    calendarHistoryOwner: "{holder} only",
+    calendarHistoryAll: "All holders together: {done} done",
+    calendarHistoryCombined: "This day was saved before each list kept its own record, so what {holder} finished is not known. All holders together: {done} done.",
+    calendarHistoryCombinedNone: "This day was saved before each list kept its own record, so what {holder} finished is not known. Nothing was recorded for any holder.",
+    calendarDayDone: "{day}: {done} tasks done",
+    calendarDayNotTracked: "{day}: not recorded",
     welcomeBackDismiss: "OK",
+    dailyWelcomeTitle: "A small hello",
+    dailyWelcomeBody: "A little gift for opening Growra today: {coins} coins. Take it whenever you like, or skip it. Nothing is lost either way.",
+    dailyWelcomeClaim: "Claim",
+    dailyWelcomeDismiss: "Not now",
+    settingsDailyWelcome: "Daily welcome",
+    settingsDailyWelcomeHelp: "Show a small once-a-day welcome gift of a few coins when you open the app. Skipping a day costs nothing. Turn off to hide it.",
     backupNudgeTitle: "Keep a copy of your progress",
     backupNudgeBody: "Your tasks and progress live only on this phone. Share a backup code to somewhere safe, like a note or an email to yourself, so you can bring everything back on a new phone.",
     backupNudgeShare: "Share backup code",
@@ -1021,6 +1163,13 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     whatsNewClose: "Got it",
     whatsNewHide: "Don't show again until the next update",
     tutorialChooseCompanionHint: "Choose your first companion. The others join as you use Growra.",
+    tutorialBack: "Back",
+    tutorialPreviewBadge: "Coming up",
+    tutorialGuideLabel: "{name}, your guide",
+    tutorialPetInvite: "I'm {name}. Pick a companion below, any of us would love to join you!",
+    tutorialPetClose: "Now I'm yours, I'm {name}! Open Journey: every day you finish a task adds a tile to our road.",
+    tutorialReplayCompleteTask: "Tap the box next to a task to complete it. You earn coins and Bond, and your companion cheers you on.",
+    tutorialReplayOpenRealm: "Open Pets any time to meet your companions.",
     companionFoundTitle: "{name} found something!",
     companionFoundSubtitle: "A {item} from your focus session. It's in your bag on the Journey.",
     journeyTitle: "Journey",
@@ -1128,6 +1277,7 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     notifyTimerTitle: "Time's up",
     notifyTimerBody: "The timer for “{task}” has finished.",
     notifyTimerChannel: "Task timers",
+    timerAlertDenied: "Notifications are off for Growra, so a timer won't alert you while the app is closed. You can turn them on in your phone's settings.",
     reminderTitle: "Growra",
     reminderBody: "Your tasks are waiting whenever you're ready.",
     reminderChannel: "Daily reminder",
@@ -1171,6 +1321,12 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     roomCopyConfirmBody: "The items in this room go back to your bag.",
     roomCopyReplace: "Replace",
     roomCopyCancel: "Cancel",
+    roomScanPicture: "Scan a picture",
+    roomScanCamera: "Scan with camera",
+    roomScanHint: "Point the camera at a Growra room QR code.",
+    roomScanDenied: "Camera access is off. You can still paste a code or scan from a picture.",
+    roomScanNoQr: "No QR code found in that picture. Paste the room code instead.",
+    roomScanUnreadable: "Couldn't read that picture. Paste the room code instead.",
     roomCodeErrors: {
       format: "That isn't a room code.",
       checksum: "This room code is incomplete or was changed. Ask for it again.",
@@ -1521,6 +1677,11 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     addTaskSaveTemplate: "Guardar para depois",
     addTaskSaveTemplateHelp: "Guarda esta tarefa personalizada e categoria como modelo reutilizável para escolher novamente mais tarde.",
     addTaskSavedCustomTasks: "Tarefas personalizadas guardadas",
+    templateSaveFromTask: "Guardar como modelo",
+    templateSavedNotice: "Guardado como modelo.",
+    templateDelete: "Apagar modelo",
+    templateDeleteTitle: "Apagar modelo?",
+    templateDeleteBody: "As tarefas já criadas a partir dele não mudam.",
     addTaskNamePlaceholder: "Escreve o nome da tarefa",
     addTaskDescriptionPlaceholder: "Escreve a descrição da tarefa (opcional)",
     addTaskNameMissing: "Dá primeiro um nome à tarefa. O resto é opcional.",
@@ -1640,6 +1801,36 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     companionJoinedTitle: "{name} juntou-se a ti!",
     companionEvolvedTitle: "{name} evoluiu!",
     companionRevealSubtitle: "Reparou na forma como usas o Growra.",
+    companionMoodMore: {
+      hello: [
+        "{name} está aqui quando quiseres começar.",
+        "{name} acena. Sem pressa.",
+      ],
+      happy: [
+        "{name} está contente com o teu dia.",
+        "{name} sorri com o teu progresso.",
+      ],
+      glowing: [
+        "{name} está radiante. Que grande dia!",
+        "{name} não para de sorrir. Muito bem!",
+      ],
+      sleepy: [
+        "{name} está enroscado e feliz por voltares. Vai com calma.",
+        "{name} está feliz por te ver. Começa pequeno, sem pressa.",
+      ],
+    },
+    praiseRestLines: [
+      "Tudo o que era para hoje está feito. {name} diz: descansa!",
+      "Tudo em dia por hoje. Aproveita uma pausa!",
+      "Nada mais para hoje. {name} tem orgulho em ti.",
+    ],
+    praiseBigDayLines: [
+      "Um grande dia! {name} está maravilhado!",
+      "Que dia! {name} aplaude em voz alta.",
+      "Um grande dia, e conseguiste. Muito bem!",
+    ],
+    settingsCompanionReactions: "Reações do companheiro",
+    settingsCompanionReactionsHelp: "Mostra o balão de fala do teu companheiro depois de concluíres uma tarefa ou turno, e varia a frase do dia. Desliga para um companheiro mais calado; o resto não muda.",
     companionMood: {
       hello: "{name} diz olá. Pronto quando tu estiveres.",
       happy: "{name} está contente com o dia de hoje.",
@@ -1737,7 +1928,47 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     welcomeBack: "É bom ver-te outra vez.",
     returnRecapLine: "Os teus últimos {days} dias ativos: {done} tarefas feitas.",
     returnRecapFocus: "Os teus últimos {days} dias ativos: {done} tarefas feitas, {focus} sessões de foco.",
+    weeklySummaryOpen: "Ver como correu esta semana",
+    weeklySummaryTitle: "Os teus últimos 7 dias",
+    weeklySummaryTasks: "Tarefas feitas",
+    weeklySummaryActiveDays: "Dias com uma tarefa feita: {active} de {total}",
+    weeklySummaryRecurring: "Tarefas repetidas feitas",
+    weeklySummaryFocus: "Sessões de foco concluídas",
+    weeklySummaryEmpty: "Uma semana tranquila, e está tudo bem. Quando terminares algo, aparece aqui.",
+    weeklySummaryPartial: "O Growra só guarda este registo em {days} destes dias, por isso os dias anteriores ficam de fora.",
+    weeklySummaryNotTracked: "sem registo",
+    weeklySummaryDayLabel: "{day}: {done} tarefas feitas",
+    weeklySummaryClose: "Fechar",
+    weeklyGoalTitle: "Meta semanal",
+    weeklyGoalSetup: "Definir uma meta semanal (opcional)",
+    weeklyGoalValue: "{goal} tarefas por semana",
+    weeklyGoalProgress: "{done} de {goal} tarefas esta semana",
+    weeklyGoalMet: "Chegaste à meta desta semana. Boa.",
+    weeklyGoalHint: "Conta as tarefas que terminas de segunda a domingo. É só para ti e não perdes nada se não a alcançares.",
+    weeklyGoalMore: "Aumentar meta",
+    weeklyGoalLess: "Diminuir meta",
+    weeklyGoalOff: "Desativar meta",
+    calendarPrevMonth: "Mês anterior",
+    calendarNextMonth: "Mês seguinte",
+    calendarHistoryTitle: "Concluído neste dia",
+    calendarHistoryCount: "{done} feitas",
+    calendarHistoryNone: "Nada foi marcado como feito neste dia.",
+    calendarHistoryNotTracked: "O Growra ainda não guardava este registo, por isso não há nada para mostrar neste dia.",
+    calendarHistoryFuture: "Este dia ainda não aconteceu.",
+    calendarHistoryTruncated: "Só algumas tarefas concluídas foram guardadas pelo nome; a contagem acima está completa.",
+    calendarHistoryOwner: "Só {holder}",
+    calendarHistoryAll: "Todas as listas juntas: {done} feitas",
+    calendarHistoryCombined: "Este dia foi guardado antes de cada lista ter o seu próprio registo, por isso não se sabe o que {holder} concluiu. Todas as listas juntas: {done} feitas.",
+    calendarHistoryCombinedNone: "Este dia foi guardado antes de cada lista ter o seu próprio registo, por isso não se sabe o que {holder} concluiu. Não ficou nada registado em nenhuma lista.",
+    calendarDayDone: "{day}: {done} tarefas feitas",
+    calendarDayNotTracked: "{day}: sem registo",
     welcomeBackDismiss: "OK",
+    dailyWelcomeTitle: "Um pequeno olá",
+    dailyWelcomeBody: "Um miminho por abrires o Growra hoje: {coins} moedas. Recebe quando quiseres, ou deixa. Não se perde nada.",
+    dailyWelcomeClaim: "Receber",
+    dailyWelcomeDismiss: "Agora não",
+    settingsDailyWelcome: "Boas-vindas diárias",
+    settingsDailyWelcomeHelp: "Mostra um pequeno presente de boas-vindas por dia, com algumas moedas, ao abrires a app. Saltar um dia não custa nada. Desliga para o esconder.",
     backupNudgeTitle: "Guarda uma cópia do teu progresso",
     backupNudgeBody: "As tuas tarefas e o teu progresso só existem neste telemóvel. Partilha um código de backup para um sítio seguro, como uma nota ou um email para ti, para recuperares tudo num telemóvel novo.",
     backupNudgeShare: "Partilhar código de backup",
@@ -1748,6 +1979,13 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     whatsNewClose: "Percebi",
     whatsNewHide: "Não mostrar outra vez até à próxima atualização",
     tutorialChooseCompanionHint: "Escolhe o teu primeiro companheiro. Os outros juntam-se a ti quando usas o Growra.",
+    tutorialBack: "Voltar",
+    tutorialPreviewBadge: "A seguir",
+    tutorialGuideLabel: "{name}, o teu guia",
+    tutorialPetInvite: "Sou o {name}. Escolhe um companheiro abaixo, qualquer um de nós adorava juntar-se a ti!",
+    tutorialPetClose: "Agora sou teu, sou o {name}! Abre a Jornada: cada dia em que concluis uma tarefa junta um bloco ao nosso caminho.",
+    tutorialReplayCompleteTask: "Toca na caixa ao lado de uma tarefa para a concluir. Ganhas moedas e Vínculo, e o teu companheiro anima-te.",
+    tutorialReplayOpenRealm: "Abre Companheiros quando quiseres para conhecer os teus companheiros.",
     companionFoundTitle: "{name} encontrou uma coisa!",
     companionFoundSubtitle: "Um(a) {item} da tua sessão de foco. Está na tua mochila na Jornada.",
     journeyTitle: "Jornada",
@@ -1855,6 +2093,7 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     notifyTimerTitle: "Tempo esgotado",
     notifyTimerBody: "O temporizador de “{task}” terminou.",
     notifyTimerChannel: "Temporizadores das tarefas",
+    timerAlertDenied: "As notificações do Growra estão desligadas, por isso o temporizador não te avisa com a app fechada. Podes ligá-las nas definições do telemóvel.",
     reminderTitle: "Growra",
     reminderBody: "As tuas tarefas estão à tua espera quando quiseres.",
     reminderChannel: "Lembrete diário",
@@ -1898,6 +2137,12 @@ const copyByLanguage: Record<"en" | "pt", AppCopy> = {
     roomCopyConfirmBody: "Os itens deste quarto voltam para o teu saco.",
     roomCopyReplace: "Substituir",
     roomCopyCancel: "Cancelar",
+    roomScanPicture: "Ler uma imagem",
+    roomScanCamera: "Ler com a câmara",
+    roomScanHint: "Aponta a câmara a um código QR de quarto do Growra.",
+    roomScanDenied: "O acesso à câmara está desligado. Podes colar um código ou ler uma imagem.",
+    roomScanNoQr: "Não há código QR nessa imagem. Cola o código do quarto.",
+    roomScanUnreadable: "Não foi possível ler essa imagem. Cola o código do quarto.",
     roomCodeErrors: {
       format: "Isto não é um código de quarto.",
       checksum: "Este código de quarto está incompleto ou foi alterado. Pede-o outra vez.",

@@ -1,6 +1,7 @@
 import {
     CompanionEvent,
     GameState,
+    HolderId,
     Pet,
     PetImages,
     PetRarity,
@@ -640,6 +641,8 @@ export interface CompletionInput {
   name: string;
   minutes: number | null;
   facts: CompletionFacts;
+  /** Whose list the item came from, so the calendar history can show each holder's own completions (#79). */
+  holder: HolderId;
   /** What counts toward the usage and day stats (the perks read `facts`). */
   record: { recurring: boolean; custom: boolean; highPriority: boolean; timer: boolean };
 }
@@ -689,7 +692,7 @@ export function applyCompletionRewards(
     totalExperience,
     totalTasksCompleted: gameState.totalTasksCompleted + 1,
     usage,
-    days: recordDayCompletion(gameState.days, { name: input.name }, recorded, completedAt),
+    days: recordDayCompletion(gameState.days, { name: input.name }, recorded, completedAt, input.holder),
     streak: nextStreak,
     lastPlayedAt: completedAt,
   };
@@ -736,6 +739,7 @@ export function completeTask(gameState: GameState, taskId: string): GameState {
     gameState,
     {
       name: targetTask.name,
+      holder: "personal",
       minutes: getTaskMinutes(targetTask),
       facts,
       record: {
@@ -798,6 +802,7 @@ export function completeWorkOccurrence(
     gameState,
     {
       name: occurrence.name,
+      holder: "work",
       minutes: (occurrence.end - occurrence.start) / 60000,
       facts: {
         recurring,

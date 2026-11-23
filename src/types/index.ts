@@ -48,6 +48,12 @@ export interface AppSettings {
   appearance: AppAppearance;
   /** Ask "Leave Growra?" when Back is pressed on the dashboard. */
   confirmExit: boolean;
+  /** Offer the small once-a-day welcome reward (#75). */
+  dailyWelcome: boolean;
+  /** The companion's speech bubble after a tick and its varied daily line (#78); off = a quiet companion. */
+  companionReactions: boolean;
+  /** Optional weekly goal in tasks done (#80); 0 = no goal. */
+  weeklyGoal: number;
   /** Search and quick add rows on the Tasks screen are shown (the player can fold them away). */
   taskToolsOpen: boolean;
   /** One optional reminder a day (#39); off unless the player turns it on. */
@@ -79,6 +85,12 @@ export interface CustomTaskTemplate {
   description: string;
   category: string;
   createdAt: number;
+  /** Optional so templates saved before #77 still load; absent means the form defaults. */
+  frequency?: TaskFrequency;
+  priority?: TaskPriority;
+  durationMinutes?: number;
+  /** Timer length in minutes; absent or 0 means no timer. */
+  timerMinutes?: number;
 }
 
 export interface Task {
@@ -226,6 +238,16 @@ export interface DayRecord {
   timersFinished: number;
   scheduledAhead: number; // tasks created or moved to a later day
   completions: { name: string; at: number }[]; // capped, for the tile and look-back cards
+  /**
+   * What each holder (Personal, Work, a group) finished that day, for the calendar history card (#79).
+   * Only written from GameState.holderHistorySince on; older records have none, so they stay combined-only.
+   */
+  byHolder?: Record<string, HolderDayRecord>;
+}
+
+export interface HolderDayRecord {
+  done: number;
+  completions: { name: string; at: number }[]; // capped like DayRecord.completions
 }
 
 export interface Decoration {
@@ -362,6 +384,11 @@ export interface GameState {
   companionEvents: CompanionEvent[]; // joins/evolutions waiting to be shown
   notices: GameNotice[]; // one-time messages (e.g. the gacha → companions migration)
   days: DayRecord[];
+  /**
+   * Start of the first local day whose `days` records say which holder finished what (#79). Earlier days only have
+   * combined totals, so the calendar reports them as such instead of guessing.
+   */
+  holderHistorySince: number;
   decorations: Decoration[];
   streak: Streak;
   plus: PlusState;
@@ -371,6 +398,10 @@ export interface GameState {
   roomShareFooter: boolean;
   /** The one-time "keep a backup" card has been shown (#54); it never comes back. */
   backupNudgeShown: boolean;
+  /** The one-time "timer alerts are off" notice has been shown (#38); it never comes back. */
+  timerDeniedNoticeShown: boolean;
+  /** Local day (YYYY-MM-DD) of the last daily welcome claim (#75); "" = never. */
+  welcomeClaimedDay: string;
   /** The app version whose What's New notes the player chose to stop seeing ("" = none yet). */
   whatsNewHiddenFor: string;
   workItems: WorkItem[];

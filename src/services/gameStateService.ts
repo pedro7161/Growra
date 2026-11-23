@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { normalizeCustomTaskTemplates } from "../utils/customTaskTemplates";
 import {
   DayRecord,
   Decoration,
@@ -35,7 +36,9 @@ import { buildDaysFromTasks } from "../utils/journey";
 import { getNextAvailableDate, getStartOfDay } from "../utils/taskSchedule";
 import { defaultSettings, defaultTimerAlertSettings } from "../utils/settings";
 import { isAppLanguage } from "../constants/languages";
+import { normalizeWeeklyGoal } from "../utils/weeklyGoal";
 import { SAVE_VERSION } from "../utils/initialState";
+import { normalizeWelcomeClaimedDay } from "../utils/dailyWelcome";
 import { createTaskTimer } from "../utils/taskTimer";
 import { BOND_GROWTH_THRESHOLDS, createEmptyUsage } from "../utils/companions";
 
@@ -68,6 +71,13 @@ function normalizeDailyReminder(value: unknown): AppSettings["dailyReminder"] {
     hour: Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : defaultSettings.dailyReminder.hour,
     minute: minute === 30 ? 30 : 0,
   };
+}
+
+function normalizeHolderHistorySince(stored: unknown): number {
+  if (typeof stored === "number" && Number.isFinite(stored) && stored > 0) return getStartOfDay(stored);
+  const tomorrow = new Date(getStartOfDay(Date.now()));
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.getTime();
 }
 
 function savedVersion(data: unknown): number {
@@ -139,6 +149,7 @@ type PersistedGameState = Omit<
   | "companionEvents"
   | "notices"
   | "days"
+  | "holderHistorySince"
   | "decorations"
   | "plus"
   | "explore"
@@ -146,12 +157,15 @@ type PersistedGameState = Omit<
   | "ownedRoomStyles"
   | "roomShareFooter"
   | "backupNudgeShown"
+  | "timerDeniedNoticeShown"
+  | "welcomeClaimedDay"
   | "whatsNewHiddenFor"
   | "workItems"
   | "groups"
   | "settings"
 > & {
   days?: DayRecord[];
+  holderHistorySince?: number;
   decorations?: Decoration[];
   plus?: PlusState;
   explore?: ExploreState;
@@ -159,6 +173,8 @@ type PersistedGameState = Omit<
   ownedRoomStyles?: string[];
   roomShareFooter?: boolean;
   backupNudgeShown?: boolean;
+  timerDeniedNoticeShown?: boolean;
+  welcomeClaimedDay?: string;
   whatsNewHiddenFor?: string;
   workItems?: WorkItem[];
   groups?: Group[];
@@ -456,6 +472,9 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       ...(hadExpeditions ? [{ kind: "journey-migrated" as const, coins: gearCoins }] : []),
     ],
     days: saveData.gameState.days ?? buildDaysFromTasks(saveData.gameState.tasks as Task[]),
+    // Saves from before per-holder history (#79) can't say who finished what on earlier days, so the first
+    // day it can speak for is the next one; anything before stays combined-only instead of guessed.
+    holderHistorySince: normalizeHolderHistorySince(saveData.gameState.holderHistorySince),
     decorations: saveData.gameState.decorations ?? [],
     plus: saveData.gameState.plus ?? { owned: false, lastCheckedAt: 0 },
     explore: saveData.gameState.explore ?? { day: 0, count: 0 },
@@ -463,6 +482,8 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
     ownedRoomStyles: saveData.gameState.ownedRoomStyles ?? ["wooden-bedroom"],
     roomShareFooter: saveData.gameState.roomShareFooter ?? true,
     backupNudgeShown: saveData.gameState.backupNudgeShown === true,
+    timerDeniedNoticeShown: saveData.gameState.timerDeniedNoticeShown === true,
+    welcomeClaimedDay: normalizeWelcomeClaimedDay(saveData.gameState.welcomeClaimedDay),
     whatsNewHiddenFor: saveData.gameState.whatsNewHiddenFor ?? "",
     workItems: saveData.gameState.workItems ?? [],
     groups,
@@ -470,10 +491,14 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       saveData.gameState.totalTasksCompleted !== undefined
         ? saveData.gameState.totalTasksCompleted
         : saveData.gameState.tasks.filter((task) => task.status === TaskStatus.COMPLETED).length,
+    // Saves from before the tutorial existed have no flag. A player who already has tasks,
+    // companions or finished tasks is not a newcomer: never force them into onboarding (#82).
     tutorialCompleted:
       saveData.gameState.tutorialCompleted !== undefined
         ? saveData.gameState.tutorialCompleted
-        : false,
+        : saveData.gameState.tasks.length > 0 ||
+          saveData.gameState.pets.length > 0 ||
+          (saveData.gameState.totalTasksCompleted ?? 0) > 0,
     tutorialRewardGranted:
       saveData.gameState.tutorialRewardGranted !== undefined
         ? saveData.gameState.tutorialRewardGranted
@@ -487,6 +512,9 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
           ? storedSettings.appearance
           : "system",
       confirmExit: storedSettings.confirmExit !== false,
+      dailyWelcome: storedSettings.dailyWelcome !== false,
+      companionReactions: storedSettings.companionReactions !== false,
+      weeklyGoal: normalizeWeeklyGoal(storedSettings.weeklyGoal),
       taskToolsOpen: storedSettings.taskToolsOpen !== false,
       dailyReminder: normalizeDailyReminder(storedSettings.dailyReminder),
       musicEnabled: storedSettings.musicEnabled === true,
@@ -503,11 +531,7 @@ function migrateSaveData(saveData: PersistedSaveData): SaveData {
       dashboardCollapsed: normalizeDashboardCollapsed(storedSettings.dashboardCollapsed),
       calendarShow: normalizeCalendarShow(persistedSettings),
     },
-    customTaskTemplates: saveData.gameState.customTaskTemplates
-      ? saveData.gameState.customTaskTemplates.map((template) => ({
-          ...template,
-        }))
-      : [],
+    customTaskTemplates: normalizeCustomTaskTemplates(saveData.gameState.customTaskTemplates),
     tasks: saveData.gameState.tasks.map(normalizeTask),
     pets,
     equippedPetId: activePetId,

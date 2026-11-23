@@ -1,6 +1,7 @@
 import { GameState, Group, GroupKind, HolderId, Task, TaskStatus, WorkItem } from "../types";
 import { getNextAvailableDate } from "./taskSchedule";
 import { finishTaskTimer } from "./taskTimer";
+import { recordHolderOnlyCompletion } from "./journey";
 import { addDaysToKey } from "./workForm";
 import { canCompleteOccurrence, getOccurrencesBetween } from "./workSchedule";
 
@@ -121,10 +122,12 @@ export function completeGroupTask(state: GameState, groupId: string, taskId: str
     dueDate: getNextAvailableDate(task, now),
     completedAt: now,
   });
-  return updateHolderGroup(state, groupId, (group) => ({
+  const ticked = updateHolderGroup(state, groupId, (group) => ({
     ...group,
     tasks: group.tasks.map((candidate) => (candidate.id === taskId ? completed : candidate)),
   }));
+  // Only the group's own tally in the day history (#79); no reward or combined total changes.
+  return { ...ticked, days: recordHolderOnlyCompletion(ticked.days, groupId, task.name, now) };
 }
 
 /** Ticks off one occurrence of a group schedule item, with the same window as Work and no rewards. */
@@ -141,10 +144,11 @@ export function completeGroupOccurrence(
     (candidate) => candidate.dateKey === dateKey,
   );
   if (!occurrence || !canCompleteOccurrence(occurrence, now)) return state;
-  return updateHolderGroup(state, groupId, (group) => ({
+  const ticked = updateHolderGroup(state, groupId, (group) => ({
     ...group,
     workItems: group.workItems.map((candidate) =>
       candidate.id === itemId ? { ...candidate, completedDateKeys: [...candidate.completedDateKeys, dateKey] } : candidate,
     ),
   }));
+  return { ...ticked, days: recordHolderOnlyCompletion(ticked.days, groupId, occurrence.name, now) };
 }

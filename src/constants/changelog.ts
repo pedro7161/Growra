@@ -23,6 +23,44 @@ export interface ChangelogEntry {
 const changelogByLanguage: Record<"en" | "pt", ChangelogEntry[]> = {
   en: [
     {
+      version: "1.13.1",
+      dateLabel: "Version 1.13.1 · November 2026",
+      items: [
+        "A festive Christmas app icon for the season.",
+      ],
+      fixes: [],
+    },
+    {
+      version: "1.13.0",
+      dateLabel: "Version 1.13.0 · November 2026",
+      items: [
+        "A gentle, optional welcome reward when you come back: easy to dismiss, once per day, 2 coins.",
+        "An optional weekly progress summary sheet.",
+        "Save a task as a template and reuse it: applying one creates a new, independent task, and you can delete templates from the saved list.",
+        "Richer companion reactions, with an On/Off setting.",
+        "The calendar shows each holder's history, with combined totals shown separately. Older days show \"combined only\".",
+        "Set an optional weekly goal from the weekly summary sheet. Missed goals cost nothing.",
+        "Your starter companion now guides new users in speech bubbles with Back, Next and Skip. Replay it from Settings; existing users are not forced into it.",
+      ],
+      fixes: [
+        "Fixed placeholder names in the guide and improved its layout on short screens.",
+      ],
+    },
+    {
+      version: "1.12.0",
+      dateLabel: "Version 1.12.0 · November 2026",
+      items: [
+        "Share a room as a QR code on the picture footer.",
+        "Scan a room QR code with the camera or from a picture.",
+        "When the footer is off, the room code text is shared with the picture.",
+        "Tapping a timer alert opens that task.",
+        "A one-time notice explains when timer alerts are blocked by the notification permission.",
+      ],
+      fixes: [
+        "Timer alerts now use updated notification channels, so the sound and vibration settings apply correctly on Android.",
+      ],
+    },
+    {
       version: "1.11.0",
       dateLabel: "Version 1.11.0 · November 2026",
       items: [
@@ -205,6 +243,44 @@ const changelogByLanguage: Record<"en" | "pt", ChangelogEntry[]> = {
     },
   ],
   pt: [
+    {
+      version: "1.13.1",
+      dateLabel: "Versão 1.13.1 · novembro de 2026",
+      items: [
+        "Um ícone de Natal para a época festiva.",
+      ],
+      fixes: [],
+    },
+    {
+      version: "1.13.0",
+      dateLabel: "Versão 1.13.0 · novembro de 2026",
+      items: [
+        "Uma recompensa de boas-vindas suave e opcional quando voltas: fácil de dispensar, uma vez por dia, 2 moedas.",
+        "Uma folha opcional com o resumo semanal do progresso.",
+        "Guarda uma tarefa como modelo e reutiliza-a: aplicar um modelo cria uma tarefa nova e independente, e podes apagar modelos da lista guardada.",
+        "Reações mais ricas do companheiro, com uma definição Ligado/Desligado.",
+        "O calendário mostra o histórico de cada titular, com os totais combinados à parte. Os dias mais antigos mostram \"só combinado\".",
+        "Define um objetivo semanal opcional a partir do resumo semanal. Os objetivos falhados não custam nada.",
+        "O teu companheiro inicial guia agora os novos utilizadores em balões de fala com Voltar, Seguinte e Saltar. Repete-o nas Definições; os utilizadores existentes não são obrigados a vê-lo.",
+      ],
+      fixes: [
+        "Corrigidos os nomes de exemplo no guia e melhorado o layout em ecrãs pequenos.",
+      ],
+    },
+    {
+      version: "1.12.0",
+      dateLabel: "Versão 1.12.0 · novembro de 2026",
+      items: [
+        "Partilha uma sala com um código QR no rodapé da imagem.",
+        "Lê o código QR de uma sala com a câmara ou a partir de uma imagem.",
+        "Quando o rodapé está desativado, o texto do código da sala é partilhado junto com a imagem.",
+        "Tocar num alerta do temporizador abre essa tarefa.",
+        "Um aviso único explica quando os alertas do temporizador estão bloqueados pela permissão de notificações.",
+      ],
+      fixes: [
+        "Os alertas do temporizador usam agora canais de notificação atualizados, por isso as definições de som e vibração aplicam-se corretamente no Android.",
+      ],
+    },
     {
       version: "1.11.0",
       dateLabel: "Versão 1.11.0 · novembro de 2026",
